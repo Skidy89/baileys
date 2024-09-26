@@ -744,7 +744,6 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 							},
 						),
 						//TODO: CACHE
-
 						useCachedGroupMetadata: await config.cachedGroupMetadata(jid) ? true : false,
 						getProfilePicUrl: sock.profilePictureUrl,
 						upload: waUploadToServer,
@@ -776,7 +775,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					console.warn('cachedGroupMetadata in sendMessage are deprecated, now cachedGroupMetadata is part of the socket config.')
 				}
 
-				await relayMessage(jid, fullMsg.message!, { messageId: fullMsg.key.id!,useCachedGroupMetadata:await config.cachedGroupMetadata(jid) ? true : false, additionalAttributes, statusJidList: options.statusJidList })
+				await relayMessage(jid, fullMsg.message!, { messageId: fullMsg.key.id!, useCachedGroupMetadata:await config.cachedGroupMetadata(jid) ? true : false, additionalAttributes, statusJidList: options.statusJidList,  })
 				if(config.emitOwnEvents) {
 					process.nextTick(() => {
 						processingMutex.mutex(() => (

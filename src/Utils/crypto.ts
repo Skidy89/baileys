@@ -89,7 +89,7 @@ export function aesDecryptCTR(ciphertext: Uint8Array, key: Uint8Array, iv: Uint8
 
 /** decrypt AES 256 CBC; where the IV is prefixed to the buffer */
 export function aesDecrypt(buffer: Buffer, key: Buffer) {
-	return aesDecryptWithIV(buffer.slice(16, buffer.length), key, buffer.slice(0, 16))
+	return aesDecryptWithIV(buffer.subarray(16, buffer.length), key, buffer.subarray(0, 16))
 }
 
 /** decrypt AES 256 CBC */
