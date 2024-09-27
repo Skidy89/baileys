@@ -24,8 +24,8 @@ const getUserAgent = (config: SocketConfig): proto.ClientPayload.IUserAgent => {
 		},
 		platform,
 		releaseChannel: proto.ClientPayload.UserAgent.ReleaseChannel.RELEASE,
-		mcc: config.auth.creds.registration?.phoneNumberMobileCountryCode || '000',
-		mnc: config.auth.creds.registration?.phoneNumberMobileNetworkCode || '000',
+		mcc:  '000',
+		mnc:  '000',
 		osVersion: osVersion,
 		manufacturer,
 		device,
@@ -82,7 +82,6 @@ export const generateMobileNode = (config: SocketConfig): proto.IClientPayload =
 		},
 		passive: false, // XMPP heartbeat setting (false: server actively pings) (true: client actively pings)
 		pushName: 'test',
-		username: Number(`${config.auth.creds.registration.phoneNumberCountryCode}${config.auth.creds.registration.phoneNumberNationalNumber}`),
 	}
 	return proto.ClientPayload.fromObject(payload)
 }

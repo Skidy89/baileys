@@ -45,7 +45,7 @@ import {
 	jidEncode,
 	S_WHATSAPP_NET
 } from '../WABinary'
-import { MobileSocketClient, WebSocketClient } from './Client'
+import { WebSocketClient } from './Client'
 
 /**
  * Connects to WA servers and performs:
@@ -71,17 +71,11 @@ export const makeSocket = (config: SocketConfig) => {
 
 	let url = typeof waWebSocketUrl === 'string' ? new URL(waWebSocketUrl) : waWebSocketUrl
 
-	config.mobile = config.mobile || url.protocol === 'tcp:'
-
-	if(config.mobile && url.protocol !== 'tcp:') {
-		url = new URL(`tcp://${MOBILE_ENDPOINT}:${MOBILE_PORT}`)
-	}
-
 	if(!config.mobile && url.protocol === 'wss' && authState?.creds?.routingInfo) {
 		url.searchParams.append('ED', authState.creds.routingInfo.toString('base64url'))
 	}
 
-	const ws = config.socket ? config.socket : config.mobile ? new MobileSocketClient(url, config) : new WebSocketClient(url, config)
+	const ws = new WebSocketClient(url, config)
 
 	ws.connect()
 
@@ -92,7 +86,6 @@ export const makeSocket = (config: SocketConfig) => {
 	const noise = makeNoiseHandler({
 		keyPair: ephemeralKeyPair,
 		NOISE_HEADER: config.mobile ? MOBILE_NOISE_HEADER : NOISE_WA_HEADER,
-		mobile: config.mobile,
 		logger,
 		routingInfo: authState?.creds?.routingInfo
 	})

@@ -77,13 +77,13 @@ const makeLtHashGenerator = ({ indexValueMap, hash }: Pick<LTHashState, 'hash' |
 				// remove from index value mac, since this mutation is erased
 				delete indexValueMap[indexMacBase64]
 			} else {
-				addBuffs.push(new Uint8Array(valueMac).buffer)
+				addBuffs.push(Buffer.from(valueMac).buffer)
 				// add this index into the history map
 				indexValueMap[indexMacBase64] = { valueMac }
 			}
 
 			if(prevOp) {
-				subBuffs.push(new Uint8Array(prevOp.valueMac).buffer)
+				subBuffs.push(Buffer.from(prevOp.valueMac).buffer)
 			}
 		},
 		finish: () => {

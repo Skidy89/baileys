@@ -8,11 +8,9 @@ import fs, { readFileSync } from 'fs'
 import P, { pino } from 'pino'
 
 
-const logger =	MAIN_LOGGER.child({})
-logger.level = 'info'
+const logger =	pino({ level: "silent"})
 
-const useStore = !process.argv.includes('--no-store')
-const doReplies = process.argv.includes('--do-reply')
+
 const usePairingCode = process.argv.includes('--use-pairing-code')
 const useMobile = process.argv.includes('--mobile')
 
@@ -20,7 +18,7 @@ const useMobile = process.argv.includes('--mobile')
 // keep this out of the socket itself, so as to prevent a message decryption/encryption loop across socket restarts
 const msgRetryCounterCache = new NodeCache()
 
-const onDemandMap = new Map<string, string>()
+
 
 // Read line interface
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout })

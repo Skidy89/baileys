@@ -214,7 +214,7 @@ export const initAuthCreds = (): AuthenticationCreds => {
 		identityId: randomBytes(20),
 		registered: false,
 		backupToken: randomBytes(20),
-		registration: {} as never,
+
 		pairingCode: undefined,
 		lastPropHash: undefined,
 		routingInfo: undefined,
