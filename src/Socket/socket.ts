@@ -2,15 +2,12 @@ import { Boom } from '@hapi/boom'
 import { randomBytes } from 'crypto'
 import { URL } from 'url'
 import { promisify } from 'util'
-import { proto } from '../../WAProto'
+import { WAWa6 } from '../../WAProto'
 import {
 	DEF_CALLBACK_PREFIX,
 	DEF_TAG_PREFIX,
 	INITIAL_PREKEY_COUNT,
 	MIN_PREKEY_COUNT,
-	MOBILE_ENDPOINT,
-	MOBILE_NOISE_HEADER,
-	MOBILE_PORT,
 	NOISE_WA_HEADER
 } from '../Defaults'
 import { DisconnectReason, SocketConfig } from '../Types'
@@ -85,7 +82,7 @@ export const makeSocket = (config: SocketConfig) => {
 	/** WA noise protocol wrapper */
 	const noise = makeNoiseHandler({
 		keyPair: ephemeralKeyPair,
-		NOISE_HEADER: config.mobile ? MOBILE_NOISE_HEADER : NOISE_WA_HEADER,
+		NOISE_HEADER: NOISE_WA_HEADER,
 		logger,
 		routingInfo: authState?.creds?.routingInfo
 	})
@@ -223,23 +220,23 @@ export const makeSocket = (config: SocketConfig) => {
 
 	/** connection handshake */
 	const validateConnection = async() => {
-		let helloMsg: proto.IHandshakeMessage = {
+		let helloMsg: WAWa6.IHandshakeMessage = {
 			clientHello: { ephemeral: ephemeralKeyPair.public }
 		}
-		helloMsg = proto.HandshakeMessage.fromObject(helloMsg)
+		helloMsg = WAWa6.HandshakeMessage.fromObject(helloMsg)
 
 		logger.info({ browser, helloMsg }, 'connected to WA')
 
-		const init = proto.HandshakeMessage.encode(helloMsg).finish()
+		const init = WAWa6.HandshakeMessage.encode(helloMsg).finish()
 
 		const result = await awaitNextMessage<Uint8Array>(init)
-		const handshake = proto.HandshakeMessage.decode(result)
+		const handshake = WAWa6.HandshakeMessage.decode(result)
 
 		logger.trace({ handshake }, 'handshake recv from WA')
 
 		const keyEnc = noise.processHandshake(handshake, creds.noiseKey)
 
-		let node: proto.IClientPayload
+		let node: WAWa6.IClientPayload
 		if(config.mobile) {
 			node = generateMobileNode(config)
 		} else if(!creds.me) {
@@ -251,10 +248,10 @@ export const makeSocket = (config: SocketConfig) => {
 		}
 
 		const payloadEnc = noise.encrypt(
-			proto.ClientPayload.encode(node).finish()
+			WAWa6.ClientPayload.encode(node).finish()
 		)
 		await sendRawMessage(
-			proto.HandshakeMessage.encode({
+			WAWa6.HandshakeMessage.encode({
 				clientFinish: {
 					static: keyEnc,
 					payload: payloadEnc,

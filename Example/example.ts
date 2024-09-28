@@ -1,10 +1,8 @@
 import { Boom } from '@hapi/boom'
 import NodeCache from 'node-cache'
 import readline from 'readline'
-import makeWASocket, { AnyMessageContent, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, getHistoryMsg, isJidBroadcast, isJidNewsletter, makeCacheableSignalKeyStore, PHONENUMBER_MCC, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } from '../src'
-import MAIN_LOGGER from '../src/Utils/logger'
-import open from 'open'
-import fs, { readFileSync } from 'fs'
+import makeWASocket, { DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, useMultiFileAuthState, WACompanionReg, WAHistorySync } from '../src'
+
 import P, { pino } from 'pino'
 
 
@@ -37,7 +35,6 @@ const startSock = async() => {
 		version,
 		logger,
 		printQRInTerminal: !usePairingCode,
-		mobile: useMobile,
 		auth: {
 			creds: state.creds,
 			/** caching makes the store faster to send/recv messages */
@@ -51,9 +48,7 @@ const startSock = async() => {
 
 	// Pairing code for Web clients
 	if(usePairingCode && !sock.authState.creds.registered) {
-		if(useMobile) {
-			throw new Error('Cannot use pairing code with mobile api')
-		}
+
 
 		const phoneNumber = await question('Please enter your mobile phone number:\n')
 		const code = await sock.requestPairingCode(phoneNumber)
@@ -106,7 +101,7 @@ const startSock = async() => {
 			// history received
 			if(events['messaging-history.set']) {
 				const { chats, contacts, messages, isLatest, progress, syncType } = events['messaging-history.set']
-				if (syncType === proto.HistorySync.HistorySyncType.ON_DEMAND) {
+				if (syncType === WAHistorySync.HistorySync.HistorySyncType.ON_DEMAND) {
 					console.log('received on-demand history sync, messages=', messages)
 				}
 				console.log(`recv ${chats.length} chats, ${contacts.length} contacts, ${messages.length} msgs (is latest: ${isLatest}, progress: ${progress}%), type: ${syncType}`)

@@ -1,7 +1,6 @@
 import { Boom } from '@hapi/boom'
 import { AxiosRequestConfig } from 'axios'
 import type { Logger } from 'pino'
-import { proto } from '../../WAProto'
 import { BaileysEventEmitter, Chat, ChatModification, ChatMutation, ChatUpdate, Contact, InitialAppStateSyncOptions, LastMessageList, LTHashState, WAPatchCreate, WAPatchName } from '../Types'
 import { ChatLabelAssociation, LabelAssociationType, MessageLabelAssociation } from '../Types/LabelAssociation'
 import { BinaryNode, getBinaryNodeChild, getBinaryNodeChildren, isJidGroup, jidNormalizedUser } from '../WABinary'
@@ -9,8 +8,9 @@ import { aesDecrypt, aesEncrypt, hkdf, hmacSign } from './crypto'
 import { toNumber } from './generics'
 import { LT_HASH_ANTI_TAMPERING } from './lt-hash'
 import { downloadContentFromMessage, } from './messages-media'
+import { WAE2E, WAServerSync, WASyncAction, WAWa6, WAWebProtobufSyncAction } from '../../WAProto'
 
-type FetchAppStateSyncKey = (keyId: string) => Promise<proto.Message.IAppStateSyncKeyData | null | undefined>
+type FetchAppStateSyncKey = (keyId: string) => Promise<WAE2E.Message.IAppStateSyncKeyData | null | undefined>
 
 export type ChatMutationMap = { [index: string]: ChatMutation }
 
@@ -25,14 +25,14 @@ const mutationKeys = (keydata: Uint8Array) => {
 	}
 }
 
-const generateMac = (operation: proto.SyncdMutation.SyncdOperation, data: Buffer, keyId: Uint8Array | string, key: Buffer) => {
+const generateMac = (operation: WAServerSync.SyncdMutation.SyncdOperation, data: Buffer, keyId: Uint8Array | string, key: Buffer) => {
 	const getKeyData = () => {
 		let r: number
 		switch (operation) {
-		case proto.SyncdMutation.SyncdOperation.SET:
+		case WAServerSync.SyncdMutation.SyncdOperation.SET:
 			r = 0x01
 			break
-		case proto.SyncdMutation.SyncdOperation.REMOVE:
+		case WAServerSync.SyncdMutation.SyncdOperation.REMOVE:
 			r = 0x02
 			break
 		}
@@ -58,7 +58,7 @@ const to64BitNetworkOrder = (e: number) => {
 	return buff
 }
 
-type Mac = { indexMac: Uint8Array, valueMac: Uint8Array, operation: proto.SyncdMutation.SyncdOperation }
+type Mac = { indexMac: Uint8Array, valueMac: Uint8Array, operation: WAServerSync.SyncdMutation.SyncdOperation }
 
 const makeLtHashGenerator = ({ indexValueMap, hash }: Pick<LTHashState, 'hash' | 'indexValueMap'>) => {
 	indexValueMap = { ...indexValueMap }
@@ -69,7 +69,7 @@ const makeLtHashGenerator = ({ indexValueMap, hash }: Pick<LTHashState, 'hash' |
 		mix: ({ indexMac, valueMac, operation }: Mac) => {
 			const indexMacBase64 = Buffer.from(indexMac).toString('base64')
 			const prevOp = indexValueMap[indexMacBase64]
-			if(operation === proto.SyncdMutation.SyncdOperation.REMOVE) {
+			if(operation === WAServerSync.SyncdMutation.SyncdOperation.REMOVE) {
 				if(!prevOp) {
 					throw new Boom('tried remove, but no previous op', { data: { indexMac, valueMac } })
 				}
@@ -136,13 +136,13 @@ export const encodeSyncdPatch = async(
 	state = { ...state, indexValueMap: { ...state.indexValueMap } }
 
 	const indexBuffer = Buffer.from(JSON.stringify(index))
-	const dataProto = proto.SyncActionData.fromObject({
+	const dataProto = WAWebProtobufSyncAction.SyncActionData.fromObject({
 		index: indexBuffer,
 		value: syncAction,
 		padding: new Uint8Array(0),
 		version: apiVersion
 	})
-	const encoded = proto.SyncActionData.encode(dataProto).finish()
+	const encoded = WAWebProtobufSyncAction.SyncActionData.encode(dataProto).finish()
 
 	const keyValue = mutationKeys(key!.keyData!)
 
@@ -159,7 +159,7 @@ export const encodeSyncdPatch = async(
 
 	const snapshotMac = generateSnapshotMac(state.hash, state.version, type, keyValue.snapshotMacKey)
 
-	const patch: proto.ISyncdPatch = {
+	const patch: WAServerSync.ISyncdPatch = {
 		patchMac: generatePatchMac(snapshotMac, [valueMac], state.version, type, keyValue.patchMacKey),
 		snapshotMac: snapshotMac,
 		keyId: { id: encKeyId },
@@ -186,7 +186,7 @@ export const encodeSyncdPatch = async(
 }
 
 export const decodeSyncdMutations = async(
-	msgMutations: (proto.ISyncdMutation | proto.ISyncdRecord)[],
+	msgMutations: (WAServerSync.ISyncdMutation | WAServerSync.ISyncdRecord)[],
 	initialState: LTHashState,
 	getAppStateSyncKey: FetchAppStateSyncKey,
 	onMutation: (mutation: ChatMutation) => void,
@@ -199,8 +199,8 @@ export const decodeSyncdMutations = async(
 	for(const msgMutation of msgMutations!) {
 		// if it's a syncdmutation, get the operation property
 		// otherwise, if it's only a record -- it'll be a SET mutation
-		const operation = 'operation' in msgMutation ? msgMutation.operation : proto.SyncdMutation.SyncdOperation.SET
-		const record = ('record' in msgMutation && !!msgMutation.record) ? msgMutation.record : msgMutation as proto.ISyncdRecord
+		const operation = 'operation' in msgMutation ? msgMutation.operation : WAServerSync.SyncdMutation.SyncdOperation.SET
+		const record = ('record' in msgMutation && !!msgMutation.record) ? msgMutation.record : msgMutation as WAServerSync.ISyncdRecord
 
 		const key = await getKey(record.keyId!.id!)
 		const content = Buffer.from(record.value!.blob!)
@@ -214,7 +214,7 @@ export const decodeSyncdMutations = async(
 		}
 
 		const result = aesDecrypt(encContent, key.valueEncryptionKey)
-		const syncAction = proto.SyncActionData.decode(result)
+		const syncAction = WAWebProtobufSyncAction.SyncActionData.decode(result)
 
 		if(validateMacs) {
 			const hmac = hmacSign(syncAction.index, key.indexKey)
@@ -247,7 +247,7 @@ export const decodeSyncdMutations = async(
 }
 
 export const decodeSyncdPatch = async(
-	msg: proto.ISyncdPatch,
+	msg: WAServerSync.ISyncdPatch,
 	name: WAPatchName,
 	initialState: LTHashState,
 	getAppStateSyncKey: FetchAppStateSyncKey,
@@ -281,7 +281,7 @@ export const extractSyncdPatches = async(
 	const syncNode = getBinaryNodeChild(result, 'sync')
 	const collectionNodes = getBinaryNodeChildren(syncNode, 'collection')
 
-	const final = {} as { [T in WAPatchName]: { patches: proto.ISyncdPatch[], hasMorePatches: boolean, snapshot?: proto.ISyncdSnapshot } }
+	const final = {} as { [T in WAPatchName]: { patches: WAServerSync.ISyncdPatch[], hasMorePatches: boolean, snapshot?: WAServerSync.ISyncdSnapshot } }
 	await Promise.all(
 		collectionNodes.map(
 			async collectionNode => {
@@ -290,22 +290,22 @@ export const extractSyncdPatches = async(
 				const patches = getBinaryNodeChildren(patchesNode || collectionNode, 'patch')
 				const snapshotNode = getBinaryNodeChild(collectionNode, 'snapshot')
 
-				const syncds: proto.ISyncdPatch[] = []
+				const syncds: WAServerSync.ISyncdPatch[] = []
 				const name = collectionNode.attrs.name as WAPatchName
 
 				const hasMorePatches = collectionNode.attrs.has_more_patches === 'true'
 
-				let snapshot: proto.ISyncdSnapshot | undefined = undefined
+				let snapshot: WAServerSync.ISyncdSnapshot | undefined = undefined
 				if(snapshotNode && !!snapshotNode.content) {
 					if(!Buffer.isBuffer(snapshotNode)) {
 						snapshotNode.content = Buffer.from(Object.values(snapshotNode.content))
 					}
 
-					const blobRef = proto.ExternalBlobReference.decode(
+					const blobRef = WAServerSync.ExternalBlobReference.decode(
 						snapshotNode.content! as Buffer
 					)
 					const data = await downloadExternalBlob(blobRef, options)
-					snapshot = proto.SyncdSnapshot.decode(data)
+					snapshot = WAServerSync.SyncdSnapshot.decode(data)
 				}
 
 				for(let { content } of patches) {
@@ -314,7 +314,7 @@ export const extractSyncdPatches = async(
 							content = Buffer.from(Object.values(content))
 						}
 
-						const syncd = proto.SyncdPatch.decode(content! as Uint8Array)
+						const syncd = WAServerSync.SyncdPatch.decode(content! as Uint8Array)
 						if(!syncd.version) {
 							syncd.version = { version: +collectionNode.attrs.version + 1 }
 						}
@@ -333,7 +333,7 @@ export const extractSyncdPatches = async(
 
 
 export const downloadExternalBlob = async(
-	blob: proto.IExternalBlobReference,
+	blob: WAServerSync.IExternalBlobReference,
 	options: AxiosRequestConfig<any>
 ) => {
 	const stream = await downloadContentFromMessage(blob, 'md-app-state', { options })
@@ -346,17 +346,17 @@ export const downloadExternalBlob = async(
 }
 
 export const downloadExternalPatch = async(
-	blob: proto.IExternalBlobReference,
+	blob: WAServerSync.IExternalBlobReference,
 	options: AxiosRequestConfig<any>
 ) => {
 	const buffer = await downloadExternalBlob(blob, options)
-	const syncData = proto.SyncdMutations.decode(buffer)
+	const syncData = WAServerSync.SyncdMutations.decode(buffer)
 	return syncData
 }
 
 export const decodeSyncdSnapshot = async(
 	name: WAPatchName,
-	snapshot: proto.ISyncdSnapshot,
+	snapshot: WAServerSync.ISyncdSnapshot,
 	getAppStateSyncKey: FetchAppStateSyncKey,
 	minimumVersionNumber: number | undefined,
 	validateMacs: boolean = true
@@ -405,7 +405,7 @@ export const decodeSyncdSnapshot = async(
 
 export const decodePatches = async(
 	name: WAPatchName,
-	syncds: proto.ISyncdPatch[],
+	syncds: WAServerSync.ISyncdPatch[],
 	initial: LTHashState,
 	getAppStateSyncKey: FetchAppStateSyncKey,
 	options: AxiosRequestConfig<any>,
@@ -477,9 +477,9 @@ export const chatModificationToAppPatch = (
 	mod: ChatModification,
 	jid: string
 ) => {
-	const OP = proto.SyncdMutation.SyncdOperation
+	const OP = WAServerSync.SyncdMutation.SyncdOperation
 	const getMessageRange = (lastMessages: LastMessageList) => {
-		let messageRange: proto.SyncActionValue.ISyncActionMessageRange
+		let messageRange: WAWebProtobufSyncAction.SyncActionValue.ISyncActionMessageRange
 		if(Array.isArray(lastMessages)) {
 			const lastMsg = lastMessages[lastMessages.length - 1]
 			messageRange = {
@@ -841,7 +841,7 @@ export const processSyncAction = (
 		logger?.debug({ syncAction, id }, 'unprocessable update')
 	}
 
-	function getChatUpdateConditional(id: string, msgRange: proto.SyncActionValue.ISyncActionMessageRange | null | undefined): ChatUpdate['conditional'] {
+	function getChatUpdateConditional(id: string, msgRange: WAWebProtobufSyncAction.SyncActionValue.ISyncActionMessageRange | null | undefined): ChatUpdate['conditional'] {
 		return isInitialSync
 			? (data) => {
 				const chat = data.historySets.chats[id] || data.chatUpserts[id]
@@ -852,7 +852,7 @@ export const processSyncAction = (
 			: undefined
 	}
 
-	function isValidPatchBasedOnMessageRange(chat: Chat, msgRange: proto.SyncActionValue.ISyncActionMessageRange | null | undefined) {
+	function isValidPatchBasedOnMessageRange(chat: Chat, msgRange: WAWebProtobufSyncAction.SyncActionValue.ISyncActionMessageRange | null | undefined) {
 		  const lastMsgTimestamp = Number(msgRange?.lastMessageTimestamp || msgRange?.lastSystemMessageTimestamp || 0)
 		  const chatLastMsgTimestamp = Number(chat?.lastMessageRecvTimestamp || 0)
 		  return lastMsgTimestamp >= chatLastMsgTimestamp
