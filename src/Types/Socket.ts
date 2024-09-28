@@ -3,12 +3,13 @@ import { AxiosRequestConfig } from 'axios'
 import type { Agent } from 'https'
 import type { Logger } from 'pino'
 import type { URL } from 'url'
-import { proto } from '../../WAProto'
+
 import { AuthenticationState, SignalAuthState, TransactionCapabilityOptions } from './Auth'
 import { GroupMetadata } from './GroupMetadata'
 import { MediaConnInfo } from './Message'
 import { SignalRepository } from './Signal'
 import NodeCache from 'node-cache'
+import { WAE2E, WAProtocol } from '../../WAProto'
 
 export type WAVersion = [number, number, number]
 export type WABrowserDescription = [string, string, string]
@@ -60,7 +61,7 @@ export type SocketConfig = {
     /** provide an auth state object to maintain the auth state */
     auth: AuthenticationState
     /** manage history processing with this control; by default will sync up everything */
-    shouldSyncHistoryMessage: (msg: proto.Message.IHistorySyncNotification) => boolean
+    shouldSyncHistoryMessage: (msg: WAE2E.Message.IHistorySyncNotification) => boolean
     shouldIgnoreOfflineMessages: boolean
     /** transaction capability options for SignalKeyStore */
     transactionOpts: TransactionCapabilityOptions
@@ -102,9 +103,9 @@ export type SocketConfig = {
      * Optionally patch the message before sending out
      * */
     patchMessageBeforeSending: (
-        msg: proto.IMessage,
+        msg: WAE2E.IMessage,
         recipientJids: string[],
-    ) => Promise<proto.IMessage> | proto.IMessage
+    ) => Promise<WAE2E.IMessage> | WAE2E.IMessage
 
     /** verify app state MACs */
     appStateMacVerification: {
@@ -119,7 +120,7 @@ export type SocketConfig = {
      * implement this so that messages failed to send
      * (solves the "this message can take a while" issue) can be retried
      * */
-    getMessage: (key: proto.IMessageKey) => Promise<proto.IMessage | undefined>
+    getMessage: (key: WAProtocol.IMessageKey) => Promise<WAE2E.IMessage | undefined>
 
     /** cached group metadata, use to prevent redundant requests to WA & speed up msg sending */
     cachedGroupMetadata: (jid: string) => Promise<GroupMetadata | undefined>

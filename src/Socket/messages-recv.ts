@@ -2,7 +2,7 @@
 import { Boom } from '@hapi/boom'
 import { randomBytes } from 'crypto'
 import NodeCache from 'node-cache'
-import { proto } from '../../WAProto'
+import { WAE2E, WAProtocol, WAWeb } from '../../WAProto'
 import { DEFAULT_CACHE_TTLS, KEY_BUNDLE_TYPE, MIN_PREKEY_COUNT } from '../Defaults'
 import { MessageReceiptType, MessageRelayOptions, MessageUserReceipt, SocketConfig, WACallEvent, WAMessageKey, WAMessageStatus, WAMessageStubType, WAPatchName } from '../Types'
 import {
@@ -42,6 +42,7 @@ import {
 } from '../WABinary'
 import { extractGroupMetadata } from './groups'
 import { makeMessagesSocket } from './messages-send'
+import Long from 'long'
 
 export const makeMessagesRecvSocket = (config: SocketConfig) => {
 	const {
@@ -255,7 +256,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 	const handleGroupNotification = (
 		participant: string,
 		child: BinaryNode,
-		msg: Partial<proto.IWebMessageInfo>
+		msg: Partial<WAWeb.IWebMessageInfo>
 	) => {
 		const participantJid = getBinaryNodeChild(child, 'participant')?.attrs?.jid || participant
 		switch (child?.tag) {
@@ -280,7 +281,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		case 'not_ephemeral':
 			msg.message = {
 				protocolMessage: {
-					type: proto.Message.ProtocolMessage.Type.EPHEMERAL_SETTING,
+					type: WAE2E.Message.ProtocolMessage.Type.EPHEMERAL_SETTING,
 					ephemeralExpiration: +(child.attrs.expiration || 0)
 				}
 			}
@@ -363,7 +364,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 	}
 
 	const processNotification = async(node: BinaryNode) => {
-		const result: Partial<proto.IWebMessageInfo> = { }
+		const result: Partial<WAWeb.IWebMessageInfo> = { }
 		const [child] = getAllBinaryNodeChildren(node)
 		const nodeType = node.attrs.type
 		const from = jidNormalizedUser(node.attrs.from)
@@ -556,7 +557,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 	}
 
 	const sendMessagesAgain = async(
-		key: proto.IMessageKey,
+		key: WAProtocol.IMessageKey,
 		ids: string[],
 		retryNode: BinaryNode
 	) => {
@@ -604,7 +605,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		const remoteJid = !isNodeFromMe || isJidGroup(attrs.from) ? attrs.from : attrs.recipient
 		const fromMe = !attrs.recipient || (attrs.type === 'retry' && isNodeFromMe)
 
-		const key: proto.IMessageKey = {
+		const key: WAProtocol.IMessageKey = {
 			remoteJid,
 			id: '',
 			fromMe,
@@ -632,13 +633,13 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 						(
 							// basically, we only want to know when a message from us has been delivered to/read by the other person
 							// or another device of ours has read some messages
-							status > proto.WebMessageInfo.Status.DELIVERY_ACK ||
+							status > WAWeb.WebMessageInfo.Status.DELIVERY_ACK ||
 							!isNodeFromMe
 						)
 					) {
 						if(isJidGroup(remoteJid) || isJidStatusBroadcast(remoteJid)) {
 							if(attrs.participant) {
-								const updateKey: keyof MessageUserReceipt = status === proto.WebMessageInfo.Status.DELIVERY_ACK ? 'receiptTimestamp' : 'readTimestamp'
+								const updateKey: keyof MessageUserReceipt = status === WAWeb.WebMessageInfo.Status.DELIVERY_ACK ? 'receiptTimestamp' : 'readTimestamp'
 								ev.emit(
 									'message-receipt.update',
 									ids.map(id => ({
@@ -715,7 +716,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 						msg.participant ??= node.attrs.participant
 						msg.messageTimestamp = +node.attrs.t
 
-						const fullMsg = proto.WebMessageInfo.fromObject(msg)
+						const fullMsg = WAWeb.WebMessageInfo.fromObject(msg)
 						await upsertMessage(fullMsg, 'append')
 					}
 				}
@@ -766,7 +767,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			msg.messageStubParameters = [NO_MESSAGE_FOUND_ERROR_TEXT, response]
 		}
 
-		if(msg.message?.protocolMessage?.type === proto.Message.ProtocolMessage.Type.SHARE_PHONE_NUMBER) {
+		if(msg.message?.protocolMessage?.type === WAE2E.Message.ProtocolMessage.Type.SHARE_PHONE_NUMBER) {
 			if(node.attrs.sender_pn) {
 				ev.emit('chats.phoneNumberShare', { lid: node.attrs.from, jid: node.attrs.sender_pn })
 			}
@@ -777,7 +778,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				async() => {
 					await decrypt()
 					// message failed to decrypt
-					if(msg.messageStubType === proto.WebMessageInfo.StubType.CIPHERTEXT) {
+					if(msg.messageStubType === WAWeb.WebMessageInfo.StubType.CIPHERTEXT) {
 						retryMutex.mutex(
 							async() => {
 								if(ws.isOpen) {
@@ -833,7 +834,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 	const fetchMessageHistory = async(
 		count: number,
 		oldestMsgKey: WAMessageKey,
-		oldestMsgTimestamp: number | Long
+		oldestMsgTimestamp: number | Long | null | undefined
 	): Promise<string> => {
 		if(!authState.creds.me?.id) {
 			throw new Boom('Not authenticated')
@@ -844,13 +845,13 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				chatJid: oldestMsgKey.remoteJid,
 				oldestMsgFromMe: oldestMsgKey.fromMe,
 				oldestMsgId: oldestMsgKey.id,
-				oldestMsgTimestampMs: oldestMsgTimestamp,
+				oldestMsgTimestampMs: oldestMsgTimestamp instanceof Long ? oldestMsgTimestamp.toNumber() : oldestMsgTimestamp,
 				onDemandMsgCount: count
 			},
-			peerDataOperationRequestType: proto.Message.PeerDataOperationRequestType.HISTORY_SYNC_ON_DEMAND
+			peerDataOperationRequestType: WAE2E?.Message?.PeerDataOperationRequestType?.HISTORY_SYNC_ON_DEMAND!
 		}
 
-		return sendPeerDataOperationMessage(pdoMessage)
+		return await sendPeerDataOperationMessage(pdoMessage)
 	}
 
 	const requestPlaceholderResend = async(messageKey: WAMessageKey): Promise<'RESOLVED'| string | undefined> => {
@@ -876,7 +877,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			placeholderMessageResendRequest: [{
 				messageKey
 			}],
-			peerDataOperationRequestType: proto.Message.PeerDataOperationRequestType.PLACEHOLDER_MESSAGE_RESEND
+			peerDataOperationRequestType: WAE2E.Message.PeerDataOperationRequestType.PLACEHOLDER_MESSAGE_RESEND
 		}
 
 		setTimeout(() => {
@@ -1007,7 +1008,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 	ev.on('call', ([ call ]) => {
 		// missed call + group call notification message generation
 		if(call.status === 'timeout' || (call.status === 'offer' && call.isGroup)) {
-			const msg: proto.IWebMessageInfo = {
+			const msg: WAWeb.IWebMessageInfo = {
 				key: {
 					remoteJid: call.chatId,
 					id: call.id,
@@ -1025,7 +1026,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				msg.message = { call: { callKey: Buffer.from(call.id) } }
 			}
 
-			const protoMsg = proto.WebMessageInfo.fromObject(msg)
+			const protoMsg = WAWeb.WebMessageInfo.fromObject(msg)
 			upsertMessage(protoMsg, call.offline ? 'append' : 'notify')
 		}
 	})

@@ -4,7 +4,7 @@ import { randomBytes } from 'crypto'
 import { promises as fs } from 'fs'
 import { Logger } from 'pino'
 import { type Transform } from 'stream'
-import { proto } from '../../WAProto'
+import { WAE2E, WAProtocol, WAWa6, WAWeb } from '../../WAProto'
 import { MEDIA_KEYS, URL_REGEX, WA_DEFAULT_EPHEMERAL } from '../Defaults'
 import {
 	AnyMediaMessageContent,
@@ -21,7 +21,6 @@ import {
 	WAMessage,
 	WAMessageContent,
 	WAMessageStatus,
-	WAProto,
 	WATextMessage,
 } from '../Types'
 import { isJidGroup, isJidStatusBroadcast, jidNormalizedUser } from '../WABinary'
@@ -55,11 +54,11 @@ const MIMETYPE_MAP: { [T in MediaType]?: string } = {
 }
 
 const MessageTypeProto = {
-	'image': WAProto.Message.ImageMessage,
-	'video': WAProto.Message.VideoMessage,
-	'audio': WAProto.Message.AudioMessage,
-	'sticker': WAProto.Message.StickerMessage,
-   	'document': WAProto.Message.DocumentMessage,
+	'image': WAE2E.Message.ImageMessage,
+	'video': WAE2E.Message.VideoMessage,
+	'audio': WAE2E.Message.AudioMessage,
+	'sticker': WAE2E.Message.StickerMessage,
+   	'document': WAE2E.Message.DocumentMessage,
 } as const
 
 /**
@@ -141,7 +140,7 @@ export const prepareWAMessageMedia = async(
 		if(mediaBuff) {
 			logger?.debug({ cacheableKey }, 'got media cache hit')
 
-			const obj = WAProto.Message.decode(mediaBuff)
+			const obj = WAE2E.Message.decode(mediaBuff)
 			const key = `${mediaType}Message`
 
 			Object.assign(obj[key], { ...uploadData, media: undefined })
@@ -236,7 +235,7 @@ export const prepareWAMessageMedia = async(
 			}
 		)
 
-	const obj = WAProto.Message.fromObject({
+	const obj = WAE2E.Message.fromObject({
 		[`${mediaType}Message`]: MessageTypeProto[mediaType].fromObject(
 			{
 				url: mediaUrl,
@@ -261,7 +260,7 @@ export const prepareWAMessageMedia = async(
 		// set cache
 		logger?.debug({ cacheableKey }, 'setting cache')
 		
-		await options.mediaCache!.set(cacheableKey, WAProto.Message.encode(obj).finish())
+		await options.mediaCache!.set(cacheableKey, WAE2E.Message.encode(obj).finish())
 
 	}
 
@@ -274,13 +273,13 @@ export const prepareDisappearingMessageSettingContent = (ephemeralExpiration?: n
 		ephemeralMessage: {
 			message: {
 				protocolMessage: {
-					type: WAProto.Message.ProtocolMessage.Type.EPHEMERAL_SETTING,
+					type: WAE2E.Message.ProtocolMessage.Type.EPHEMERAL_SETTING,
 					ephemeralExpiration
 				}
 			}
 		}
 	}
-	return WAProto.Message.fromObject(content)
+	return WAE2E.Message.fromObject(content)
 }
 
 /**
@@ -299,7 +298,7 @@ export const generateForwardMessageContent = (
 
 	// hacky copy
 	content = normalizeMessageContent(content)
-	content = proto.Message.decode(proto.Message.encode(content!).finish())
+	content = WAE2E.Message.decode(WAE2E.Message.encode(content!).finish())
 
 	let key = Object.keys(content)[0] as MessageType
 
@@ -370,22 +369,22 @@ export const generateWAMessageContent = async(
 		}
 
 		if(contactLen === 1) {
-			m.contactMessage = WAProto.Message.ContactMessage.fromObject(message.contacts.contacts[0])
+			m.contactMessage = WAE2E.Message.ContactMessage.fromObject(message.contacts.contacts[0])
 		} else {
-			m.contactsArrayMessage = WAProto.Message.ContactsArrayMessage.fromObject(message.contacts)
+			m.contactsArrayMessage = WAE2E.Message.ContactsArrayMessage.fromObject(message.contacts)
 		}
 	} else if('location' in message) {
-		m.locationMessage = WAProto.Message.LocationMessage.fromObject(message.location)
+		m.locationMessage = WAE2E.Message.LocationMessage.fromObject(message.location)
 	} else if('react' in message) {
 		if(!message.react.senderTimestampMs) {
 			message.react.senderTimestampMs = Date.now()
 		}
 
-		m.reactionMessage = WAProto.Message.ReactionMessage.fromObject(message.react)
+		m.reactionMessage = WAE2E.Message.ReactionMessage.fromObject(message.react)
 	} else if('delete' in message) {
 		m.protocolMessage = {
 			key: message.delete,
-			type: WAProto.Message.ProtocolMessage.Type.REVOKE
+			type: WAE2E.Message.ProtocolMessage.Type.REVOKE
 		}
 	} else if('forward' in message) {
 		m = generateForwardMessageContent(
@@ -438,7 +437,7 @@ export const generateWAMessageContent = async(
 			m.buttonsResponseMessage = {
 				selectedButtonId: message.buttonReply.id,
 				selectedDisplayText: message.buttonReply.displayText,
-				type: proto.Message.ButtonsResponseMessage.Type.DISPLAY_TEXT,
+				type: WAE2E.Message.ButtonsResponseMessage.Type.DISPLAY_TEXT,
 			}
 			break
 		}
@@ -453,7 +452,7 @@ export const generateWAMessageContent = async(
 			{ image: message.product.productImage },
 			options
 		)
-		m.productMessage = WAProto.Message.ProductMessage.fromObject({
+		m.productMessage = WAE2E.Message.ProductMessage.fromObject({
 			...message,
 			product: {
 				...message.product,
@@ -505,7 +504,7 @@ export const generateWAMessageContent = async(
 		}
 	} else if('sharePhoneNumber' in message) {
 		m.protocolMessage = {
-			type: proto.Message.ProtocolMessage.Type.SHARE_PHONE_NUMBER
+			type: WAE2E.Message.ProtocolMessage.Type.SHARE_PHONE_NUMBER
 		}
 	} else if('requestPhoneNumber' in message) {
 		m.requestPhoneNumberMessage = {}
@@ -532,7 +531,7 @@ export const generateWAMessageContent = async(
 				key: message.edit,
 				editedMessage: m,
 				timestampMs: Date.now(),
-				type: WAProto.Message.ProtocolMessage.Type.MESSAGE_EDIT
+				type: WAE2E.Message.ProtocolMessage.Type.MESSAGE_EDIT
 			}
 		}
 	}
@@ -543,7 +542,7 @@ export const generateWAMessageContent = async(
 		m[messageType].contextInfo = message.contextInfo
 	}
 
-	return WAProto.Message.fromObject(m)
+	return WAE2E.Message.fromObject(m)
 }
 
 export const generateWAMessageFromContent = (
@@ -568,14 +567,14 @@ export const generateWAMessageFromContent = (
 		let quotedMsg = normalizeMessageContent(quoted.message)!
 		const msgType = getContentType(quotedMsg)!
 		// strip any redundant properties
-		quotedMsg = proto.Message.fromObject({ [msgType]: quotedMsg[msgType] })
+		quotedMsg = WAE2E.Message.fromObject({ [msgType]: quotedMsg[msgType] })
 
 		const quotedContent = quotedMsg[msgType]
 		if(typeof quotedContent === 'object' && quotedContent && 'contextInfo' in quotedContent) {
 			delete quotedContent.contextInfo
 		}
 
-		const contextInfo: proto.IContextInfo = innerMessage[key].contextInfo || { }
+		const contextInfo: WAE2E.IContextInfo = innerMessage[key].contextInfo || { }
 		contextInfo.participant = jidNormalizedUser(participant!)
 		contextInfo.stanzaId = quoted.key.id
 		contextInfo.quotedMessage = quotedMsg
@@ -604,7 +603,7 @@ export const generateWAMessageFromContent = (
 		}
 	}
 
-	message = WAProto.Message.fromObject(message)
+	message = WAE2E.Message.fromObject(message)
 
 	const messageJSON = {
 		key: {
@@ -618,7 +617,7 @@ export const generateWAMessageFromContent = (
 		participant: isJidGroup(jid) || isJidStatusBroadcast(jid) ? userJid : undefined,
 		status: WAMessageStatus.PENDING
 	}
-	return WAProto.WebMessageInfo.fromObject(messageJSON)
+	return WAWeb.WebMessageInfo.fromObject(messageJSON)
 }
 
 export const generateWAMessage = async(
@@ -639,7 +638,7 @@ export const generateWAMessage = async(
 }
 
 /** Get the key to access the true type of content */
-export const getContentType = (content: WAProto.IMessage | undefined) => {
+export const getContentType = (content: WAE2E.IMessage | undefined) => {
 	if(content) {
 		const keys = Object.keys(content)
 		const key = keys.find(k => (k === 'conversation' || k.includes('Message')) && k !== 'senderKeyDistributionMessage')
@@ -687,7 +686,7 @@ export const normalizeMessageContent = (content: WAMessageContent | null | undef
  * Eg. extracts the inner message from a disappearing message/view once message
  */
 export const extractMessageContent = (content: WAMessageContent | undefined | null): WAMessageContent | undefined => {
-	const extractFromTemplateMessage = (msg: proto.Message.TemplateMessage.IHydratedFourRowTemplate | proto.Message.IButtonsMessage) => {
+	const extractFromTemplateMessage = (msg: WAE2E.Message.TemplateMessage.IHydratedFourRowTemplate | WAE2E.Message.IButtonsMessage) => {
 		if(msg.imageMessage) {
 			return { imageMessage: msg.imageMessage }
 		} else if(msg.documentMessage) {
@@ -744,7 +743,7 @@ export const updateMessageWithReceipt = (msg: Pick<WAMessage, 'userReceipt'>, re
 }
 
 /** Update the message with a new reaction */
-export const updateMessageWithReaction = (msg: Pick<WAMessage, 'reactions'>, reaction: proto.IReaction) => {
+export const updateMessageWithReaction = (msg: Pick<WAMessage, 'reactions'>, reaction: WAWeb.IReaction) => {
 	const authorID = getKeyAuthor(reaction.key)
 
 	const reactions = (msg.reactions || [])
@@ -759,7 +758,7 @@ export const updateMessageWithReaction = (msg: Pick<WAMessage, 'reactions'>, rea
 /** Update the message with a new poll update */
 export const updateMessageWithPollUpdate = (
 	msg: Pick<WAMessage, 'pollUpdates'>,
-	update: proto.IPollUpdate
+	update: WAWeb.IPollUpdate
 ) => {
 	const authorID = getKeyAuthor(update.pollUpdateMessageKey)
 
@@ -824,7 +823,7 @@ export function getAggregateVotesInPollMessage(
 }
 
 /** Given a list of message keys, aggregates them by chat & sender. Useful for sending read receipts in bulk */
-export const aggregateMessageKeysNotFromMe = (keys: proto.IMessageKey[]) => {
+export const aggregateMessageKeysNotFromMe = (keys: WAProtocol.IMessageKey[]) => {
 	const keyMap: { [id: string]: { jid: string, participant: string | undefined, messageIds: string[] } } = { }
 	for(const { remoteJid, id, participant, fromMe } of keys) {
 		if(!fromMe) {
@@ -920,7 +919,7 @@ export const downloadMediaMessage = async<Type extends 'buffer' | 'stream'>(
 }
 
 /** Checks whether the given message is a media message; if it is returns the inner content */
-export const assertMediaContent = (content: proto.IMessage | null | undefined) => {
+export const assertMediaContent = (content: WAE2E.IMessage | null | undefined) => {
 	content = extractMessageContent(content)
 	const mediaContent = content?.documentMessage
 		|| content?.imageMessage

@@ -1,10 +1,11 @@
 import { Boom } from '@hapi/boom'
-import { Logger } from 'pino'
-import { proto } from '../../WAProto'
+
 import { NOISE_MODE, WA_CERT_DETAILS } from '../Defaults'
 import { KeyPair } from '../Types'
 import { BinaryNode, decodeBinaryNode } from '../WABinary'
 import { aesDecryptGCM, aesEncryptGCM, Curve, hkdf, sha256 } from './crypto'
+import { Logger } from 'pino'
+import { WACert, WAWa6 } from '../../WAProto'
 
 const generateIV = (counter: number) => {
 	const iv = new ArrayBuffer(12)
@@ -102,7 +103,7 @@ export const makeNoiseHandler = ({
 		authenticate,
 		mixIntoKey,
 		finishInit,
-		processHandshake: ({ serverHello }: proto.HandshakeMessage, noiseKey: KeyPair) => {
+		processHandshake: ({ serverHello }: WAWa6.HandshakeMessage, noiseKey: KeyPair) => {
 			authenticate(serverHello!.ephemeral!)
 			mixIntoKey(Curve.sharedKey(privateKey, serverHello!.ephemeral!))
 
@@ -112,9 +113,9 @@ export const makeNoiseHandler = ({
 			const certDecoded = decrypt(serverHello!.payload!)
 
 
-				const { intermediate: certIntermediate } = proto.CertChain.decode(certDecoded)
+				const { intermediate: certIntermediate } = WACert.CertChain.decode(certDecoded)
 
-				const { issuerSerial } = proto.CertChain.NoiseCertificate.Details.decode(certIntermediate!.details!)
+				const { issuerSerial } = WACert.CertChain.NoiseCertificate.Details.decode(certIntermediate!.details!)
 
 				if(issuerSerial !== WA_CERT_DETAILS.SERIAL) {
 					throw new Boom('certification match failed', { statusCode: 400 })

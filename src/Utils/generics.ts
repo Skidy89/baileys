@@ -3,7 +3,7 @@ import axios, { AxiosRequestConfig } from 'axios'
 import { createHash, randomBytes } from 'crypto'
 import { platform, release } from 'os'
 import { Logger } from 'pino'
-import { proto } from '../../WAProto'
+import { WACompanionReg, WAE2E, WAProtocol, WAWa6, WAWeb } from '../../WAProto'
 import { version as baileysVersion } from '../Defaults/baileys-version.json'
 import { BaileysEventEmitter, BaileysEventMap, BrowsersMap, DisconnectReason, WACallUpdateType, WAVersion } from '../Types'
 import { BinaryNode, getAllBinaryNodeChildren, jidDecode } from '../WABinary'
@@ -28,7 +28,7 @@ export const Browsers: BrowsersMap = {
 }
 
 export const getPlatformId = (browser: string) => {
-	const platformType = proto.DeviceProps.PlatformType[browser.toUpperCase()]
+	const platformType = WACompanionReg.DeviceProps.PlatformType[browser.toUpperCase()]
 	return platformType ? platformType.toString().charCodeAt(0).toString() : '49' //chrome
 }
 
@@ -51,7 +51,7 @@ export const BufferJSON = {
 }
 
 export const getKeyAuthor = (
-	key: proto.IMessageKey | undefined | null,
+	key: WAProtocol.IMessageKey | undefined | null,
 	meId: string = 'me'
 ) => (
 	(key?.fromMe ? meId : key?.participant || key?.remoteJid) || ''
@@ -81,9 +81,9 @@ export const unpadRandomMax16 = (e: Uint8Array | Buffer) => {
 	return new Uint8Array(t.buffer, t.byteOffset, t.length - r)
 }
 
-export const encodeWAMessage = (message: proto.IMessage) => (
+export const encodeWAMessage = (message: WAE2E.IMessage) => (
 	writeRandomPadMax16(
-		proto.Message.encode(message).finish()
+		WAE2E.Message.encode(message).finish()
 	)
 )
 
@@ -312,10 +312,10 @@ export const generateMdTagPrefix = () => {
 	return `${bytes.readUInt16BE()}.${bytes.readUInt16BE(2)}-`
 }
 
-const STATUS_MAP: { [_: string]: proto.WebMessageInfo.Status } = {
-	'played': proto.WebMessageInfo.Status.PLAYED,
-	'read': proto.WebMessageInfo.Status.READ,
-	'read-self': proto.WebMessageInfo.Status.READ
+const STATUS_MAP: { [_: string]: WAWeb.WebMessageInfo.Status } = {
+	'played': WAWeb.WebMessageInfo.Status.PLAYED,
+	'read': WAWeb.WebMessageInfo.Status.READ,
+	'read-self': WAWeb.WebMessageInfo.Status.READ
 }
 /**
  * Given a type of receipt, returns what the new status of the message should be
@@ -324,7 +324,7 @@ const STATUS_MAP: { [_: string]: proto.WebMessageInfo.Status } = {
 export const getStatusFromReceiptType = (type: string | undefined) => {
 	const status = STATUS_MAP[type!]
 	if(typeof type === 'undefined') {
-		return proto.WebMessageInfo.Status.DELIVERY_ACK
+		return WAWeb.WebMessageInfo.Status.DELIVERY_ACK
 	}
 
 	return status
