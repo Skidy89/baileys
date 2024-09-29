@@ -227,7 +227,7 @@ export type MessageRelayOptions = MinimalRelayOptions & {
     participant?: { jid: string, count: number }
     /** additional attributes to add to the WA binary node */
     additionalAttributes?: { [_: string]: string }
-    additionalNodes?: BinaryNode[]
+    additionalNodes?: BinaryNode
     /** should we use the devices cache, or fetch afresh from the server; default assumed to be "true" */
     useUserDevicesCache?: boolean
     /** jid list of participants for status@broadcast */
