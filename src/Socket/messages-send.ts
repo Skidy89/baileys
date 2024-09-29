@@ -570,12 +570,9 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 
 				if(additionalNodes && additionalNodes.length > 0) {
 					(stanza.content as BinaryNode[]).push(...additionalNodes)
+					logger.debug({ additionalNodes }, 'adding additional nodes')
 				}
-				if (test) {
-					(stanza.content as BinaryNode[]).push(
-						
-					)
-				}
+				
 
 				logger.debug({ msgId }, `sending message to ${participants.length} devices`)
 
