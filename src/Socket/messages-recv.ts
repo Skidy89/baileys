@@ -703,30 +703,32 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			await sendMessageAck(node)
 			return
 		}
-
-		await Promise.all([
-			processingMutex.mutex(
-				async() => {
-					const msg = await processNotification(node)
-					if(msg) {
-						const fromMe = areJidsSameUser(node.attrs.participant || remoteJid, authState.creds.me!.id)
-						msg.key = {
-							remoteJid,
-							fromMe,
-							participant: node.attrs.participant,
-							id: node.attrs.id,
-							...(msg.key || {})
-						}
-						msg.participant ??= node.attrs.participant
-						msg.messageTimestamp = +node.attrs.t
+		try {
+			await Promise.all([
+				processingMutex.mutex(
+					async() => {
+						const msg = await processNotification(node)
+						if(msg) {
+							const fromMe = areJidsSameUser(node.attrs.participant || remoteJid, authState.creds.me!.id)
+							msg.key = {
+								remoteJid,
+								fromMe,
+								participant: node.attrs.participant,
+								id: node.attrs.id,
+								...(msg.key || {})
+							}
+							msg.participant ??= node.attrs.participant
+							msg.messageTimestamp = +node.attrs.t
 
 						const fullMsg = WAWeb.WebMessageInfo.fromObject(msg)
 						await upsertMessage(fullMsg, 'append')
 					}
 				}
-			),
-			sendMessageAck(node)
+			)
 		])
+	} finally {
+		await sendMessageAck(node)
+	}
 	}
 
 	const handleMessage = async(node: BinaryNode) => {
@@ -777,18 +779,19 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			}
 		}
 
-		await Promise.all([
-			processingMutex.mutex(
-				async() => {
-					await decrypt()
-					// message failed to decrypt
-					if(msg.messageStubType === WAWeb.WebMessageInfo.StubType.CIPHERTEXT) {
-						retryMutex.mutex(
-							async() => {
-								if(ws.isOpen) {
-									if(getBinaryNodeChild(node, 'unavailable')) {
-										return
-									}
+		try {
+			await Promise.all([
+				processingMutex.mutex(
+					async() => {
+						await decrypt()
+						// message failed to decrypt
+						if(msg.messageStubType === WAWeb.WebMessageInfo.StubType.CIPHERTEXT) {
+							retryMutex.mutex(
+								async() => {
+									if(ws.isOpen) {
+										if(getBinaryNodeChild(node, 'unavailable')) {
+											return
+										}
 
 									const encNode = getBinaryNodeChild(node, 'enc')
 									await sendRetryRequest(node, !encNode)
@@ -831,8 +834,10 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 					await upsertMessage(msg, node.attrs.offline ? 'append' : 'notify')
 				}
 			),
-			sendMessageAck(node)
 		])
+	} finally {
+		await sendMessageAck(node)
+	}
 	}
 
 	const fetchMessageHistory = async(
