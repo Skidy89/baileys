@@ -223,7 +223,8 @@ const processMessage = async(
 					isLatest:
 						histNotification.syncType !== WAHistorySync.HistorySync.HistorySyncType.ON_DEMAND
 							? isLatest
-							: undefined
+							: undefined,
+							peerDataRequestSessionId: histNotification.peerDataRequestSessionId
 				})
 			}
 
