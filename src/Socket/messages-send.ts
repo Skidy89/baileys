@@ -469,15 +469,15 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 
 					await authState.keys.set({ 'sender-key-memory': { [jid]: senderKeyMap } })
 				} else {
-					const { user: meUser, device: meDevice } = jidDecode(meId)!
+					const { user: meUser } = jidDecode(meId)!
 
 					if(!participant) {
 						devices.push({ user })
 						// do not send message to self if the device is 0 (mobile)
 
 						if(!(additionalAttributes?.['category'] === 'peer' && user === meUser)) {
-							if(meDevice !== undefined && meDevice !== 0) {
-								devices.push({ user: meUser })
+							if(user !== meUser) {
+							devices.push({ user: meUser })
 							}
 
 							const additionalDevices = await getUSyncDevices([ meId, jid ], !!useUserDevicesCache, true)
