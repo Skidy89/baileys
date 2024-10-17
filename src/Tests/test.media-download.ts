@@ -66,7 +66,7 @@ describe('Media Download Tests', () => {
 				}
 
 				const hex = buffer.toString('hex')
-				const expectedHex = plaintext.slice(range.startByte || 0, range.endByte || undefined).toString('hex')
+				const expectedHex = plaintext.subarray(range.startByte || 0, range.endByte || undefined).toString('hex')
 				expect(hex).toBe(expectedHex)
 
 				console.log('success on ', range)

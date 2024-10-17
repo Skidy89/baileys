@@ -1,6 +1,7 @@
 import { DEFAULT_CONNECTION_CONFIG } from '../Defaults'
 import { UserFacingSocketConfig } from '../Types'
-import { makeRegistrationSocket as _makeSocket } from './registration'
+import { makeBusinessSocket as _makeSocket } from './business'
+
 
 // export the last socket layer
 const makeWASocket = (config: UserFacingSocketConfig) => (

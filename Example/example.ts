@@ -1,7 +1,7 @@
 import { Boom } from '@hapi/boom'
 import NodeCache from 'node-cache'
 import readline from 'readline'
-import makeWASocket, { AnyMessageContent, BinaryInfo, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, encodeWAM, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, getHistoryMsg, isJidBroadcast, isJidNewsletter, makeCacheableSignalKeyStore, makeInMemoryStore, PHONENUMBER_MCC, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } from '../src'
+import makeWASocket, { AnyMessageContent, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, proto, useMultiFileAuthState } from '../src'
 import MAIN_LOGGER from '../src/Utils/logger'
 import open from 'open'
 import fs, { readFileSync } from 'fs'
@@ -62,82 +62,8 @@ const startSock = async() => {
 		console.log(`Pairing code: ${code}`)
 	}
 
-	// If mobile was chosen, ask for the code
-	if(useMobile && !sock.authState.creds.registered) {
-		const { registration } = sock.authState.creds || { registration: {} }
 
-		if(!registration.phoneNumber) {
-			registration.phoneNumber = await question('Please enter your mobile phone number:\n')
-		}
-
-		const libPhonenumber = await import("libphonenumber-js")
-		const phoneNumber = libPhonenumber.parsePhoneNumber(registration!.phoneNumber)
-		if(!phoneNumber?.isValid()) {
-			throw new Error('Invalid phone number: ' + registration!.phoneNumber)
-		}
-
-		registration.phoneNumber = phoneNumber.format('E.164')
-		registration.phoneNumberCountryCode = phoneNumber.countryCallingCode
-		registration.phoneNumberNationalNumber = phoneNumber.nationalNumber
-		const mcc = PHONENUMBER_MCC[phoneNumber.countryCallingCode]
-		if(!mcc) {
-			throw new Error('Could not find MCC for phone number: ' + registration!.phoneNumber + '\nPlease specify the MCC manually.')
-		}
-
-		registration.phoneNumberMobileCountryCode = mcc
-
-		async function enterCode() {
-			try {
-				const code = await question('Please enter the one time code:\n')
-				const response = await sock.register(code.replace(/["']/g, '').trim().toLowerCase())
-				console.log('Successfully registered your phone number.')
-				console.log(response)
-				rl.close()
-			} catch(error) {
-				console.error('Failed to register your phone number. Please try again.\n', error)
-				await askForOTP()
-			}
-		}
-
-		async function enterCaptcha() {
-			const response = await sock.requestRegistrationCode({ ...registration, method: 'captcha' })
-			const path = __dirname + '/captcha.png'
-			fs.writeFileSync(path, Buffer.from(response.image_blob!, 'base64'))
-
-			open(path)
-			const code = await question('Please enter the captcha code:\n')
-			fs.unlinkSync(path)
-			registration.captcha = code.replace(/["']/g, '').trim().toLowerCase()
-		}
-
-		async function askForOTP() {
-			if (!registration.method) {
-				await delay(2000)
-				let code = await question('How would you like to receive the one time code for registration? "sms" or "voice"\n')
-				code = code.replace(/["']/g, '').trim().toLowerCase()
-				if(code !== 'sms' && code !== 'voice') {
-					return await askForOTP()
-				}
-
-				registration.method = code
-			}
-
-			try {
-				await sock.requestRegistrationCode(registration)
-				await enterCode()
-			} catch(error) {
-				console.error('Failed to request registration code. Please try again.\n', error)
-
-				if(error?.reason === 'code_checkpoint') {
-					await enterCaptcha()
-				}
-
-				await askForOTP()
-			}
-		}
-
-		askForOTP()
-	}
+	
 
 	const sendMessageWTyping = async(msg: AnyMessageContent, jid: string) => {
 		await sock.presenceSubscribe(jid)
@@ -170,35 +96,6 @@ const startSock = async() => {
 					}
 				}
 				
-				// WARNING: THIS WILL SEND A WAM EXAMPLE AND THIS IS A ****CAPTURED MESSAGE.****
-				// DO NOT ACTUALLY ENABLE THIS UNLESS YOU MODIFIED THE FILE.JSON!!!!!
-				// THE ANALYTICS IN THE FILE ARE OLD. DO NOT USE THEM.
-				// YOUR APP SHOULD HAVE GLOBALS AND ANALYTICS ACCURATE TO TIME, DATE AND THE SESSION
-				// THIS FILE.JSON APPROACH IS JUST AN APPROACH I USED, BE FREE TO DO THIS IN ANOTHER WAY.
-				// THE FIRST EVENT CONTAINS THE CONSTANT GLOBALS, EXCEPT THE seqenceNumber(in the event) and commitTime
-				// THIS INCLUDES STUFF LIKE ocVersion WHICH IS CRUCIAL FOR THE PREVENTION OF THE WARNING
-				const sendWAMExample = false;
-				if(connection === 'open' && sendWAMExample) {
-					/// sending WAM EXAMPLE
-					const {
-						header: {
-							wamVersion,
-							eventSequenceNumber,
-						},
-						events,
-					} = JSON.parse(await fs.promises.readFile("./boot_analytics_test.json", "utf-8"))
-
-					const binaryInfo = new BinaryInfo({
-						protocolVersion: wamVersion,
-						sequence: eventSequenceNumber,
-						events: events
-					})
-
-					const buffer = encodeWAM(binaryInfo);
-					
-					const result = await sock.sendWAMBuffer(buffer)
-					console.log(result)
-				}
 
 				console.log('connection update', update)
 			}
