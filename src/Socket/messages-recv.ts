@@ -933,7 +933,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			const msg = await getMessage(key)
 			console.log(msg!)
 			if(msg) {
-				await relayMessage(key.remoteJid!, msg, { messageId: key.id!, useUserDevicesCache: false })
+				await relayMessage(key.remoteJid!, msg, { messageId: key.id!, useUserDevicesCache: false, useCachedGroupMetadata: true })
 			} else {
 				logger.warn({ attrs }, 'could not send message again, as it was not found')
 			}
