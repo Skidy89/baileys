@@ -931,6 +931,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		if(attrs.phash) {
 			logger.info({ attrs }, 'received phash in ack, resending message...')
 			const msg = await getMessage(key)
+			console.log(msg!)
 			if(msg) {
 				await relayMessage(key.remoteJid!, msg, { messageId: key.id!, useUserDevicesCache: false })
 			} else {
