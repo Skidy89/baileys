@@ -49,7 +49,8 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		retryRequestDelayMs,
 		maxMsgRetryCount,
 		getMessage,
-		shouldIgnoreJid
+		shouldIgnoreJid,
+		shouldIgnoreOfflineMessages
 	} = config
 	const sock = makeMessagesSocket(config)
 	const {
@@ -597,6 +598,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 	}
 
 	const handleReceipt = async(node: BinaryNode) => {
+		try {
 		const { attrs, content } = node
 		const isLid = attrs.from.includes('lid')
 		const isNodeFromMe = areJidsSameUser(attrs.participant || attrs.from, isLid ? authState.creds.me?.lid : authState.creds.me?.id)
@@ -612,7 +614,6 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 		if(shouldIgnoreJid(remoteJid) && remoteJid !== '@s.whatsapp.net') {
 			logger.debug({ remoteJid }, 'ignoring receipt from jid')
-			await sendMessageAck(node)
 			return
 		}
 
@@ -681,15 +682,17 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 					}
 				}
 			),
-			sendMessageAck(node)
 		])
+	} finally {
+		sendMessageAck(node)
+	}
 	}
 
 	const handleNotification = async(node: BinaryNode) => {
+		try {
 		const remoteJid = node.attrs.from
 		if(shouldIgnoreJid(remoteJid) && remoteJid !== '@s.whatsapp.net') {
 			logger.debug({ remoteJid, id: node.attrs.id }, 'ignored notification')
-			await sendMessageAck(node)
 			return
 		}
 
@@ -714,26 +717,26 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 					}
 				}
 			),
-			sendMessageAck(node)
 		])
+	} finally {
+		await sendMessageAck(node)
+	}
 	}
 
 	const handleMessage = async(node: BinaryNode) => {
-		if(config.shouldIgnoreOfflineMessages && node.attrs.offline) {
+		try {
+		if(shouldIgnoreOfflineMessages && node.attrs.offline) {
 			logger.debug({ key: node.attrs.key }, 'ignoring offline message')
-			await sendMessageAck(node)
 			return
 		}
 		if(shouldIgnoreJid(node.attrs.from) && node.attrs.from !== '@s.whatsapp.net') {
 			logger.debug({ key: node.attrs.key }, 'ignored message')
-			await sendMessageAck(node)
 			return
 		}
 
 		let response: string | undefined
 
 		if(getBinaryNodeChild(node, 'unavailable') && !getBinaryNodeChild(node, 'enc')) {
-			await sendMessageAck(node)
 			const { key } = decodeMessageNode(node, authState.creds.me!.id, authState.creds.me!.lid || '').fullMessage
 			response = await requestPlaceholderResend(key)
 			if(response === 'RESOLVED') {
@@ -820,8 +823,10 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 					await upsertMessage(msg, node.attrs.offline ? 'append' : 'notify')
 				}
 			),
-			sendMessageAck(node)
 		])
+	} finally {
+		await sendMessageAck(node)
+	}
 	}
 
 	const fetchMessageHistory = async(
@@ -884,6 +889,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 	}
 
 	const handleCall = async(node: BinaryNode) => {
+		
 		const { attrs } = node
 		const [infoChild] = getAllBinaryNodeChildren(node)
 		const callId = infoChild.attrs['call-id']

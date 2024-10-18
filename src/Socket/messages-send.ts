@@ -746,6 +746,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 						mediaCache: config.mediaCache,
 						options: config.options,
 						messageId: generateMessageIDV2(sock.user?.id),
+						useCachedGroupMetadata: options.useCachedGroupMetadata,
 						...options,
 					}
 				)
