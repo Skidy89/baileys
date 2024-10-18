@@ -12,8 +12,7 @@ class SenderKeyDistributionMessage extends CiphertextMessage {
     super();
     if (serialized) {
       try {
-        const version = serialized[0];
-        const message = serialized.slice(1);
+        const message = serialized.subarray(1);
 
         const distributionMessage = protobufs.SenderKeyDistributionMessage.decode(
           message
