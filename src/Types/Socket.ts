@@ -33,7 +33,9 @@ export type SocketConfig = {
     defaultQueryTimeoutMs: number | undefined
     /** ping-pong interval for WS connection */
     keepAliveIntervalMs: number
-	/** should baileys use the mobile api instead of the multi device api */
+	/** should baileys use the mobile api instead of the multi device api 
+     * @deprecated
+    */
 	mobile?: boolean
     /** proxy agent */
     agent?: Agent

@@ -20,7 +20,7 @@ export const Curve = {
 		return {
 			private: Buffer.from(privKey),
 			// remove version byte
-			public: Buffer.from((pubKey as Uint8Array).slice(1))
+			public: Buffer.from((pubKey as Uint8Array).subarray(1))
 		}
 	},
 	sharedKey: (privateKey: Uint8Array, publicKey: Uint8Array) => {
@@ -68,8 +68,8 @@ export function aesEncryptGCM(plaintext: Uint8Array, key: Uint8Array, iv: Uint8A
 export function aesDecryptGCM(ciphertext: Uint8Array, key: Uint8Array, iv: Uint8Array, additionalData: Uint8Array) {
 	const decipher = createDecipheriv('aes-256-gcm', key, iv)
 	// decrypt additional adata
-	const enc = ciphertext.slice(0, ciphertext.length - GCM_TAG_LENGTH)
-	const tag = ciphertext.slice(ciphertext.length - GCM_TAG_LENGTH)
+	const enc = ciphertext.subarray(0, ciphertext.length - GCM_TAG_LENGTH)
+	const tag = ciphertext.subarray(ciphertext.length - GCM_TAG_LENGTH)
 	// set additional data
 	decipher.setAAD(additionalData)
 	decipher.setAuthTag(tag)
@@ -89,7 +89,7 @@ export function aesDecryptCTR(ciphertext: Uint8Array, key: Uint8Array, iv: Uint8
 
 /** decrypt AES 256 CBC; where the IV is prefixed to the buffer */
 export function aesDecrypt(buffer: Buffer, key: Buffer) {
-	return aesDecryptWithIV(buffer.slice(16, buffer.length), key, buffer.slice(0, 16))
+	return aesDecryptWithIV(buffer.subarray(16, buffer.length), key, buffer.subarray(0, 16))
 }
 
 /** decrypt AES 256 CBC */

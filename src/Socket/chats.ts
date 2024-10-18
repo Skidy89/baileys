@@ -225,7 +225,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		await query({
 			tag: 'iq',
 			attrs: {
-				to: jidNormalizedUser(jid),
+				to: S_WHATSAPP_NET,
 				type: 'set',
 				xmlns: 'w:profile:picture'
 			},
@@ -752,10 +752,12 @@ export const makeChatsSocket = (config: SocketConfig) => {
 
 
 		let props: { [_: string]: string } = {}
-		if(propsNode) {
+		if (propsNode) {
+		if(propsNode?.attrs?.hash) { // on some clients, the hash is returning as undefined
 			authState.creds.lastPropHash = propsNode?.attrs?.hash
 			ev.emit('creds.update', authState.creds)
-			props = reduceBinaryNodeToDictionary(propsNode, 'prop')
+		}
+		props = reduceBinaryNodeToDictionary(propsNode, 'prop')
 		}
 
 		logger.debug('fetched props')
@@ -969,7 +971,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 			// if we don't have the app state key
 			// we keep buffering events until we finally have
 			// the key and can sync the messages
-			if(!authState.creds?.myAppStateKeyId && !config.mobile) {
+			if(!authState.creds?.myAppStateKeyId) {
 				ev.buffer()
 				needToFlushWithAppStateSync = true
 			}
