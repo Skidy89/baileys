@@ -84,7 +84,6 @@ export const makeSocket = (config: SocketConfig) => {
 	const noise = makeNoiseHandler({
 		keyPair: ephemeralKeyPair,
 		NOISE_HEADER: NOISE_WA_HEADER,
-		mobile: false,
 		logger,
 		routingInfo: authState?.creds?.routingInfo
 	})

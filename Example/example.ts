@@ -3,18 +3,15 @@ import NodeCache from 'node-cache'
 import readline from 'readline'
 import makeWASocket, { AnyMessageContent, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, proto, useMultiFileAuthState } from '../src'
 import MAIN_LOGGER from '../src/Utils/logger'
-import open from 'open'
-import fs, { readFileSync } from 'fs'
-import P, { pino } from 'pino'
+
 
 
 const logger =	MAIN_LOGGER.child({})
 logger.level = 'info'
 
-const useStore = !process.argv.includes('--no-store')
-const doReplies = process.argv.includes('--do-reply')
+
 const usePairingCode = process.argv.includes('--use-pairing-code')
-const useMobile = process.argv.includes('--mobile')
+
 
 // external map to store retry counts of messages when decryption/encryption fails
 // keep this out of the socket itself, so as to prevent a message decryption/encryption loop across socket restarts
@@ -39,7 +36,6 @@ const startSock = async() => {
 		version,
 		logger,
 		printQRInTerminal: !usePairingCode,
-		mobile: useMobile,
 		auth: {
 			creds: state.creds,
 			/** caching makes the store faster to send/recv messages */
@@ -53,9 +49,6 @@ const startSock = async() => {
 
 	// Pairing code for Web clients
 	if(usePairingCode && !sock.authState.creds.registered) {
-		if(useMobile) {
-			throw new Error('Cannot use pairing code with mobile api')
-		}
 
 		const phoneNumber = await question('Please enter your mobile phone number:\n')
 		const code = await sock.requestPairingCode(phoneNumber)
