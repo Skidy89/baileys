@@ -1,4 +1,4 @@
-import { createHash } from 'crypto'
+
 import { proto } from '../../WAProto'
 import { makeLibSignalRepository } from '../Signal/libsignal'
 import type { AuthenticationState, MediaType, SocketConfig, WAVersion } from '../Types'

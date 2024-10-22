@@ -1,4 +1,4 @@
-const { deriveSecrets } = require('libsignal/src/crypto');
+const { deriveSecrets } = require('@skidy89/libsignal-node/src/crypto');
 class SenderMessageKey {
     iteration = 0;
 
