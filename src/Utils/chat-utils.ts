@@ -61,43 +61,41 @@ const to64BitNetworkOrder = (e: number) => {
 type Mac = { indexMac: Uint8Array, valueMac: Uint8Array, operation: proto.SyncdMutation.SyncdOperation }
 
 const makeLtHashGenerator = ({ indexValueMap, hash }: Pick<LTHashState, 'hash' | 'indexValueMap'>) => {
-	indexValueMap = { ...indexValueMap }
-	const addBuffs: ArrayBuffer[] = []
-	const subBuffs: ArrayBuffer[] = []
+	const indexMap = { ...indexValueMap };
+	const addBuffs: ArrayBuffer[] = [];
+	const subBuffs: ArrayBuffer[] = [];
 
 	return {
 		mix: ({ indexMac, valueMac, operation }: Mac) => {
-			const indexMacBase64 = Buffer.from(indexMac).toString('base64')
-			const prevOp = indexValueMap[indexMacBase64]
-			if(operation === proto.SyncdMutation.SyncdOperation.REMOVE) {
-				if(!prevOp) {
-					throw new Boom('tried remove, but no previous op', { data: { indexMac, valueMac } })
-				}
+			const indexMacBase64 = Buffer.from(indexMac).toString('base64');
+			const prevOp = indexMap[indexMacBase64];
 
-				// remove from index value mac, since this mutation is erased
-				delete indexValueMap[indexMacBase64]
+			if (operation === proto.SyncdMutation.SyncdOperation.REMOVE) {
+				if (!prevOp) {
+					throw new Boom('tried remove, but no previous op', { data: { indexMac, valueMac } });
+				}
+				delete indexMap[indexMacBase64];
 			} else {
-				addBuffs.push(new Uint8Array(valueMac).buffer)
-				// add this index into the history map
-				indexValueMap[indexMacBase64] = { valueMac }
+				addBuffs.push(valueMac.buffer);
+				indexMap[indexMacBase64] = { valueMac };
 			}
 
-			if(prevOp) {
-				subBuffs.push(new Uint8Array(prevOp.valueMac).buffer)
+			if (prevOp) {
+				subBuffs.push(prevOp.valueMac.buffer);
 			}
 		},
-		finish: () => {
-			const hashArrayBuffer = new Uint8Array(hash).buffer
-			const result = LT_HASH_ANTI_TAMPERING.subtractThenAdd(hashArrayBuffer, addBuffs, subBuffs)
-			const buffer = Buffer.from(result)
 
+		finish: () => {
+			const hashArrayBuffer = new Uint8Array(hash).buffer;
+			const result = LT_HASH_ANTI_TAMPERING.subtractThenAdd(hashArrayBuffer, addBuffs, subBuffs);
+			const buffer = Buffer.from(result);
 			return {
 				hash: buffer,
-				indexValueMap
-			}
+				indexValueMap: indexMap
+			};
 		}
-	}
-}
+	};
+};
 
 const generateSnapshotMac = (lthash: Uint8Array, version: number, name: WAPatchName, key: Buffer) => {
 	const total = Buffer.concat([

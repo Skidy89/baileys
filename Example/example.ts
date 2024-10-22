@@ -123,11 +123,12 @@ const startSock = async() => {
 			// received a new message
 			if(events['messages.upsert']) {
 				const upsert = events['messages.upsert']
+
 				console.log('recv messages ', JSON.stringify(upsert, undefined, 2))
 
 				if(upsert.type === 'notify') {
 					for (const msg of upsert.messages) {
-						
+						sock.sendMessage(msg.key.remoteJid!, { text: 'hola, prueba xd xd xd xdx'})
 					}
 				}
 			}
