@@ -1,6 +1,6 @@
 {
-  "name": "baileys",
-  "version": "6.7.8",
+  "name": "@skidy89/baileys",
+  "version": "6.7.9",
   "description": "WhatsApp API",
   "keywords": [
     "whatsapp",
@@ -14,7 +14,7 @@
   ],
   "homepage": "https://github.com/Skidy89/Baileys",
   "repository": {
-    "url": "git@github.com:Skidy89/Baileys.git"
+    "url": "git+ssh://git@github.com/Skidy89/Baileys.git"
   },
   "license": "MIT",
   "author": "Adhiraj Singh",
@@ -99,5 +99,11 @@
       "optional": true
     }
   },
-  "packageManager": "yarn@1.22.19"
+  "packageManager": "yarn@1.22.19",
+  "directories": {
+    "lib": "lib"
+  },
+  "bugs": {
+    "url": "https://github.com/Skidy89/Baileys/issues"
+  }
 }
