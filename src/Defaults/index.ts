@@ -5,11 +5,11 @@ import type { AuthenticationState, MediaType, SocketConfig, WAVersion } from '..
 import { Browsers } from '../Utils'
 import logger from '../Utils/logger'
 import { version } from './baileys-version.json'
-
+import phoneNumberMCC from './phoneNumber.json'
 
 export const UNAUTHORIZED_CODES = [401, 403, 419]
 
-
+export const PHONENUMBER_MCC = phoneNumberMCC
 export const DEFAULT_ORIGIN = 'https://web.whatsapp.com'
 export const DEF_CALLBACK_PREFIX = 'CB:'
 export const DEF_TAG_PREFIX = 'TAG:'
