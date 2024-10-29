@@ -58,7 +58,7 @@ describe('App State Sync Tests', () => {
 		]
 
 		for(const mutations of CASES) {
-			const events = processSyncAction(mutations, me, undefined, logger)
+			const events = processSyncAction(mutations[0], me!, undefined, logger)
 			expect(events['chats.update']).toHaveLength(1)
 			const event = events['chats.update']?.[0]
 			expect(event.archive).toEqual(false)

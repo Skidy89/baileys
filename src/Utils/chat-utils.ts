@@ -66,15 +66,14 @@ const to64BitNetworkOrder = (e: number) => {
 type Mac = { indexMac: Uint8Array, valueMac: Uint8Array, operation: proto.SyncdMutation.SyncdOperation }
 
 const makeLtHashGenerator = ({ indexValueMap, hash }: Pick<LTHashState, 'hash' | 'indexValueMap'>) => {
-	const indexMap = { ...indexValueMap }
-	const addBuffs: ArrayBuffer[] = []
-	const subBuffs: ArrayBuffer[] = []
+	const indexMap = { ...indexValueMap };
+	const addBuffs: ArrayBuffer[] = [];
+	const subBuffs: ArrayBuffer[] = [];
 
 	return {
 		mix: ({ indexMac, valueMac, operation }: Mac) => {
 			const indexMacBase64 = Buffer.from(indexMac).toString('base64')
-			const prevOp = indexMap[indexMacBase64]
-
+			const prevOp = indexValueMap[indexMacBase64]
 			if(operation === proto.SyncdMutation.SyncdOperation.REMOVE) {
 				if(!prevOp) {
 					throw new Boom('tried remove, but no previous op', { data: { indexMac, valueMac } })
@@ -87,7 +86,7 @@ const makeLtHashGenerator = ({ indexValueMap, hash }: Pick<LTHashState, 'hash' |
 			}
 
 			if(prevOp) {
-				subBuffs.push(prevOp.valueMac.buffer)
+				subBuffs.push(new Uint8Array(prevOp.valueMac).buffer)
 			}
 		},
 
@@ -97,7 +96,7 @@ const makeLtHashGenerator = ({ indexValueMap, hash }: Pick<LTHashState, 'hash' |
 			const buffer = Buffer.from(result)
 			return {
 				hash: buffer,
-				indexValueMap: indexMap
+				indexValueMap
 			}
 		}
 	}
