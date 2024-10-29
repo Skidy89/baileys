@@ -1,6 +1,6 @@
 {
-  "name": "baileys",
-  "version": "6.7.7",
+  "name": "@skidy89/baileys",
+  "version": "6.8.2",
   "description": "WhatsApp API",
   "keywords": [
     "whatsapp",
@@ -14,7 +14,7 @@
   ],
   "homepage": "https://github.com/Skidy89/Baileys",
   "repository": {
-    "url": "git@github.com:Skidy89/Baileys.git"
+    "url": "git+ssh://git@github.com/Skidy89/Baileys.git"
   },
   "license": "MIT",
   "author": "Adhiraj Singh",
@@ -45,19 +45,16 @@
   "dependencies": {
     "@adiwajshing/keyed-db": "^0.2.4",
     "@hapi/boom": "^9.1.3",
+    "@skidy89/libsignal-node": "github:Skidy89/libsignal-node",
     "async-lock": "^1.4.1",
     "audio-decode": "^2.1.3",
     "axios": "^1.6.0",
-    "cache-manager": "4.0.1",
     "futoin-hkdf": "^1.5.1",
-    "libphonenumber-js": "^1.10.20",
-    "libsignal": "github:Skidy89/libsignal-node",
     "lodash": "^4.17.21",
     "music-metadata": "^7.12.3",
     "node-cache": "^5.1.2",
     "pino": "^7.0.0",
     "protobufjs": "^7.2.4",
-    "uuid": "^10.0.0",
     "ws": "^8.13.0"
   },
   "devDependencies": {
@@ -69,6 +66,7 @@
     "@types/ws": "^8.0.0",
     "conventional-changelog-cli": "^2.2.2",
     "eslint": "^8.0.0",
+    "eslint-plugin-deprecation": "^3.0.0",
     "jest": "^27.0.6",
     "jimp": "^0.16.1",
     "json": "^11.0.0",
@@ -102,5 +100,11 @@
       "optional": true
     }
   },
-  "packageManager": "yarn@1.22.19"
+  "packageManager": "yarn@1.22.19",
+  "directories": {
+    "lib": "lib"
+  },
+  "bugs": {
+    "url": "https://github.com/Skidy89/Baileys/issues"
+  }
 }

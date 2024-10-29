@@ -5,6 +5,7 @@
         "project": "./tsconfig.json"
     },
     "ignorePatterns": ["src/Tests/*"],
+    "plugins": ["deprecation"],
     "rules": {
         "@typescript-eslint/no-explicit-any": [
             "warn",
@@ -30,6 +31,7 @@
         ],
         "keyword-spacing": [
             "warn"
-        ]
+        ],
+        "deprecation/deprecation": "warn"
     }
 }

@@ -1,5 +1,5 @@
 const CiphertextMessage = require('./ciphertext_message');
-const curve = require('libsignal/src/curve');
+const curve = require('@skidy89/libsignal-node/src/curve');
 const protobufs = require('./protobufs');
 
 class SenderKeyMessage extends CiphertextMessage {
@@ -64,8 +64,8 @@ class SenderKeyMessage extends CiphertextMessage {
   }
 
   verifySignature(signatureKey) {
-    const part1 = this.serialized.slice(0, this.serialized.length - this.SIGNATURE_LENGTH);
-    const part2 = this.serialized.slice(-1 * this.SIGNATURE_LENGTH);
+    const part1 = this.serialized.subarray(0, this.serialized.length - this.SIGNATURE_LENGTH);
+    const part2 = this.serialized.subarray(-1 * this.SIGNATURE_LENGTH);
     const res = curve.verifySignature(signatureKey, part1, part2);
     if (!res) throw new Error('Invalid signature!');
   }

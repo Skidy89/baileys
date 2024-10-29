@@ -1,6 +1,6 @@
 const SenderMessageKey = require('./sender_message_key');
 //const HKDF = require('./hkdf');
-const crypto = require('libsignal/src/crypto');
+const crypto = require('@skidy89/libsignal-node/src/crypto');
 
 class SenderChainKey {
   MESSAGE_KEY_SEED = Buffer.from([0x01]);

@@ -16,13 +16,11 @@ const generateIV = (counter: number) => {
 export const makeNoiseHandler = ({
 	keyPair: { private: privateKey, public: publicKey },
 	NOISE_HEADER,
-	mobile,
 	logger,
 	routingInfo
 }: {
 	keyPair: KeyPair
 	NOISE_HEADER: Uint8Array
-	mobile: boolean
 	logger: Logger
 	routingInfo?: Buffer | undefined
 }) => {
@@ -61,7 +59,7 @@ export const makeNoiseHandler = ({
 
 	const localHKDF = (data: Uint8Array) => {
 		const key = hkdf(Buffer.from(data), 64, { salt, info: '' })
-		return [key.slice(0, 32), key.slice(32)]
+		return [key.subarray(0, 32), key.subarray(32)]
 	}
 
 	const mixIntoKey = (data: Uint8Array) => {
@@ -113,9 +111,7 @@ export const makeNoiseHandler = ({
 
 			const certDecoded = decrypt(serverHello!.payload!)
 
-			if(mobile) {
-				proto.CertChain.NoiseCertificate.decode(certDecoded)
-			} else {
+			
 				const { intermediate: certIntermediate } = proto.CertChain.decode(certDecoded)
 
 				const { issuerSerial } = proto.CertChain.NoiseCertificate.Details.decode(certIntermediate!.details!)
@@ -123,7 +119,7 @@ export const makeNoiseHandler = ({
 				if(issuerSerial !== WA_CERT_DETAILS.SERIAL) {
 					throw new Boom('certification match failed', { statusCode: 400 })
 				}
-			}
+			
 
 			const keyEnc = encrypt(noiseKey.public)
 			mixIntoKey(Curve.sharedKey(noiseKey.private, serverHello!.ephemeral!))
@@ -179,8 +175,8 @@ export const makeNoiseHandler = ({
 
 			let size = getBytesSize()
 			while(size && inBytes.length >= size + 3) {
-				let frame: Uint8Array | BinaryNode = inBytes.slice(3, size + 3)
-				inBytes = inBytes.slice(size + 3)
+				let frame: Uint8Array | BinaryNode = inBytes.subarray(3, size + 3)
+				inBytes = inBytes.subarray(size + 3)
 
 				if(isFinished) {
 					const result = decrypt(frame as Uint8Array)

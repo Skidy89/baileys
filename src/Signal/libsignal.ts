@@ -1,4 +1,4 @@
-import * as libsignal from 'libsignal'
+import * as libsignal from '@skidy89/libsignal-node'
 import { GroupCipher, GroupSessionBuilder, SenderKeyDistributionMessage, SenderKeyName, SenderKeyRecord } from '../../WASignalGroup'
 import { SignalAuthState } from '../Types'
 import { SignalRepository } from '../Types/Signal'

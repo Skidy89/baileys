@@ -1,7 +1,6 @@
 import { randomBytes } from 'crypto'
 import NodeCache from 'node-cache'
 import type { Logger } from 'pino'
-import { v4 as uuidv4 } from 'uuid'
 import { DEFAULT_CACHE_TTLS } from '../Defaults'
 import type { AuthenticationCreds, CacheStore, SignalDataSet, SignalDataTypeMap, SignalKeyStore, SignalKeyStoreWithTransaction, TransactionCapabilityOptions } from '../Types'
 import { Curve, signedKeyPair } from './crypto'
@@ -30,12 +29,12 @@ export function makeCacheableSignalKeyStore(
 
 	return {
 		async get(type, ids) {
-			const data: { [_: string]: SignalDataTypeMap[typeof type] } =  { }
+			const data: { [_: string]: SignalDataTypeMap[typeof type] } = { }
 			const idsToFetch: string[] = []
 			for(const id of ids) {
-				const item = await cache.get<SignalDataTypeMap[typeof type]>(getUniqueId(type, id))
+				const item = cache.get<SignalDataTypeMap[typeof type]>(getUniqueId(type, id))
 				if(typeof item !== 'undefined') {
-					data[id] = item
+					data[id] = await item
 				} else {
 					idsToFetch.push(id)
 				}
@@ -125,7 +124,7 @@ export const addTransactionCapability = (
 					}, { }
 				)
 			} else {
-				return await state.get(type, ids)
+				return state.get(type, ids)
 			}
 		},
 		set: data => {
@@ -208,13 +207,7 @@ export const initAuthCreds = (): AuthenticationCreds => {
 		accountSettings: {
 			unarchiveChats: false
 		},
-		// mobile creds
-		deviceId: Buffer.from(uuidv4().replace(/-/g, ''), 'hex').toString('base64url'),
-		phoneId: uuidv4(),
-		identityId: randomBytes(20),
 		registered: false,
-		backupToken: randomBytes(20),
-		registration: {} as never,
 		pairingCode: undefined,
 		lastPropHash: undefined,
 		routingInfo: undefined,

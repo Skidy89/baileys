@@ -17,11 +17,11 @@ export type ChatMutationMap = { [index: string]: ChatMutation }
 const mutationKeys = (keydata: Uint8Array) => {
 	const expanded = hkdf(keydata, 160, { info: 'WhatsApp Mutation Keys' })
 	return {
-		indexKey: expanded.slice(0, 32),
-		valueEncryptionKey: expanded.slice(32, 64),
-		valueMacKey: expanded.slice(64, 96),
-		snapshotMacKey: expanded.slice(96, 128),
-		patchMacKey: expanded.slice(128, 160)
+		indexKey: expanded.subarray(0, 32),
+		valueEncryptionKey: expanded.subarray(32, 64),
+		valueMacKey: expanded.subarray(64, 96),
+		snapshotMacKey: expanded.subarray(96, 128),
+		patchMacKey: expanded.subarray(128, 160)
 	}
 }
 
@@ -49,7 +49,7 @@ const generateMac = (operation: proto.SyncdMutation.SyncdOperation, data: Buffer
 	const total = Buffer.concat([keyData, data, last])
 	const hmac = hmacSign(total, key, 'sha512')
 
-	return hmac.slice(0, 32)
+	return hmac.subarray(0, 32)
 }
 
 const to64BitNetworkOrder = (e: number) => {
@@ -61,43 +61,41 @@ const to64BitNetworkOrder = (e: number) => {
 type Mac = { indexMac: Uint8Array, valueMac: Uint8Array, operation: proto.SyncdMutation.SyncdOperation }
 
 const makeLtHashGenerator = ({ indexValueMap, hash }: Pick<LTHashState, 'hash' | 'indexValueMap'>) => {
-	indexValueMap = { ...indexValueMap }
-	const addBuffs: ArrayBuffer[] = []
-	const subBuffs: ArrayBuffer[] = []
+	const indexMap = { ...indexValueMap };
+	const addBuffs: ArrayBuffer[] = [];
+	const subBuffs: ArrayBuffer[] = [];
 
 	return {
 		mix: ({ indexMac, valueMac, operation }: Mac) => {
-			const indexMacBase64 = Buffer.from(indexMac).toString('base64')
-			const prevOp = indexValueMap[indexMacBase64]
-			if(operation === proto.SyncdMutation.SyncdOperation.REMOVE) {
-				if(!prevOp) {
-					throw new Boom('tried remove, but no previous op', { data: { indexMac, valueMac } })
-				}
+			const indexMacBase64 = Buffer.from(indexMac).toString('base64');
+			const prevOp = indexMap[indexMacBase64];
 
-				// remove from index value mac, since this mutation is erased
-				delete indexValueMap[indexMacBase64]
+			if (operation === proto.SyncdMutation.SyncdOperation.REMOVE) {
+				if (!prevOp) {
+					throw new Boom('tried remove, but no previous op', { data: { indexMac, valueMac } });
+				}
+				delete indexMap[indexMacBase64];
 			} else {
-				addBuffs.push(new Uint8Array(valueMac).buffer)
-				// add this index into the history map
-				indexValueMap[indexMacBase64] = { valueMac }
+				addBuffs.push(valueMac.buffer);
+				indexMap[indexMacBase64] = { valueMac };
 			}
 
-			if(prevOp) {
-				subBuffs.push(new Uint8Array(prevOp.valueMac).buffer)
+			if (prevOp) {
+				subBuffs.push(prevOp.valueMac.buffer);
 			}
 		},
-		finish: () => {
-			const hashArrayBuffer = new Uint8Array(hash).buffer
-			const result = LT_HASH_ANTI_TAMPERING.subtractThenAdd(hashArrayBuffer, addBuffs, subBuffs)
-			const buffer = Buffer.from(result)
 
+		finish: () => {
+			const hashArrayBuffer = new Uint8Array(hash).buffer;
+			const result = LT_HASH_ANTI_TAMPERING.subtractThenAdd(hashArrayBuffer, addBuffs, subBuffs);
+			const buffer = Buffer.from(result);
 			return {
 				hash: buffer,
-				indexValueMap
-			}
+				indexValueMap: indexMap
+			};
 		}
-	}
-}
+	};
+};
 
 const generateSnapshotMac = (lthash: Uint8Array, version: number, name: WAPatchName, key: Buffer) => {
 	const total = Buffer.concat([
@@ -204,8 +202,8 @@ export const decodeSyncdMutations = async(
 
 		const key = await getKey(record.keyId!.id!)
 		const content = Buffer.from(record.value!.blob!)
-		const encContent = content.slice(0, -32)
-		const ogValueMac = content.slice(-32)
+		const encContent = content.subarray(0, -32)
+		const ogValueMac = content.subarray(-32)
 		if(validateMacs) {
 			const contentHmac = generateMac(operation!, encContent, record.keyId!.id!, key.valueMacKey)
 			if(Buffer.compare(contentHmac, ogValueMac) !== 0) {
@@ -262,7 +260,7 @@ export const decodeSyncdPatch = async(
 		}
 
 		const mainKey = mutationKeys(mainKeyObj.keyData!)
-		const mutationmacs = msg.mutations!.map(mutation => mutation.record!.value!.blob!.slice(-32))
+		const mutationmacs = msg.mutations!.map(mutation => mutation.record!.value!.blob!.subarray(-32))
 
 		const patchMac = generatePatchMac(msg.snapshotMac!, mutationmacs, toNumber(msg.version!.version!), name, mainKey.patchMacKey)
 		if(Buffer.compare(patchMac, msg.patchMac!) !== 0) {
