@@ -66,6 +66,7 @@
     "@types/ws": "^8.0.0",
     "conventional-changelog-cli": "^2.2.2",
     "eslint": "^8.0.0",
+    "eslint-plugin-deprecation": "^3.0.0",
     "jest": "^27.0.6",
     "jimp": "^0.16.1",
     "json": "^11.0.0",
