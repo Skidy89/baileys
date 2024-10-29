@@ -176,7 +176,7 @@ export const decryptMessageNode = (
 							console.log(enc)
 							msgBuffer = content
 							break
-						
+
 						default:
 							throw new Error(`Unknown e2e type: ${e2eType}`)
 						}
@@ -193,7 +193,7 @@ export const decryptMessageNode = (
 								logger.error({ key: fullMessage.key, err }, 'failed to decrypt message')
 						        }
 						}
-						
+
 
 						if(fullMessage.message) {
 							Object.assign(fullMessage.message, msg)

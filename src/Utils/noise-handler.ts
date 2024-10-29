@@ -111,15 +111,15 @@ export const makeNoiseHandler = ({
 
 			const certDecoded = decrypt(serverHello!.payload!)
 
-			
-				const { intermediate: certIntermediate } = proto.CertChain.decode(certDecoded)
 
-				const { issuerSerial } = proto.CertChain.NoiseCertificate.Details.decode(certIntermediate!.details!)
+			const { intermediate: certIntermediate } = proto.CertChain.decode(certDecoded)
 
-				if(issuerSerial !== WA_CERT_DETAILS.SERIAL) {
-					throw new Boom('certification match failed', { statusCode: 400 })
-				}
-			
+			const { issuerSerial } = proto.CertChain.NoiseCertificate.Details.decode(certIntermediate!.details!)
+
+			if(issuerSerial !== WA_CERT_DETAILS.SERIAL) {
+				throw new Boom('certification match failed', { statusCode: 400 })
+			}
+
 
 			const keyEnc = encrypt(noiseKey.public)
 			mixIntoKey(Curve.sharedKey(noiseKey.private, serverHello!.ephemeral!))
@@ -179,7 +179,7 @@ export const makeNoiseHandler = ({
 				inBytes = inBytes.subarray(size + 3)
 
 				if(isFinished) {
-					const result = decrypt(frame as Uint8Array)
+					const result = decrypt(frame)
 					frame = await decodeBinaryNode(result)
 				}
 

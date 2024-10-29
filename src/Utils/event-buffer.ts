@@ -592,12 +592,10 @@ function consolidateEvents(data: BufferedEventData) {
 }
 
 function concatChats<C extends Partial<Chat>>(a: C, b: Partial<Chat>) {
-	if(b.unreadCount === null) {
-		// neutralize unread counter
-		if(a.unreadCount! < 0) {
-			a.unreadCount = undefined
-			b.unreadCount = undefined
-		}
+	if(b.unreadCount === null && // neutralize unread counter
+		a.unreadCount! < 0) {
+		a.unreadCount = undefined
+		b.unreadCount = undefined
 	}
 
 	if(typeof a.unreadCount === 'number' && typeof b.unreadCount === 'number') {
