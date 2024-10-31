@@ -150,7 +150,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 			const user = jidDecode(jid)?.user
 			jid = jidNormalizedUser(jid)
 
-			const devices = await userDevicesCache!.get<JidWithDevice[]>(user!)
+			const devices = await userDevicesCache.get<JidWithDevice[]>(user!)
 			if(devices && useCache) {
 				deviceResults.push(...devices)
 
@@ -280,7 +280,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 			}
 		}
 
-		const meJid = jidNormalizedUser(authState.creds.me.id)!
+		const meJid = jidNormalizedUser(authState.creds.me.id)
 
 		const msgId = await relayMessage(meJid, protocolMessage, {
 			additionalAttributes: {

@@ -16,6 +16,43 @@ export const createSignalIdentity = (
 	}
 }
 
+function processItem(
+    item: BinaryNode,
+    myUser: string,
+    myDevice: number,
+    excludeZeroDevices: boolean,
+    extracted: JidWithDevice[]
+) {
+    const { user } = jidDecode(item.attrs.jid)!
+    const devicesNode = getBinaryNodeChild(item, 'devices')
+    const deviceListNode = getBinaryNodeChild(devicesNode, 'device-list')
+    if (Array.isArray(deviceListNode?.content)) {
+        deviceListNode?.content?.forEach(({ tag, attrs }) => {
+            processDevice(tag, attrs, user, myUser, myDevice, excludeZeroDevices, extracted)
+        })
+    }
+}
+
+function processDevice(
+    tag: string,
+    attrs: { [key: string]: string },
+    user: string,
+    myUser: string,
+    myDevice: number,
+    excludeZeroDevices: boolean,
+    extracted: JidWithDevice[]
+) {
+    const device = +attrs.id
+    if (
+        tag === 'device' &&
+        (!excludeZeroDevices || device !== 0) &&
+        (myUser !== user || myDevice !== device) &&
+        (device === 0 || !!attrs['key-index'])
+    ) {
+        extracted.push({ user, device })
+    }
+}
+
 export const getPreKeys = async({ get }: SignalKeyStore, min: number, limit: number) => {
 	const idList: string[] = []
 	for(let id = min; id < limit;id++) {
@@ -73,7 +110,7 @@ export const parseAndInjectE2ESessions = async(
 	const extractKey = (key: BinaryNode) => (
 		key ? ({
 			keyId: getBinaryNodeChildUInt(key, 'id', 3)!,
-			publicKey: generateSignalPubKey(getBinaryNodeChildBuffer(key, 'value')!)!,
+			publicKey: generateSignalPubKey(getBinaryNodeChildBuffer(key, 'value')!),
 			signature: getBinaryNodeChildBuffer(key, 'signature')!,
 		}) : undefined
 	)
@@ -114,35 +151,26 @@ export const parseAndInjectE2ESessions = async(
 	}
 }
 
-export const extractDeviceJids = (result: BinaryNode, myJid: string, excludeZeroDevices: boolean) => {
-	const { user: myUser, device: myDevice } = jidDecode(myJid)!
-	const extracted: JidWithDevice[] = []
-	for(const node of result.content as BinaryNode[]) {
-		const list = getBinaryNodeChild(node, 'list')?.content
-		if(list && Array.isArray(list)) {
-			for(const item of list) {
-				const { user } = jidDecode(item.attrs.jid)!
-				const devicesNode = getBinaryNodeChild(item, 'devices')
-				const deviceListNode = getBinaryNodeChild(devicesNode, 'device-list')
-				if(Array.isArray(deviceListNode?.content)) {
-					for(const { tag, attrs } of deviceListNode!.content) {
-						const device = +attrs.id
-						if(
-							tag === 'device' && // ensure the "device" tag
-							(!excludeZeroDevices || device !== 0) && // if zero devices are not-excluded, or device is non zero
-							(myUser !== user || myDevice !== device) && // either different user or if me user, not this device
-							(device === 0 || !!attrs['key-index']) // ensure that "key-index" is specified for "non-zero" devices, produces a bad req otherwise
-						) {
-							extracted.push({ user, device })
-						}
-					}
-				}
-			}
-		}
-	}
+export const extractDeviceJids = (
+    result: BinaryNode,
+    myJid: string,
+    excludeZeroDevices: boolean
+): JidWithDevice[] => {
+    const { user: myUser, device: myDevice } = jidDecode(myJid)!
+    const extracted: JidWithDevice[] = []
 
-	return extracted
+    for (const node of result.content as BinaryNode[]) {
+        const list = getBinaryNodeChild(node, 'list')?.content
+        if (list && Array.isArray(list)) {
+            list.forEach(item => processItem(item, myUser, myDevice!, excludeZeroDevices, extracted))
+        }
+    }
+
+    return extracted
 }
+
+
+
 
 /**
  * get the next N keys for upload or processing

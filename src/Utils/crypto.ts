@@ -1,6 +1,6 @@
+import * as libsignal from '@skidy89/libsignal-node'
 import { createCipheriv, createDecipheriv, createHash, createHmac, pbkdf2, randomBytes } from 'crypto'
 import HKDF from 'futoin-hkdf'
-import * as libsignal from '@skidy89/libsignal-node'
 import { promisify } from 'util'
 import { KEY_BUNDLE_TYPE } from '../Defaults'
 import { KeyPair } from '../Types'

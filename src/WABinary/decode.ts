@@ -19,7 +19,7 @@ export const decompressingIfRequired = async(buffer: Buffer) => {
 export const decodeDecompressedBinaryNode = (
 	buffer: Buffer,
 	opts: Pick<BinaryNodeCodingOptions, 'DOUBLE_BYTE_TOKENS' | 'SINGLE_BYTE_TOKENS' | 'TAGS'>,
-	indexRef: { index: number } = { index: 0 }
+	indexRef: { index: number } =  { index: 0 }
 ): BinaryNode => {
 	const { DOUBLE_BYTE_TOKENS, SINGLE_BYTE_TOKENS, TAGS } = opts
 

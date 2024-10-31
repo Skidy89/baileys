@@ -8,7 +8,6 @@ import { AuthenticationState, SignalAuthState, TransactionCapabilityOptions } fr
 import { GroupMetadata } from './GroupMetadata'
 import { MediaConnInfo } from './Message'
 import { SignalRepository } from './Signal'
-import NodeCache from 'node-cache'
 
 export type WAVersion = [number, number, number]
 export type WABrowserDescription = [string, string, string]
@@ -33,7 +32,7 @@ export type SocketConfig = {
     defaultQueryTimeoutMs: number | undefined
     /** ping-pong interval for WS connection */
     keepAliveIntervalMs: number
-	/** should baileys use the mobile api instead of the multi device api 
+	/** should baileys use the mobile api instead of the multi device api
      * @deprecated
     */
 	mobile?: boolean
