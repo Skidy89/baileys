@@ -42,6 +42,7 @@ import {
 } from '../WABinary'
 import { extractGroupMetadata } from './groups'
 import { makeMessagesSocket } from './messages-send'
+import Long from 'long'
 function toRequiredBuffer(data: Uint8Array | Buffer | undefined) {
 	if(data === undefined) {
 		throw new Boom('Invalid buffer', { statusCode: 400 })
@@ -847,7 +848,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			peerDataOperationRequestType: proto.Message.PeerDataOperationRequestType.HISTORY_SYNC_ON_DEMAND
 		}
 
-		return sendPeerDataOperationMessage(pdoMessage)
+		return sendPeerDataOperationMessage(pdoMessage!)
 	}
 
 	const requestPlaceholderResend = async(messageKey: WAMessageKey): Promise<'RESOLVED'| string | undefined> => {
