@@ -20,7 +20,7 @@ export const Curve = {
 		return {
 			private: Buffer.from(privKey),
 			// remove version byte
-			public: Buffer.from((pubKey as Uint8Array).subarray(1))
+			public: Buffer.from((pubKey as Uint8Array).slice(1))
 		}
 	},
 	sharedKey: (privateKey: Uint8Array, publicKey: Uint8Array) => {
