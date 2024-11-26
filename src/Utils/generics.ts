@@ -49,6 +49,9 @@ export const BufferJSON = {
 		return value
 	}
 }
+export const encodeNewsletterMessage = (message: proto.IMessage) => (
+	proto.Message.encode(message).finish()
+)
 
 export const getKeyAuthor = (
 	key: proto.IMessageKey | undefined | null,
