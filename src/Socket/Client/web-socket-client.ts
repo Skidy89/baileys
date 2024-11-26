@@ -34,7 +34,7 @@ export class WebSocketClient extends AbstractSocketClient {
 
 		this.socket.setMaxListeners(0)
 
-		const events = ['close', 'error', 'upgrade', 'message', 'open', 'ping', 'pong', 'unexpected-response']
+		const events = ['close', 'error', 'message', 'open', 'ping', 'pong']
 
 		for(const event of events) {
 			this.socket?.on(event, (...args: any[]) => this.emit(event, ...args))

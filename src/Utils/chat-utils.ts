@@ -13,11 +13,6 @@ import { downloadContentFromMessage, } from './messages-media'
 type FetchAppStateSyncKey = (keyId: string) => Promise<proto.Message.IAppStateSyncKeyData | null | undefined>
 
 export type ChatMutationMap = { [index: string]: ChatMutation }
-function isValidPatchBasedOnMessageRange(chat: Chat, msgRange: proto.SyncActionValue.ISyncActionMessageRange | null | undefined) {
-	const lastMsgTimestamp = Number(msgRange?.lastMessageTimestamp || msgRange?.lastSystemMessageTimestamp || 0)
-	const chatLastMsgTimestamp = Number(chat?.lastMessageRecvTimestamp || 0)
-	return lastMsgTimestamp >= chatLastMsgTimestamp
-}
 
 const mutationKeys = (keydata: Uint8Array) => {
 	const expanded = hkdf(keydata, 160, { info: 'WhatsApp Mutation Keys' })
@@ -43,7 +38,7 @@ const generateMac = (operation: proto.SyncdMutation.SyncdOperation, data: Buffer
 		}
 
 		const buff = Buffer.from([r])
-		return Buffer.concat([buff, Buffer.from(keyId as any, 'base64')])
+		return Buffer.concat([buff, Buffer.from(keyId as string, 'base64')])
 	}
 
 	const keyData = getKeyData()
@@ -66,9 +61,9 @@ const to64BitNetworkOrder = (e: number) => {
 type Mac = { indexMac: Uint8Array, valueMac: Uint8Array, operation: proto.SyncdMutation.SyncdOperation }
 
 const makeLtHashGenerator = ({ indexValueMap, hash }: Pick<LTHashState, 'hash' | 'indexValueMap'>) => {
-	const indexMap = { ...indexValueMap };
-	const addBuffs: ArrayBuffer[] = [];
-	const subBuffs: ArrayBuffer[] = [];
+	indexValueMap = { ...indexValueMap }
+	const addBuffs: ArrayBuffer[] = []
+	const subBuffs: ArrayBuffer[] = []
 
 	return {
 		mix: ({ indexMac, valueMac, operation }: Mac) => {
@@ -79,21 +74,23 @@ const makeLtHashGenerator = ({ indexValueMap, hash }: Pick<LTHashState, 'hash' |
 					throw new Boom('tried remove, but no previous op', { data: { indexMac, valueMac } })
 				}
 
-				delete indexMap[indexMacBase64]
+				// remove from index value mac, since this mutation is erased
+				delete indexValueMap[indexMacBase64]
 			} else {
-				addBuffs.push(valueMac.buffer)
-				indexMap[indexMacBase64] = { valueMac }
+				addBuffs.push(new Uint8Array(valueMac).buffer)
+				// add this index into the history map
+				indexValueMap[indexMacBase64] = { valueMac }
 			}
 
 			if(prevOp) {
 				subBuffs.push(new Uint8Array(prevOp.valueMac).buffer)
 			}
 		},
-
 		finish: () => {
 			const hashArrayBuffer = new Uint8Array(hash).buffer
 			const result = LT_HASH_ANTI_TAMPERING.subtractThenAdd(hashArrayBuffer, addBuffs, subBuffs)
 			const buffer = Buffer.from(result)
+
 			return {
 				hash: buffer,
 				indexValueMap
@@ -265,7 +262,7 @@ export const decodeSyncdPatch = async(
 		}
 
 		const mainKey = mutationKeys(mainKeyObj.keyData!)
-		const mutationmacs = msg.mutations!.map(mutation => mutation.record!.value!.blob!.subarray(-32))
+		const mutationmacs = msg.mutations!.map(mutation => mutation.record!.value!.blob!.slice(-32))
 
 		const patchMac = generatePatchMac(msg.snapshotMac!, mutationmacs, toNumber(msg.version!.version), name, mainKey.patchMacKey)
 		if(Buffer.compare(patchMac, msg.patchMac!) !== 0) {
@@ -279,7 +276,7 @@ export const decodeSyncdPatch = async(
 
 export const extractSyncdPatches = async(
 	result: BinaryNode,
-	options: AxiosRequestConfig<any>
+	options: AxiosRequestConfig<{}>
 ) => {
 	const syncNode = getBinaryNodeChild(result, 'sync')
 	const collectionNodes = getBinaryNodeChildren(syncNode, 'collection')
@@ -337,7 +334,7 @@ export const extractSyncdPatches = async(
 
 export const downloadExternalBlob = async(
 	blob: proto.IExternalBlobReference,
-	options: AxiosRequestConfig<any>
+	options: AxiosRequestConfig<{}>
 ) => {
 	const stream = await downloadContentFromMessage(blob, 'md-app-state', { options })
 	const bufferArray: Buffer[] = []
@@ -350,7 +347,7 @@ export const downloadExternalBlob = async(
 
 export const downloadExternalPatch = async(
 	blob: proto.IExternalBlobReference,
-	options: AxiosRequestConfig<any>
+	options: AxiosRequestConfig<{}>
 ) => {
 	const buffer = await downloadExternalBlob(blob, options)
 	const syncData = proto.SyncdMutations.decode(buffer)
@@ -411,7 +408,7 @@ export const decodePatches = async(
 	syncds: proto.ISyncdPatch[],
 	initial: LTHashState,
 	getAppStateSyncKey: FetchAppStateSyncKey,
-	options: AxiosRequestConfig<any>,
+	options: AxiosRequestConfig<{}>,
 	minimumVersionNumber?: number,
 	logger?: Logger,
 	validateMacs = true
@@ -555,23 +552,29 @@ export const chatModificationToAppPatch = (
 			apiVersion: 3,
 			operation: OP.SET
 		}
+	} else if('deleteForMe' in mod) {
+		const { timestamp, key, deleteMedia } = mod.deleteForMe
+		patch = {
+			syncAction: {
+				deleteMessageForMeAction: {
+					deleteMedia,
+					messageTimestamp: timestamp
+				}
+			},
+			index: ['deleteMessageForMe', jid, key.id!, key.fromMe ? '1' : '0', '0'],
+			type: 'regular_high',
+			apiVersion: 3,
+			operation: OP.SET
+		}
 	} else if('clear' in mod) {
-		if(mod.clear === 'all') {
-			throw new Boom('not supported')
-		} else {
-			const key = mod.clear.messages[0]
-			patch = {
-				syncAction: {
-					deleteMessageForMeAction: {
-						deleteMedia: false,
-						messageTimestamp: key.timestamp
-					}
-				},
-				index: ['deleteMessageForMe', jid, key.id, key.fromMe ? '1' : '0', '0'],
-				type: 'regular_high',
-				apiVersion: 3,
-				operation: OP.SET
-			}
+		patch = {
+			syncAction: {
+				clearChatAction: {} // add message range later
+			},
+			index: ['clearChat', jid, '1' /*the option here is 0 when keep starred messages is enabled*/, '0'],
+			type: 'regular_high',
+			apiVersion: 6,
+			operation: OP.SET
 		}
 	} else if('pin' in mod) {
 		patch = {
@@ -620,6 +623,21 @@ export const chatModificationToAppPatch = (
 			index: ['setting_pushName'],
 			type: 'critical_block',
 			apiVersion: 1,
+			operation: OP.SET,
+		}
+	} else if('addLabel' in mod) {
+		patch = {
+			syncAction: {
+				labelEditAction: {
+					name: mod.addLabel.name,
+					color: mod.addLabel.color,
+					predefinedId : mod.addLabel.predefinedId,
+					deleted: mod.addLabel.deleted
+				}
+			},
+			index: ['label_edit', mod.addLabel.id],
+			type: 'regular',
+			apiVersion: 3,
 			operation: OP.SET,
 		}
 	} else if('addChatLabel' in mod) {
@@ -854,5 +872,9 @@ export const processSyncAction = (
 			: undefined
 	}
 
-	
+	function isValidPatchBasedOnMessageRange(chat: Chat, msgRange: proto.SyncActionValue.ISyncActionMessageRange | null | undefined) {
+		  const lastMsgTimestamp = Number(msgRange?.lastMessageTimestamp || msgRange?.lastSystemMessageTimestamp || 0)
+		  const chatLastMsgTimestamp = Number(chat?.lastMessageRecvTimestamp || 0)
+		  return lastMsgTimestamp >= chatLastMsgTimestamp
+	}
 }

@@ -172,8 +172,6 @@ export const decryptMessageNode = (
 							break
 						case 'msmsg':
 							// TODO
-							const enc = binaryNodeToString(content)
-							console.log(enc)
 							msgBuffer = content
 							break
 
