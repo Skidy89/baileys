@@ -2163,16 +2163,42 @@ message Message {
 message MessageAddOnContextInfo {
     optional uint32 messageAddOnDurationInSecs = 1;
 }
+message MessageAssociation {
+	enum AssociationType {
+		UNKNOWN = 0;
+		MEDIA_ALBUM = 1;
+		BOT_PLUGIN = 2;
+		EVENT_COVER_IMAGE = 3;
+		STATUS_POLL = 4;
+		HD_VIDEO_DUAL_UPLOAD = 5;
+		STATUS_TAPPABLE_MESSAGE = 6;
+		MEDIA_POLL = 7;
+		STATUS_ADD_YOURS = 8;
+	}
+
+	optional AssociationType associationType = 1;
+	optional MessageKey parentMessageKey = 2;
+	optional int32 messageIndex = 3;
+}
 
 message MessageContextInfo {
-    optional DeviceListMetadata deviceListMetadata = 1;
-    optional int32 deviceListMetadataVersion = 2;
-    optional bytes messageSecret = 3;
-    optional bytes paddingBytes = 4;
-    optional uint32 messageAddOnDurationInSecs = 5;
-    optional bytes botMessageSecret = 6;
-    optional BotMetadata botMetadata = 7;
-    optional int32 reportingTokenVersion = 8;
+	enum MessageAddonExpiryType {
+		STATIC = 1;
+		DEPENDENT_ON_PARENT = 2;
+	}
+
+	optional DeviceListMetadata deviceListMetadata = 1;
+	optional int32 deviceListMetadataVersion = 2;
+	optional bytes messageSecret = 3;
+	optional bytes paddingBytes = 4;
+	optional uint32 messageAddOnDurationInSecs = 5;
+	optional bytes botMessageSecret = 6;
+	optional BotMetadata botMetadata = 7;
+	optional int32 reportingTokenVersion = 8;
+	optional MessageAddonExpiryType messageAddOnExpiryType = 9;
+	optional MessageAssociation messageAssociation = 10;
+	optional bool capiCreatedGroup = 11;
+	optional string supportPayload = 12;
 }
 
 message MessageKey {

@@ -24916,6 +24916,131 @@ export namespace proto {
         public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
+    /** Properties of a MessageAssociation. */
+    interface IMessageAssociation {
+
+        /** MessageAssociation associationType */
+        associationType?: (proto.MessageAssociation.AssociationType|null);
+
+        /** MessageAssociation parentMessageKey */
+        parentMessageKey?: (proto.IMessageKey|null);
+
+        /** MessageAssociation messageIndex */
+        messageIndex?: (number|null);
+    }
+
+    /** Represents a MessageAssociation. */
+    class MessageAssociation implements IMessageAssociation {
+
+        /**
+         * Constructs a new MessageAssociation.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: proto.IMessageAssociation);
+
+        /** MessageAssociation associationType. */
+        public associationType: proto.MessageAssociation.AssociationType;
+
+        /** MessageAssociation parentMessageKey. */
+        public parentMessageKey?: (proto.IMessageKey|null);
+
+        /** MessageAssociation messageIndex. */
+        public messageIndex: number;
+
+        /**
+         * Creates a new MessageAssociation instance using the specified properties.
+         * @param [properties] Properties to set
+         * @returns MessageAssociation instance
+         */
+        public static create(properties?: proto.IMessageAssociation): proto.MessageAssociation;
+
+        /**
+         * Encodes the specified MessageAssociation message. Does not implicitly {@link proto.MessageAssociation.verify|verify} messages.
+         * @param message MessageAssociation message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: proto.IMessageAssociation, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified MessageAssociation message, length delimited. Does not implicitly {@link proto.MessageAssociation.verify|verify} messages.
+         * @param message MessageAssociation message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: proto.IMessageAssociation, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a MessageAssociation message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns MessageAssociation
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.MessageAssociation;
+
+        /**
+         * Decodes a MessageAssociation message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns MessageAssociation
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.MessageAssociation;
+
+        /**
+         * Verifies a MessageAssociation message.
+         * @param message Plain object to verify
+         * @returns `null` if valid, otherwise the reason why it is not
+         */
+        public static verify(message: { [k: string]: any }): (string|null);
+
+        /**
+         * Creates a MessageAssociation message from a plain object. Also converts values to their respective internal types.
+         * @param object Plain object
+         * @returns MessageAssociation
+         */
+        public static fromObject(object: { [k: string]: any }): proto.MessageAssociation;
+
+        /**
+         * Creates a plain object from a MessageAssociation message. Also converts values to other types if specified.
+         * @param message MessageAssociation
+         * @param [options] Conversion options
+         * @returns Plain object
+         */
+        public static toObject(message: proto.MessageAssociation, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+        /**
+         * Converts this MessageAssociation to JSON.
+         * @returns JSON object
+         */
+        public toJSON(): { [k: string]: any };
+
+        /**
+         * Gets the default type url for MessageAssociation
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    namespace MessageAssociation {
+
+        /** AssociationType enum. */
+        enum AssociationType {
+            UNKNOWN = 0,
+            MEDIA_ALBUM = 1,
+            BOT_PLUGIN = 2,
+            EVENT_COVER_IMAGE = 3,
+            STATUS_POLL = 4,
+            HD_VIDEO_DUAL_UPLOAD = 5,
+            STATUS_TAPPABLE_MESSAGE = 6,
+            MEDIA_POLL = 7,
+            STATUS_ADD_YOURS = 8
+        }
+    }
+
     /** Properties of a MessageContextInfo. */
     interface IMessageContextInfo {
 
@@ -24942,6 +25067,18 @@ export namespace proto {
 
         /** MessageContextInfo reportingTokenVersion */
         reportingTokenVersion?: (number|null);
+
+        /** MessageContextInfo messageAddOnExpiryType */
+        messageAddOnExpiryType?: (proto.MessageContextInfo.MessageAddonExpiryType|null);
+
+        /** MessageContextInfo messageAssociation */
+        messageAssociation?: (proto.IMessageAssociation|null);
+
+        /** MessageContextInfo capiCreatedGroup */
+        capiCreatedGroup?: (boolean|null);
+
+        /** MessageContextInfo supportPayload */
+        supportPayload?: (string|null);
     }
 
     /** Represents a MessageContextInfo. */
@@ -24976,6 +25113,18 @@ export namespace proto {
 
         /** MessageContextInfo reportingTokenVersion. */
         public reportingTokenVersion: number;
+
+        /** MessageContextInfo messageAddOnExpiryType. */
+        public messageAddOnExpiryType: proto.MessageContextInfo.MessageAddonExpiryType;
+
+        /** MessageContextInfo messageAssociation. */
+        public messageAssociation?: (proto.IMessageAssociation|null);
+
+        /** MessageContextInfo capiCreatedGroup. */
+        public capiCreatedGroup: boolean;
+
+        /** MessageContextInfo supportPayload. */
+        public supportPayload: string;
 
         /**
          * Creates a new MessageContextInfo instance using the specified properties.
@@ -25053,6 +25202,15 @@ export namespace proto {
          * @returns The default type url
          */
         public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    namespace MessageContextInfo {
+
+        /** MessageAddonExpiryType enum. */
+        enum MessageAddonExpiryType {
+            STATIC = 1,
+            DEPENDENT_ON_PARENT = 2
+        }
     }
 
     /** Properties of a MessageKey. */
