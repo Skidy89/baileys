@@ -600,7 +600,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 
 					logger.debug({ jid }, 'adding business node')
 				}
-				if(message?.interactiveMessage?.nativeFlowMessage) {
+				/*if(message?.interactiveMessage?.nativeFlowMessage) {
 					if(!stanza.content || !Array.isArray(stanza.content)) {
 						stanza.content = []
 					}
@@ -621,10 +621,11 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 						}]
 					})
 					logger.debug({ msgId }, 'adding biz to interactiveMessage')
-				}
+				}*/
 
 				if(additionalNodes && additionalNodes.length > 0) {
 					(stanza.content as BinaryNode[]).push(...additionalNodes)
+					logger.debug({stanza}, 'inject additionalNodes....')
 				}
 
 				logger.debug({ msgId }, `sending message to ${participants.length} devices`)

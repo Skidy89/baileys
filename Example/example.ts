@@ -1,8 +1,9 @@
 import { Boom } from '@hapi/boom'
 import NodeCache from 'node-cache'
 import readline from 'readline'
-import makeWASocket, { AnyMessageContent, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, proto, useMultiFileAuthState } from '../src'
+import makeWASocket, { AnyMessageContent, BinaryNode, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, fetchLatestBaileysVersion, generateMessageIDV2, makeCacheableSignalKeyStore, prepareWAMessageMedia, proto, useMultiFileAuthState } from '../src'
 import MAIN_LOGGER from '../src/Utils/logger'
+import { randomBytes } from 'crypto'
 
 
 
@@ -128,7 +129,7 @@ const startSock = async() => {
 
 				if(upsert.type === 'notify') {
 					for (const msg of upsert.messages) {
-						sock.sendMessage(msg.key.remoteJid!, { text: 'hola, prueba xd xd xd xdx'})
+							//if (msg?.key.fromMe) return
 					}
 				}
 			}
