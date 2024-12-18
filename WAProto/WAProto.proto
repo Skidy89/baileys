@@ -610,7 +610,7 @@ message ContextInfo {
 	optional uint32 forwardingScore = 21;
 	optional bool isForwarded = 22;
 	optional AdReplyInfo quotedAd = 23;
-	optional WACommon.MessageKey placeholderKey = 24;
+	optional MessageKey placeholderKey = 24;
 	optional uint32 expiration = 25;
 	optional int64 ephemeralSettingTimestamp = 26;
 	optional bytes ephemeralSharedSecret = 27;

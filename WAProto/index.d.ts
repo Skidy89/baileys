@@ -4953,8 +4953,8 @@ export namespace proto {
     /** Properties of a ContextInfo. */
     interface IContextInfo {
 
-        /** ContextInfo stanzaId */
-        stanzaId?: (string|null);
+        /** ContextInfo stanzaID */
+        stanzaID?: (string|null);
 
         /** ContextInfo participant */
         participant?: (string|null);
@@ -4962,11 +4962,11 @@ export namespace proto {
         /** ContextInfo quotedMessage */
         quotedMessage?: (proto.IMessage|null);
 
-        /** ContextInfo remoteJid */
-        remoteJid?: (string|null);
+        /** ContextInfo remoteJID */
+        remoteJID?: (string|null);
 
-        /** ContextInfo mentionedJid */
-        mentionedJid?: (string[]|null);
+        /** ContextInfo mentionedJID */
+        mentionedJID?: (string[]|null);
 
         /** ContextInfo conversionSource */
         conversionSource?: (string|null);
@@ -5019,8 +5019,8 @@ export namespace proto {
         /** ContextInfo groupSubject */
         groupSubject?: (string|null);
 
-        /** ContextInfo parentGroupJid */
-        parentGroupJid?: (string|null);
+        /** ContextInfo parentGroupJID */
+        parentGroupJID?: (string|null);
 
         /** ContextInfo trustBannerType */
         trustBannerType?: (string|null);
@@ -5043,17 +5043,38 @@ export namespace proto {
         /** ContextInfo businessMessageForwardInfo */
         businessMessageForwardInfo?: (proto.ContextInfo.IBusinessMessageForwardInfo|null);
 
-        /** ContextInfo smbClientCampaignId */
-        smbClientCampaignId?: (string|null);
+        /** ContextInfo smbClientCampaignID */
+        smbClientCampaignID?: (string|null);
 
-        /** ContextInfo smbServerCampaignId */
-        smbServerCampaignId?: (string|null);
+        /** ContextInfo smbServerCampaignID */
+        smbServerCampaignID?: (string|null);
 
         /** ContextInfo dataSharingContext */
         dataSharingContext?: (proto.ContextInfo.IDataSharingContext|null);
 
         /** ContextInfo alwaysShowAdAttribution */
         alwaysShowAdAttribution?: (boolean|null);
+
+        /** ContextInfo featureEligibilities */
+        featureEligibilities?: (proto.ContextInfo.IFeatureEligibilities|null);
+
+        /** ContextInfo entryPointConversionExternalSource */
+        entryPointConversionExternalSource?: (string|null);
+
+        /** ContextInfo entryPointConversionExternalMedium */
+        entryPointConversionExternalMedium?: (string|null);
+
+        /** ContextInfo ctwaSignals */
+        ctwaSignals?: (string|null);
+
+        /** ContextInfo ctwaPayload */
+        ctwaPayload?: (Uint8Array|null);
+
+        /** ContextInfo forwardedAiBotMessageInfo */
+        forwardedAiBotMessageInfo?: (proto.ContextInfo.IForwardedAIBotMessageInfo|null);
+
+        /** ContextInfo statusAttributionType */
+        statusAttributionType?: (proto.ContextInfo.StatusAttributionType|null);
     }
 
     /** Represents a ContextInfo. */
@@ -5065,8 +5086,8 @@ export namespace proto {
          */
         constructor(properties?: proto.IContextInfo);
 
-        /** ContextInfo stanzaId. */
-        public stanzaId: string;
+        /** ContextInfo stanzaID. */
+        public stanzaID: string;
 
         /** ContextInfo participant. */
         public participant: string;
@@ -5074,11 +5095,11 @@ export namespace proto {
         /** ContextInfo quotedMessage. */
         public quotedMessage?: (proto.IMessage|null);
 
-        /** ContextInfo remoteJid. */
-        public remoteJid: string;
+        /** ContextInfo remoteJID. */
+        public remoteJID: string;
 
-        /** ContextInfo mentionedJid. */
-        public mentionedJid: string[];
+        /** ContextInfo mentionedJID. */
+        public mentionedJID: string[];
 
         /** ContextInfo conversionSource. */
         public conversionSource: string;
@@ -5131,8 +5152,8 @@ export namespace proto {
         /** ContextInfo groupSubject. */
         public groupSubject: string;
 
-        /** ContextInfo parentGroupJid. */
-        public parentGroupJid: string;
+        /** ContextInfo parentGroupJID. */
+        public parentGroupJID: string;
 
         /** ContextInfo trustBannerType. */
         public trustBannerType: string;
@@ -5155,17 +5176,38 @@ export namespace proto {
         /** ContextInfo businessMessageForwardInfo. */
         public businessMessageForwardInfo?: (proto.ContextInfo.IBusinessMessageForwardInfo|null);
 
-        /** ContextInfo smbClientCampaignId. */
-        public smbClientCampaignId: string;
+        /** ContextInfo smbClientCampaignID. */
+        public smbClientCampaignID: string;
 
-        /** ContextInfo smbServerCampaignId. */
-        public smbServerCampaignId: string;
+        /** ContextInfo smbServerCampaignID. */
+        public smbServerCampaignID: string;
 
         /** ContextInfo dataSharingContext. */
         public dataSharingContext?: (proto.ContextInfo.IDataSharingContext|null);
 
         /** ContextInfo alwaysShowAdAttribution. */
         public alwaysShowAdAttribution: boolean;
+
+        /** ContextInfo featureEligibilities. */
+        public featureEligibilities?: (proto.ContextInfo.IFeatureEligibilities|null);
+
+        /** ContextInfo entryPointConversionExternalSource. */
+        public entryPointConversionExternalSource: string;
+
+        /** ContextInfo entryPointConversionExternalMedium. */
+        public entryPointConversionExternalMedium: string;
+
+        /** ContextInfo ctwaSignals. */
+        public ctwaSignals: string;
+
+        /** ContextInfo ctwaPayload. */
+        public ctwaPayload: Uint8Array;
+
+        /** ContextInfo forwardedAiBotMessageInfo. */
+        public forwardedAiBotMessageInfo?: (proto.ContextInfo.IForwardedAIBotMessageInfo|null);
+
+        /** ContextInfo statusAttributionType. */
+        public statusAttributionType: proto.ContextInfo.StatusAttributionType;
 
         /**
          * Creates a new ContextInfo instance using the specified properties.
@@ -5247,518 +5289,20 @@ export namespace proto {
 
     namespace ContextInfo {
 
-        /** Properties of an AdReplyInfo. */
-        interface IAdReplyInfo {
-
-            /** AdReplyInfo advertiserName */
-            advertiserName?: (string|null);
-
-            /** AdReplyInfo mediaType */
-            mediaType?: (proto.ContextInfo.AdReplyInfo.MediaType|null);
-
-            /** AdReplyInfo jpegThumbnail */
-            jpegThumbnail?: (Uint8Array|null);
-
-            /** AdReplyInfo caption */
-            caption?: (string|null);
-        }
-
-        /** Represents an AdReplyInfo. */
-        class AdReplyInfo implements IAdReplyInfo {
-
-            /**
-             * Constructs a new AdReplyInfo.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: proto.ContextInfo.IAdReplyInfo);
-
-            /** AdReplyInfo advertiserName. */
-            public advertiserName: string;
-
-            /** AdReplyInfo mediaType. */
-            public mediaType: proto.ContextInfo.AdReplyInfo.MediaType;
-
-            /** AdReplyInfo jpegThumbnail. */
-            public jpegThumbnail: Uint8Array;
-
-            /** AdReplyInfo caption. */
-            public caption: string;
-
-            /**
-             * Creates a new AdReplyInfo instance using the specified properties.
-             * @param [properties] Properties to set
-             * @returns AdReplyInfo instance
-             */
-            public static create(properties?: proto.ContextInfo.IAdReplyInfo): proto.ContextInfo.AdReplyInfo;
-
-            /**
-             * Encodes the specified AdReplyInfo message. Does not implicitly {@link proto.ContextInfo.AdReplyInfo.verify|verify} messages.
-             * @param message AdReplyInfo message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: proto.ContextInfo.IAdReplyInfo, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Encodes the specified AdReplyInfo message, length delimited. Does not implicitly {@link proto.ContextInfo.AdReplyInfo.verify|verify} messages.
-             * @param message AdReplyInfo message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encodeDelimited(message: proto.ContextInfo.IAdReplyInfo, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes an AdReplyInfo message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns AdReplyInfo
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.ContextInfo.AdReplyInfo;
-
-            /**
-             * Decodes an AdReplyInfo message from the specified reader or buffer, length delimited.
-             * @param reader Reader or buffer to decode from
-             * @returns AdReplyInfo
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.ContextInfo.AdReplyInfo;
-
-            /**
-             * Verifies an AdReplyInfo message.
-             * @param message Plain object to verify
-             * @returns `null` if valid, otherwise the reason why it is not
-             */
-            public static verify(message: { [k: string]: any }): (string|null);
-
-            /**
-             * Creates an AdReplyInfo message from a plain object. Also converts values to their respective internal types.
-             * @param object Plain object
-             * @returns AdReplyInfo
-             */
-            public static fromObject(object: { [k: string]: any }): proto.ContextInfo.AdReplyInfo;
-
-            /**
-             * Creates a plain object from an AdReplyInfo message. Also converts values to other types if specified.
-             * @param message AdReplyInfo
-             * @param [options] Conversion options
-             * @returns Plain object
-             */
-            public static toObject(message: proto.ContextInfo.AdReplyInfo, options?: $protobuf.IConversionOptions): { [k: string]: any };
-
-            /**
-             * Converts this AdReplyInfo to JSON.
-             * @returns JSON object
-             */
-            public toJSON(): { [k: string]: any };
-
-            /**
-             * Gets the default type url for AdReplyInfo
-             * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
-             * @returns The default type url
-             */
-            public static getTypeUrl(typeUrlPrefix?: string): string;
-        }
-
-        namespace AdReplyInfo {
-
-            /** MediaType enum. */
-            enum MediaType {
-                NONE = 0,
-                IMAGE = 1,
-                VIDEO = 2
-            }
-        }
-
-        /** Properties of a BusinessMessageForwardInfo. */
-        interface IBusinessMessageForwardInfo {
-
-            /** BusinessMessageForwardInfo businessOwnerJid */
-            businessOwnerJid?: (string|null);
-        }
-
-        /** Represents a BusinessMessageForwardInfo. */
-        class BusinessMessageForwardInfo implements IBusinessMessageForwardInfo {
-
-            /**
-             * Constructs a new BusinessMessageForwardInfo.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: proto.ContextInfo.IBusinessMessageForwardInfo);
-
-            /** BusinessMessageForwardInfo businessOwnerJid. */
-            public businessOwnerJid: string;
-
-            /**
-             * Creates a new BusinessMessageForwardInfo instance using the specified properties.
-             * @param [properties] Properties to set
-             * @returns BusinessMessageForwardInfo instance
-             */
-            public static create(properties?: proto.ContextInfo.IBusinessMessageForwardInfo): proto.ContextInfo.BusinessMessageForwardInfo;
-
-            /**
-             * Encodes the specified BusinessMessageForwardInfo message. Does not implicitly {@link proto.ContextInfo.BusinessMessageForwardInfo.verify|verify} messages.
-             * @param message BusinessMessageForwardInfo message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: proto.ContextInfo.IBusinessMessageForwardInfo, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Encodes the specified BusinessMessageForwardInfo message, length delimited. Does not implicitly {@link proto.ContextInfo.BusinessMessageForwardInfo.verify|verify} messages.
-             * @param message BusinessMessageForwardInfo message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encodeDelimited(message: proto.ContextInfo.IBusinessMessageForwardInfo, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a BusinessMessageForwardInfo message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns BusinessMessageForwardInfo
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.ContextInfo.BusinessMessageForwardInfo;
-
-            /**
-             * Decodes a BusinessMessageForwardInfo message from the specified reader or buffer, length delimited.
-             * @param reader Reader or buffer to decode from
-             * @returns BusinessMessageForwardInfo
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.ContextInfo.BusinessMessageForwardInfo;
-
-            /**
-             * Verifies a BusinessMessageForwardInfo message.
-             * @param message Plain object to verify
-             * @returns `null` if valid, otherwise the reason why it is not
-             */
-            public static verify(message: { [k: string]: any }): (string|null);
-
-            /**
-             * Creates a BusinessMessageForwardInfo message from a plain object. Also converts values to their respective internal types.
-             * @param object Plain object
-             * @returns BusinessMessageForwardInfo
-             */
-            public static fromObject(object: { [k: string]: any }): proto.ContextInfo.BusinessMessageForwardInfo;
-
-            /**
-             * Creates a plain object from a BusinessMessageForwardInfo message. Also converts values to other types if specified.
-             * @param message BusinessMessageForwardInfo
-             * @param [options] Conversion options
-             * @returns Plain object
-             */
-            public static toObject(message: proto.ContextInfo.BusinessMessageForwardInfo, options?: $protobuf.IConversionOptions): { [k: string]: any };
-
-            /**
-             * Converts this BusinessMessageForwardInfo to JSON.
-             * @returns JSON object
-             */
-            public toJSON(): { [k: string]: any };
-
-            /**
-             * Gets the default type url for BusinessMessageForwardInfo
-             * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
-             * @returns The default type url
-             */
-            public static getTypeUrl(typeUrlPrefix?: string): string;
-        }
-
-        /** Properties of a DataSharingContext. */
-        interface IDataSharingContext {
-
-            /** DataSharingContext showMmDisclosure */
-            showMmDisclosure?: (boolean|null);
-        }
-
-        /** Represents a DataSharingContext. */
-        class DataSharingContext implements IDataSharingContext {
-
-            /**
-             * Constructs a new DataSharingContext.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: proto.ContextInfo.IDataSharingContext);
-
-            /** DataSharingContext showMmDisclosure. */
-            public showMmDisclosure: boolean;
-
-            /**
-             * Creates a new DataSharingContext instance using the specified properties.
-             * @param [properties] Properties to set
-             * @returns DataSharingContext instance
-             */
-            public static create(properties?: proto.ContextInfo.IDataSharingContext): proto.ContextInfo.DataSharingContext;
-
-            /**
-             * Encodes the specified DataSharingContext message. Does not implicitly {@link proto.ContextInfo.DataSharingContext.verify|verify} messages.
-             * @param message DataSharingContext message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: proto.ContextInfo.IDataSharingContext, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Encodes the specified DataSharingContext message, length delimited. Does not implicitly {@link proto.ContextInfo.DataSharingContext.verify|verify} messages.
-             * @param message DataSharingContext message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encodeDelimited(message: proto.ContextInfo.IDataSharingContext, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes a DataSharingContext message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns DataSharingContext
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.ContextInfo.DataSharingContext;
-
-            /**
-             * Decodes a DataSharingContext message from the specified reader or buffer, length delimited.
-             * @param reader Reader or buffer to decode from
-             * @returns DataSharingContext
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.ContextInfo.DataSharingContext;
-
-            /**
-             * Verifies a DataSharingContext message.
-             * @param message Plain object to verify
-             * @returns `null` if valid, otherwise the reason why it is not
-             */
-            public static verify(message: { [k: string]: any }): (string|null);
-
-            /**
-             * Creates a DataSharingContext message from a plain object. Also converts values to their respective internal types.
-             * @param object Plain object
-             * @returns DataSharingContext
-             */
-            public static fromObject(object: { [k: string]: any }): proto.ContextInfo.DataSharingContext;
-
-            /**
-             * Creates a plain object from a DataSharingContext message. Also converts values to other types if specified.
-             * @param message DataSharingContext
-             * @param [options] Conversion options
-             * @returns Plain object
-             */
-            public static toObject(message: proto.ContextInfo.DataSharingContext, options?: $protobuf.IConversionOptions): { [k: string]: any };
-
-            /**
-             * Converts this DataSharingContext to JSON.
-             * @returns JSON object
-             */
-            public toJSON(): { [k: string]: any };
-
-            /**
-             * Gets the default type url for DataSharingContext
-             * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
-             * @returns The default type url
-             */
-            public static getTypeUrl(typeUrlPrefix?: string): string;
-        }
-
-        /** Properties of an ExternalAdReplyInfo. */
-        interface IExternalAdReplyInfo {
-
-            /** ExternalAdReplyInfo title */
-            title?: (string|null);
-
-            /** ExternalAdReplyInfo body */
-            body?: (string|null);
-
-            /** ExternalAdReplyInfo mediaType */
-            mediaType?: (proto.ContextInfo.ExternalAdReplyInfo.MediaType|null);
-
-            /** ExternalAdReplyInfo thumbnailUrl */
-            thumbnailUrl?: (string|null);
-
-            /** ExternalAdReplyInfo mediaUrl */
-            mediaUrl?: (string|null);
-
-            /** ExternalAdReplyInfo thumbnail */
-            thumbnail?: (Uint8Array|null);
-
-            /** ExternalAdReplyInfo sourceType */
-            sourceType?: (string|null);
-
-            /** ExternalAdReplyInfo sourceId */
-            sourceId?: (string|null);
-
-            /** ExternalAdReplyInfo sourceUrl */
-            sourceUrl?: (string|null);
-
-            /** ExternalAdReplyInfo containsAutoReply */
-            containsAutoReply?: (boolean|null);
-
-            /** ExternalAdReplyInfo renderLargerThumbnail */
-            renderLargerThumbnail?: (boolean|null);
-
-            /** ExternalAdReplyInfo showAdAttribution */
-            showAdAttribution?: (boolean|null);
-
-            /** ExternalAdReplyInfo ctwaClid */
-            ctwaClid?: (string|null);
-
-            /** ExternalAdReplyInfo ref */
-            ref?: (string|null);
-        }
-
-        /** Represents an ExternalAdReplyInfo. */
-        class ExternalAdReplyInfo implements IExternalAdReplyInfo {
-
-            /**
-             * Constructs a new ExternalAdReplyInfo.
-             * @param [properties] Properties to set
-             */
-            constructor(properties?: proto.ContextInfo.IExternalAdReplyInfo);
-
-            /** ExternalAdReplyInfo title. */
-            public title: string;
-
-            /** ExternalAdReplyInfo body. */
-            public body: string;
-
-            /** ExternalAdReplyInfo mediaType. */
-            public mediaType: proto.ContextInfo.ExternalAdReplyInfo.MediaType;
-
-            /** ExternalAdReplyInfo thumbnailUrl. */
-            public thumbnailUrl: string;
-
-            /** ExternalAdReplyInfo mediaUrl. */
-            public mediaUrl: string;
-
-            /** ExternalAdReplyInfo thumbnail. */
-            public thumbnail: Uint8Array;
-
-            /** ExternalAdReplyInfo sourceType. */
-            public sourceType: string;
-
-            /** ExternalAdReplyInfo sourceId. */
-            public sourceId: string;
-
-            /** ExternalAdReplyInfo sourceUrl. */
-            public sourceUrl: string;
-
-            /** ExternalAdReplyInfo containsAutoReply. */
-            public containsAutoReply: boolean;
-
-            /** ExternalAdReplyInfo renderLargerThumbnail. */
-            public renderLargerThumbnail: boolean;
-
-            /** ExternalAdReplyInfo showAdAttribution. */
-            public showAdAttribution: boolean;
-
-            /** ExternalAdReplyInfo ctwaClid. */
-            public ctwaClid: string;
-
-            /** ExternalAdReplyInfo ref. */
-            public ref: string;
-
-            /**
-             * Creates a new ExternalAdReplyInfo instance using the specified properties.
-             * @param [properties] Properties to set
-             * @returns ExternalAdReplyInfo instance
-             */
-            public static create(properties?: proto.ContextInfo.IExternalAdReplyInfo): proto.ContextInfo.ExternalAdReplyInfo;
-
-            /**
-             * Encodes the specified ExternalAdReplyInfo message. Does not implicitly {@link proto.ContextInfo.ExternalAdReplyInfo.verify|verify} messages.
-             * @param message ExternalAdReplyInfo message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encode(message: proto.ContextInfo.IExternalAdReplyInfo, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Encodes the specified ExternalAdReplyInfo message, length delimited. Does not implicitly {@link proto.ContextInfo.ExternalAdReplyInfo.verify|verify} messages.
-             * @param message ExternalAdReplyInfo message or plain object to encode
-             * @param [writer] Writer to encode to
-             * @returns Writer
-             */
-            public static encodeDelimited(message: proto.ContextInfo.IExternalAdReplyInfo, writer?: $protobuf.Writer): $protobuf.Writer;
-
-            /**
-             * Decodes an ExternalAdReplyInfo message from the specified reader or buffer.
-             * @param reader Reader or buffer to decode from
-             * @param [length] Message length if known beforehand
-             * @returns ExternalAdReplyInfo
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.ContextInfo.ExternalAdReplyInfo;
-
-            /**
-             * Decodes an ExternalAdReplyInfo message from the specified reader or buffer, length delimited.
-             * @param reader Reader or buffer to decode from
-             * @returns ExternalAdReplyInfo
-             * @throws {Error} If the payload is not a reader or valid buffer
-             * @throws {$protobuf.util.ProtocolError} If required fields are missing
-             */
-            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.ContextInfo.ExternalAdReplyInfo;
-
-            /**
-             * Verifies an ExternalAdReplyInfo message.
-             * @param message Plain object to verify
-             * @returns `null` if valid, otherwise the reason why it is not
-             */
-            public static verify(message: { [k: string]: any }): (string|null);
-
-            /**
-             * Creates an ExternalAdReplyInfo message from a plain object. Also converts values to their respective internal types.
-             * @param object Plain object
-             * @returns ExternalAdReplyInfo
-             */
-            public static fromObject(object: { [k: string]: any }): proto.ContextInfo.ExternalAdReplyInfo;
-
-            /**
-             * Creates a plain object from an ExternalAdReplyInfo message. Also converts values to other types if specified.
-             * @param message ExternalAdReplyInfo
-             * @param [options] Conversion options
-             * @returns Plain object
-             */
-            public static toObject(message: proto.ContextInfo.ExternalAdReplyInfo, options?: $protobuf.IConversionOptions): { [k: string]: any };
-
-            /**
-             * Converts this ExternalAdReplyInfo to JSON.
-             * @returns JSON object
-             */
-            public toJSON(): { [k: string]: any };
-
-            /**
-             * Gets the default type url for ExternalAdReplyInfo
-             * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
-             * @returns The default type url
-             */
-            public static getTypeUrl(typeUrlPrefix?: string): string;
-        }
-
-        namespace ExternalAdReplyInfo {
-
-            /** MediaType enum. */
-            enum MediaType {
-                NONE = 0,
-                IMAGE = 1,
-                VIDEO = 2
-            }
+        /** StatusAttributionType enum. */
+        enum StatusAttributionType {
+            NONE = 0,
+            RESHARED_FROM_MENTION = 1
         }
 
         /** Properties of a ForwardedNewsletterMessageInfo. */
         interface IForwardedNewsletterMessageInfo {
 
-            /** ForwardedNewsletterMessageInfo newsletterJid */
-            newsletterJid?: (string|null);
+            /** ForwardedNewsletterMessageInfo newsletterJID */
+            newsletterJID?: (string|null);
 
-            /** ForwardedNewsletterMessageInfo serverMessageId */
-            serverMessageId?: (number|null);
+            /** ForwardedNewsletterMessageInfo serverMessageID */
+            serverMessageID?: (number|null);
 
             /** ForwardedNewsletterMessageInfo newsletterName */
             newsletterName?: (string|null);
@@ -5779,11 +5323,11 @@ export namespace proto {
              */
             constructor(properties?: proto.ContextInfo.IForwardedNewsletterMessageInfo);
 
-            /** ForwardedNewsletterMessageInfo newsletterJid. */
-            public newsletterJid: string;
+            /** ForwardedNewsletterMessageInfo newsletterJID. */
+            public newsletterJID: string;
 
-            /** ForwardedNewsletterMessageInfo serverMessageId. */
-            public serverMessageId: number;
+            /** ForwardedNewsletterMessageInfo serverMessageID. */
+            public serverMessageID: number;
 
             /** ForwardedNewsletterMessageInfo newsletterName. */
             public newsletterName: string;
@@ -5880,6 +5424,815 @@ export namespace proto {
                 UPDATE_CARD = 2,
                 LINK_CARD = 3
             }
+        }
+
+        /** Properties of an ExternalAdReplyInfo. */
+        interface IExternalAdReplyInfo {
+
+            /** ExternalAdReplyInfo title */
+            title?: (string|null);
+
+            /** ExternalAdReplyInfo body */
+            body?: (string|null);
+
+            /** ExternalAdReplyInfo mediaType */
+            mediaType?: (proto.ContextInfo.ExternalAdReplyInfo.MediaType|null);
+
+            /** ExternalAdReplyInfo thumbnailURL */
+            thumbnailURL?: (string|null);
+
+            /** ExternalAdReplyInfo mediaURL */
+            mediaURL?: (string|null);
+
+            /** ExternalAdReplyInfo thumbnail */
+            thumbnail?: (Uint8Array|null);
+
+            /** ExternalAdReplyInfo sourceType */
+            sourceType?: (string|null);
+
+            /** ExternalAdReplyInfo sourceID */
+            sourceID?: (string|null);
+
+            /** ExternalAdReplyInfo sourceURL */
+            sourceURL?: (string|null);
+
+            /** ExternalAdReplyInfo containsAutoReply */
+            containsAutoReply?: (boolean|null);
+
+            /** ExternalAdReplyInfo renderLargerThumbnail */
+            renderLargerThumbnail?: (boolean|null);
+
+            /** ExternalAdReplyInfo showAdAttribution */
+            showAdAttribution?: (boolean|null);
+
+            /** ExternalAdReplyInfo ctwaClid */
+            ctwaClid?: (string|null);
+
+            /** ExternalAdReplyInfo ref */
+            ref?: (string|null);
+
+            /** ExternalAdReplyInfo clickToWhatsappCall */
+            clickToWhatsappCall?: (boolean|null);
+
+            /** ExternalAdReplyInfo adContextPreviewDismissed */
+            adContextPreviewDismissed?: (boolean|null);
+
+            /** ExternalAdReplyInfo sourceApp */
+            sourceApp?: (string|null);
+
+            /** ExternalAdReplyInfo automatedGreetingMessageShown */
+            automatedGreetingMessageShown?: (boolean|null);
+
+            /** ExternalAdReplyInfo greetingMessageBody */
+            greetingMessageBody?: (string|null);
+
+            /** ExternalAdReplyInfo ctaPayload */
+            ctaPayload?: (string|null);
+
+            /** ExternalAdReplyInfo disableNudge */
+            disableNudge?: (boolean|null);
+
+            /** ExternalAdReplyInfo originalImageURL */
+            originalImageURL?: (string|null);
+        }
+
+        /** Represents an ExternalAdReplyInfo. */
+        class ExternalAdReplyInfo implements IExternalAdReplyInfo {
+
+            /**
+             * Constructs a new ExternalAdReplyInfo.
+             * @param [properties] Properties to set
+             */
+            constructor(properties?: proto.ContextInfo.IExternalAdReplyInfo);
+
+            /** ExternalAdReplyInfo title. */
+            public title: string;
+
+            /** ExternalAdReplyInfo body. */
+            public body: string;
+
+            /** ExternalAdReplyInfo mediaType. */
+            public mediaType: proto.ContextInfo.ExternalAdReplyInfo.MediaType;
+
+            /** ExternalAdReplyInfo thumbnailURL. */
+            public thumbnailURL: string;
+
+            /** ExternalAdReplyInfo mediaURL. */
+            public mediaURL: string;
+
+            /** ExternalAdReplyInfo thumbnail. */
+            public thumbnail: Uint8Array;
+
+            /** ExternalAdReplyInfo sourceType. */
+            public sourceType: string;
+
+            /** ExternalAdReplyInfo sourceID. */
+            public sourceID: string;
+
+            /** ExternalAdReplyInfo sourceURL. */
+            public sourceURL: string;
+
+            /** ExternalAdReplyInfo containsAutoReply. */
+            public containsAutoReply: boolean;
+
+            /** ExternalAdReplyInfo renderLargerThumbnail. */
+            public renderLargerThumbnail: boolean;
+
+            /** ExternalAdReplyInfo showAdAttribution. */
+            public showAdAttribution: boolean;
+
+            /** ExternalAdReplyInfo ctwaClid. */
+            public ctwaClid: string;
+
+            /** ExternalAdReplyInfo ref. */
+            public ref: string;
+
+            /** ExternalAdReplyInfo clickToWhatsappCall. */
+            public clickToWhatsappCall: boolean;
+
+            /** ExternalAdReplyInfo adContextPreviewDismissed. */
+            public adContextPreviewDismissed: boolean;
+
+            /** ExternalAdReplyInfo sourceApp. */
+            public sourceApp: string;
+
+            /** ExternalAdReplyInfo automatedGreetingMessageShown. */
+            public automatedGreetingMessageShown: boolean;
+
+            /** ExternalAdReplyInfo greetingMessageBody. */
+            public greetingMessageBody: string;
+
+            /** ExternalAdReplyInfo ctaPayload. */
+            public ctaPayload: string;
+
+            /** ExternalAdReplyInfo disableNudge. */
+            public disableNudge: boolean;
+
+            /** ExternalAdReplyInfo originalImageURL. */
+            public originalImageURL: string;
+
+            /**
+             * Creates a new ExternalAdReplyInfo instance using the specified properties.
+             * @param [properties] Properties to set
+             * @returns ExternalAdReplyInfo instance
+             */
+            public static create(properties?: proto.ContextInfo.IExternalAdReplyInfo): proto.ContextInfo.ExternalAdReplyInfo;
+
+            /**
+             * Encodes the specified ExternalAdReplyInfo message. Does not implicitly {@link proto.ContextInfo.ExternalAdReplyInfo.verify|verify} messages.
+             * @param message ExternalAdReplyInfo message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: proto.ContextInfo.IExternalAdReplyInfo, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified ExternalAdReplyInfo message, length delimited. Does not implicitly {@link proto.ContextInfo.ExternalAdReplyInfo.verify|verify} messages.
+             * @param message ExternalAdReplyInfo message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: proto.ContextInfo.IExternalAdReplyInfo, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes an ExternalAdReplyInfo message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns ExternalAdReplyInfo
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.ContextInfo.ExternalAdReplyInfo;
+
+            /**
+             * Decodes an ExternalAdReplyInfo message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns ExternalAdReplyInfo
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.ContextInfo.ExternalAdReplyInfo;
+
+            /**
+             * Verifies an ExternalAdReplyInfo message.
+             * @param message Plain object to verify
+             * @returns `null` if valid, otherwise the reason why it is not
+             */
+            public static verify(message: { [k: string]: any }): (string|null);
+
+            /**
+             * Creates an ExternalAdReplyInfo message from a plain object. Also converts values to their respective internal types.
+             * @param object Plain object
+             * @returns ExternalAdReplyInfo
+             */
+            public static fromObject(object: { [k: string]: any }): proto.ContextInfo.ExternalAdReplyInfo;
+
+            /**
+             * Creates a plain object from an ExternalAdReplyInfo message. Also converts values to other types if specified.
+             * @param message ExternalAdReplyInfo
+             * @param [options] Conversion options
+             * @returns Plain object
+             */
+            public static toObject(message: proto.ContextInfo.ExternalAdReplyInfo, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+            /**
+             * Converts this ExternalAdReplyInfo to JSON.
+             * @returns JSON object
+             */
+            public toJSON(): { [k: string]: any };
+
+            /**
+             * Gets the default type url for ExternalAdReplyInfo
+             * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+             * @returns The default type url
+             */
+            public static getTypeUrl(typeUrlPrefix?: string): string;
+        }
+
+        namespace ExternalAdReplyInfo {
+
+            /** MediaType enum. */
+            enum MediaType {
+                NONE = 0,
+                IMAGE = 1,
+                VIDEO = 2
+            }
+        }
+
+        /** Properties of an AdReplyInfo. */
+        interface IAdReplyInfo {
+
+            /** AdReplyInfo advertiserName */
+            advertiserName?: (string|null);
+
+            /** AdReplyInfo mediaType */
+            mediaType?: (proto.ContextInfo.AdReplyInfo.MediaType|null);
+
+            /** AdReplyInfo JPEGThumbnail */
+            JPEGThumbnail?: (Uint8Array|null);
+
+            /** AdReplyInfo caption */
+            caption?: (string|null);
+        }
+
+        /** Represents an AdReplyInfo. */
+        class AdReplyInfo implements IAdReplyInfo {
+
+            /**
+             * Constructs a new AdReplyInfo.
+             * @param [properties] Properties to set
+             */
+            constructor(properties?: proto.ContextInfo.IAdReplyInfo);
+
+            /** AdReplyInfo advertiserName. */
+            public advertiserName: string;
+
+            /** AdReplyInfo mediaType. */
+            public mediaType: proto.ContextInfo.AdReplyInfo.MediaType;
+
+            /** AdReplyInfo JPEGThumbnail. */
+            public JPEGThumbnail: Uint8Array;
+
+            /** AdReplyInfo caption. */
+            public caption: string;
+
+            /**
+             * Creates a new AdReplyInfo instance using the specified properties.
+             * @param [properties] Properties to set
+             * @returns AdReplyInfo instance
+             */
+            public static create(properties?: proto.ContextInfo.IAdReplyInfo): proto.ContextInfo.AdReplyInfo;
+
+            /**
+             * Encodes the specified AdReplyInfo message. Does not implicitly {@link proto.ContextInfo.AdReplyInfo.verify|verify} messages.
+             * @param message AdReplyInfo message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: proto.ContextInfo.IAdReplyInfo, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified AdReplyInfo message, length delimited. Does not implicitly {@link proto.ContextInfo.AdReplyInfo.verify|verify} messages.
+             * @param message AdReplyInfo message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: proto.ContextInfo.IAdReplyInfo, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes an AdReplyInfo message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns AdReplyInfo
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.ContextInfo.AdReplyInfo;
+
+            /**
+             * Decodes an AdReplyInfo message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns AdReplyInfo
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.ContextInfo.AdReplyInfo;
+
+            /**
+             * Verifies an AdReplyInfo message.
+             * @param message Plain object to verify
+             * @returns `null` if valid, otherwise the reason why it is not
+             */
+            public static verify(message: { [k: string]: any }): (string|null);
+
+            /**
+             * Creates an AdReplyInfo message from a plain object. Also converts values to their respective internal types.
+             * @param object Plain object
+             * @returns AdReplyInfo
+             */
+            public static fromObject(object: { [k: string]: any }): proto.ContextInfo.AdReplyInfo;
+
+            /**
+             * Creates a plain object from an AdReplyInfo message. Also converts values to other types if specified.
+             * @param message AdReplyInfo
+             * @param [options] Conversion options
+             * @returns Plain object
+             */
+            public static toObject(message: proto.ContextInfo.AdReplyInfo, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+            /**
+             * Converts this AdReplyInfo to JSON.
+             * @returns JSON object
+             */
+            public toJSON(): { [k: string]: any };
+
+            /**
+             * Gets the default type url for AdReplyInfo
+             * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+             * @returns The default type url
+             */
+            public static getTypeUrl(typeUrlPrefix?: string): string;
+        }
+
+        namespace AdReplyInfo {
+
+            /** MediaType enum. */
+            enum MediaType {
+                NONE = 0,
+                IMAGE = 1,
+                VIDEO = 2
+            }
+        }
+
+        /** Properties of a FeatureEligibilities. */
+        interface IFeatureEligibilities {
+
+            /** FeatureEligibilities cannotBeReactedTo */
+            cannotBeReactedTo?: (boolean|null);
+
+            /** FeatureEligibilities cannotBeRanked */
+            cannotBeRanked?: (boolean|null);
+
+            /** FeatureEligibilities canRequestFeedback */
+            canRequestFeedback?: (boolean|null);
+        }
+
+        /** Represents a FeatureEligibilities. */
+        class FeatureEligibilities implements IFeatureEligibilities {
+
+            /**
+             * Constructs a new FeatureEligibilities.
+             * @param [properties] Properties to set
+             */
+            constructor(properties?: proto.ContextInfo.IFeatureEligibilities);
+
+            /** FeatureEligibilities cannotBeReactedTo. */
+            public cannotBeReactedTo: boolean;
+
+            /** FeatureEligibilities cannotBeRanked. */
+            public cannotBeRanked: boolean;
+
+            /** FeatureEligibilities canRequestFeedback. */
+            public canRequestFeedback: boolean;
+
+            /**
+             * Creates a new FeatureEligibilities instance using the specified properties.
+             * @param [properties] Properties to set
+             * @returns FeatureEligibilities instance
+             */
+            public static create(properties?: proto.ContextInfo.IFeatureEligibilities): proto.ContextInfo.FeatureEligibilities;
+
+            /**
+             * Encodes the specified FeatureEligibilities message. Does not implicitly {@link proto.ContextInfo.FeatureEligibilities.verify|verify} messages.
+             * @param message FeatureEligibilities message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: proto.ContextInfo.IFeatureEligibilities, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified FeatureEligibilities message, length delimited. Does not implicitly {@link proto.ContextInfo.FeatureEligibilities.verify|verify} messages.
+             * @param message FeatureEligibilities message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: proto.ContextInfo.IFeatureEligibilities, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a FeatureEligibilities message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns FeatureEligibilities
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.ContextInfo.FeatureEligibilities;
+
+            /**
+             * Decodes a FeatureEligibilities message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns FeatureEligibilities
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.ContextInfo.FeatureEligibilities;
+
+            /**
+             * Verifies a FeatureEligibilities message.
+             * @param message Plain object to verify
+             * @returns `null` if valid, otherwise the reason why it is not
+             */
+            public static verify(message: { [k: string]: any }): (string|null);
+
+            /**
+             * Creates a FeatureEligibilities message from a plain object. Also converts values to their respective internal types.
+             * @param object Plain object
+             * @returns FeatureEligibilities
+             */
+            public static fromObject(object: { [k: string]: any }): proto.ContextInfo.FeatureEligibilities;
+
+            /**
+             * Creates a plain object from a FeatureEligibilities message. Also converts values to other types if specified.
+             * @param message FeatureEligibilities
+             * @param [options] Conversion options
+             * @returns Plain object
+             */
+            public static toObject(message: proto.ContextInfo.FeatureEligibilities, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+            /**
+             * Converts this FeatureEligibilities to JSON.
+             * @returns JSON object
+             */
+            public toJSON(): { [k: string]: any };
+
+            /**
+             * Gets the default type url for FeatureEligibilities
+             * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+             * @returns The default type url
+             */
+            public static getTypeUrl(typeUrlPrefix?: string): string;
+        }
+
+        /** Properties of a DataSharingContext. */
+        interface IDataSharingContext {
+
+            /** DataSharingContext showMmDisclosure */
+            showMmDisclosure?: (boolean|null);
+
+            /** DataSharingContext encryptedSignalTokenConsented */
+            encryptedSignalTokenConsented?: (string|null);
+
+            /** DataSharingContext parameters */
+            parameters?: (proto.ContextInfo.DataSharingContext.IParameters[]|null);
+        }
+
+        /** Represents a DataSharingContext. */
+        class DataSharingContext implements IDataSharingContext {
+
+            /**
+             * Constructs a new DataSharingContext.
+             * @param [properties] Properties to set
+             */
+            constructor(properties?: proto.ContextInfo.IDataSharingContext);
+
+            /** DataSharingContext showMmDisclosure. */
+            public showMmDisclosure: boolean;
+
+            /** DataSharingContext encryptedSignalTokenConsented. */
+            public encryptedSignalTokenConsented: string;
+
+            /** DataSharingContext parameters. */
+            public parameters: proto.ContextInfo.DataSharingContext.IParameters[];
+
+            /**
+             * Creates a new DataSharingContext instance using the specified properties.
+             * @param [properties] Properties to set
+             * @returns DataSharingContext instance
+             */
+            public static create(properties?: proto.ContextInfo.IDataSharingContext): proto.ContextInfo.DataSharingContext;
+
+            /**
+             * Encodes the specified DataSharingContext message. Does not implicitly {@link proto.ContextInfo.DataSharingContext.verify|verify} messages.
+             * @param message DataSharingContext message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: proto.ContextInfo.IDataSharingContext, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified DataSharingContext message, length delimited. Does not implicitly {@link proto.ContextInfo.DataSharingContext.verify|verify} messages.
+             * @param message DataSharingContext message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: proto.ContextInfo.IDataSharingContext, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a DataSharingContext message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns DataSharingContext
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.ContextInfo.DataSharingContext;
+
+            /**
+             * Decodes a DataSharingContext message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns DataSharingContext
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.ContextInfo.DataSharingContext;
+
+            /**
+             * Verifies a DataSharingContext message.
+             * @param message Plain object to verify
+             * @returns `null` if valid, otherwise the reason why it is not
+             */
+            public static verify(message: { [k: string]: any }): (string|null);
+
+            /**
+             * Creates a DataSharingContext message from a plain object. Also converts values to their respective internal types.
+             * @param object Plain object
+             * @returns DataSharingContext
+             */
+            public static fromObject(object: { [k: string]: any }): proto.ContextInfo.DataSharingContext;
+
+            /**
+             * Creates a plain object from a DataSharingContext message. Also converts values to other types if specified.
+             * @param message DataSharingContext
+             * @param [options] Conversion options
+             * @returns Plain object
+             */
+            public static toObject(message: proto.ContextInfo.DataSharingContext, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+            /**
+             * Converts this DataSharingContext to JSON.
+             * @returns JSON object
+             */
+            public toJSON(): { [k: string]: any };
+
+            /**
+             * Gets the default type url for DataSharingContext
+             * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+             * @returns The default type url
+             */
+            public static getTypeUrl(typeUrlPrefix?: string): string;
+        }
+
+        namespace DataSharingContext {
+
+            /** Properties of a Parameters. */
+            interface IParameters {
+
+                /** Parameters key */
+                key?: (string|null);
+
+                /** Parameters stringData */
+                stringData?: (string|null);
+
+                /** Parameters intData */
+                intData?: (number|Long|null);
+
+                /** Parameters floatData */
+                floatData?: (number|null);
+
+                /** Parameters contents */
+                contents?: (proto.ContextInfo.DataSharingContext.IParameters|null);
+            }
+
+            /** Represents a Parameters. */
+            class Parameters implements IParameters {
+
+                /**
+                 * Constructs a new Parameters.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: proto.ContextInfo.DataSharingContext.IParameters);
+
+                /** Parameters key. */
+                public key: string;
+
+                /** Parameters stringData. */
+                public stringData: string;
+
+                /** Parameters intData. */
+                public intData: (number|Long);
+
+                /** Parameters floatData. */
+                public floatData: number;
+
+                /** Parameters contents. */
+                public contents?: (proto.ContextInfo.DataSharingContext.IParameters|null);
+
+                /**
+                 * Creates a new Parameters instance using the specified properties.
+                 * @param [properties] Properties to set
+                 * @returns Parameters instance
+                 */
+                public static create(properties?: proto.ContextInfo.DataSharingContext.IParameters): proto.ContextInfo.DataSharingContext.Parameters;
+
+                /**
+                 * Encodes the specified Parameters message. Does not implicitly {@link proto.ContextInfo.DataSharingContext.Parameters.verify|verify} messages.
+                 * @param message Parameters message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                public static encode(message: proto.ContextInfo.DataSharingContext.IParameters, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified Parameters message, length delimited. Does not implicitly {@link proto.ContextInfo.DataSharingContext.Parameters.verify|verify} messages.
+                 * @param message Parameters message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                public static encodeDelimited(message: proto.ContextInfo.DataSharingContext.IParameters, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a Parameters message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns Parameters
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.ContextInfo.DataSharingContext.Parameters;
+
+                /**
+                 * Decodes a Parameters message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns Parameters
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.ContextInfo.DataSharingContext.Parameters;
+
+                /**
+                 * Verifies a Parameters message.
+                 * @param message Plain object to verify
+                 * @returns `null` if valid, otherwise the reason why it is not
+                 */
+                public static verify(message: { [k: string]: any }): (string|null);
+
+                /**
+                 * Creates a Parameters message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns Parameters
+                 */
+                public static fromObject(object: { [k: string]: any }): proto.ContextInfo.DataSharingContext.Parameters;
+
+                /**
+                 * Creates a plain object from a Parameters message. Also converts values to other types if specified.
+                 * @param message Parameters
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                public static toObject(message: proto.ContextInfo.DataSharingContext.Parameters, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this Parameters to JSON.
+                 * @returns JSON object
+                 */
+                public toJSON(): { [k: string]: any };
+
+                /**
+                 * Gets the default type url for Parameters
+                 * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+                 * @returns The default type url
+                 */
+                public static getTypeUrl(typeUrlPrefix?: string): string;
+            }
+        }
+
+        /** Properties of a ForwardedAIBotMessageInfo. */
+        interface IForwardedAIBotMessageInfo {
+
+            /** ForwardedAIBotMessageInfo botName */
+            botName?: (string|null);
+
+            /** ForwardedAIBotMessageInfo botJID */
+            botJID?: (string|null);
+
+            /** ForwardedAIBotMessageInfo creatorName */
+            creatorName?: (string|null);
+        }
+
+        /** Represents a ForwardedAIBotMessageInfo. */
+        class ForwardedAIBotMessageInfo implements IForwardedAIBotMessageInfo {
+
+            /**
+             * Constructs a new ForwardedAIBotMessageInfo.
+             * @param [properties] Properties to set
+             */
+            constructor(properties?: proto.ContextInfo.IForwardedAIBotMessageInfo);
+
+            /** ForwardedAIBotMessageInfo botName. */
+            public botName: string;
+
+            /** ForwardedAIBotMessageInfo botJID. */
+            public botJID: string;
+
+            /** ForwardedAIBotMessageInfo creatorName. */
+            public creatorName: string;
+
+            /**
+             * Creates a new ForwardedAIBotMessageInfo instance using the specified properties.
+             * @param [properties] Properties to set
+             * @returns ForwardedAIBotMessageInfo instance
+             */
+            public static create(properties?: proto.ContextInfo.IForwardedAIBotMessageInfo): proto.ContextInfo.ForwardedAIBotMessageInfo;
+
+            /**
+             * Encodes the specified ForwardedAIBotMessageInfo message. Does not implicitly {@link proto.ContextInfo.ForwardedAIBotMessageInfo.verify|verify} messages.
+             * @param message ForwardedAIBotMessageInfo message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: proto.ContextInfo.IForwardedAIBotMessageInfo, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified ForwardedAIBotMessageInfo message, length delimited. Does not implicitly {@link proto.ContextInfo.ForwardedAIBotMessageInfo.verify|verify} messages.
+             * @param message ForwardedAIBotMessageInfo message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: proto.ContextInfo.IForwardedAIBotMessageInfo, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a ForwardedAIBotMessageInfo message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns ForwardedAIBotMessageInfo
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.ContextInfo.ForwardedAIBotMessageInfo;
+
+            /**
+             * Decodes a ForwardedAIBotMessageInfo message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns ForwardedAIBotMessageInfo
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.ContextInfo.ForwardedAIBotMessageInfo;
+
+            /**
+             * Verifies a ForwardedAIBotMessageInfo message.
+             * @param message Plain object to verify
+             * @returns `null` if valid, otherwise the reason why it is not
+             */
+            public static verify(message: { [k: string]: any }): (string|null);
+
+            /**
+             * Creates a ForwardedAIBotMessageInfo message from a plain object. Also converts values to their respective internal types.
+             * @param object Plain object
+             * @returns ForwardedAIBotMessageInfo
+             */
+            public static fromObject(object: { [k: string]: any }): proto.ContextInfo.ForwardedAIBotMessageInfo;
+
+            /**
+             * Creates a plain object from a ForwardedAIBotMessageInfo message. Also converts values to other types if specified.
+             * @param message ForwardedAIBotMessageInfo
+             * @param [options] Conversion options
+             * @returns Plain object
+             */
+            public static toObject(message: proto.ContextInfo.ForwardedAIBotMessageInfo, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+            /**
+             * Converts this ForwardedAIBotMessageInfo to JSON.
+             * @returns JSON object
+             */
+            public toJSON(): { [k: string]: any };
+
+            /**
+             * Gets the default type url for ForwardedAIBotMessageInfo
+             * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+             * @returns The default type url
+             */
+            public static getTypeUrl(typeUrlPrefix?: string): string;
         }
 
         /** Properties of a UTMInfo. */
@@ -5979,6 +6332,103 @@ export namespace proto {
 
             /**
              * Gets the default type url for UTMInfo
+             * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+             * @returns The default type url
+             */
+            public static getTypeUrl(typeUrlPrefix?: string): string;
+        }
+
+        /** Properties of a BusinessMessageForwardInfo. */
+        interface IBusinessMessageForwardInfo {
+
+            /** BusinessMessageForwardInfo businessOwnerJID */
+            businessOwnerJID?: (string|null);
+        }
+
+        /** Represents a BusinessMessageForwardInfo. */
+        class BusinessMessageForwardInfo implements IBusinessMessageForwardInfo {
+
+            /**
+             * Constructs a new BusinessMessageForwardInfo.
+             * @param [properties] Properties to set
+             */
+            constructor(properties?: proto.ContextInfo.IBusinessMessageForwardInfo);
+
+            /** BusinessMessageForwardInfo businessOwnerJID. */
+            public businessOwnerJID: string;
+
+            /**
+             * Creates a new BusinessMessageForwardInfo instance using the specified properties.
+             * @param [properties] Properties to set
+             * @returns BusinessMessageForwardInfo instance
+             */
+            public static create(properties?: proto.ContextInfo.IBusinessMessageForwardInfo): proto.ContextInfo.BusinessMessageForwardInfo;
+
+            /**
+             * Encodes the specified BusinessMessageForwardInfo message. Does not implicitly {@link proto.ContextInfo.BusinessMessageForwardInfo.verify|verify} messages.
+             * @param message BusinessMessageForwardInfo message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: proto.ContextInfo.IBusinessMessageForwardInfo, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified BusinessMessageForwardInfo message, length delimited. Does not implicitly {@link proto.ContextInfo.BusinessMessageForwardInfo.verify|verify} messages.
+             * @param message BusinessMessageForwardInfo message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: proto.ContextInfo.IBusinessMessageForwardInfo, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a BusinessMessageForwardInfo message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns BusinessMessageForwardInfo
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.ContextInfo.BusinessMessageForwardInfo;
+
+            /**
+             * Decodes a BusinessMessageForwardInfo message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns BusinessMessageForwardInfo
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.ContextInfo.BusinessMessageForwardInfo;
+
+            /**
+             * Verifies a BusinessMessageForwardInfo message.
+             * @param message Plain object to verify
+             * @returns `null` if valid, otherwise the reason why it is not
+             */
+            public static verify(message: { [k: string]: any }): (string|null);
+
+            /**
+             * Creates a BusinessMessageForwardInfo message from a plain object. Also converts values to their respective internal types.
+             * @param object Plain object
+             * @returns BusinessMessageForwardInfo
+             */
+            public static fromObject(object: { [k: string]: any }): proto.ContextInfo.BusinessMessageForwardInfo;
+
+            /**
+             * Creates a plain object from a BusinessMessageForwardInfo message. Also converts values to other types if specified.
+             * @param message BusinessMessageForwardInfo
+             * @param [options] Conversion options
+             * @returns Plain object
+             */
+            public static toObject(message: proto.ContextInfo.BusinessMessageForwardInfo, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+            /**
+             * Converts this BusinessMessageForwardInfo to JSON.
+             * @returns JSON object
+             */
+            public toJSON(): { [k: string]: any };
+
+            /**
+             * Gets the default type url for BusinessMessageForwardInfo
              * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
              * @returns The default type url
              */
