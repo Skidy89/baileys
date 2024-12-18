@@ -56,7 +56,45 @@ message AvatarUserSettings {
     optional string fbid = 1;
     optional string password = 2;
 }
+message StickerPackMessage {
+	enum StickerPackOrigin {
+		FIRST_PARTY = 0;
+		THIRD_PARTY = 1;
+		USER_CREATED = 2;
+	}
 
+	message Sticker {
+		optional string fileName = 1;
+		optional bool isAnimated = 2;
+		repeated string emojis = 3;
+		optional string accessibilityLabel = 4;
+		optional bool isLottie = 5;
+		optional string mimetype = 6;
+	}
+
+	optional string stickerPackID = 1;
+	optional string name = 2;
+	optional string publisher = 3;
+	repeated Sticker stickers = 4;
+	optional uint64 fileLength = 5;
+	optional bytes fileSHA256 = 6;
+	optional bytes fileEncSHA256 = 7;
+	optional bytes mediaKey = 8;
+	optional string directPath = 9;
+	optional string caption = 10;
+	optional ContextInfo contextInfo = 11;
+	optional string packDescription = 12;
+	optional int64 mediaKeyTimestamp = 13;
+	optional string trayIconFileName = 14;
+	optional string thumbnailDirectPath = 15;
+	optional bytes thumbnailSHA256 = 16;
+	optional bytes thumbnailEncSHA256 = 17;
+	optional uint32 thumbnailHeight = 18;
+	optional uint32 thumbnailWidth = 19;
+	optional string imageDataHash = 20;
+	optional uint64 stickerPackSize = 21;
+	optional StickerPackOrigin stickerPackOrigin = 22;
+}
 message BizAccountLinkInfo {
     optional uint64 whatsappBizAcctFbid = 1;
     optional string whatsappAcctNumber = 2;
@@ -890,6 +928,16 @@ message KeepInChat {
     optional int64 clientTimestampMs = 5;
     optional int64 serverTimestampMs = 6;
 }
+message PollResultSnapshotMessage {
+	message PollVote {
+		optional string optionName = 1;
+		optional int64 optionVoteCount = 2;
+	}
+
+	optional string name = 1;
+	repeated PollVote pollVotes = 2;
+	optional ContextInfo contextInfo = 3;
+}
 
 enum KeepType {
     UNKNOWN = 0;
@@ -1048,9 +1096,26 @@ message Message {
     optional NewsletterAdminInviteMessage newsletterAdminInviteMessage = 78;
     optional PlaceholderMessage placeholderMessage = 80;
     optional SecretEncryptedMessage secretEncryptedMessage = 82;
+    optional AlbumMessage albumMessage = 83;
+	optional FutureProofMessage eventCoverImage = 85;
+	optional StickerPackMessage stickerPackMessage = 86;
+	optional FutureProofMessage statusMentionMessage = 87;
+	optional PollResultSnapshotMessage pollResultSnapshotMessage = 88;
+	optional FutureProofMessage pollCreationOptionImageMessage = 90;
+	optional FutureProofMessage associatedChildMessage = 91;
+	optional FutureProofMessage groupStatusMentionMessage = 92;
+	optional FutureProofMessage pollCreationMessageV4 = 93;
+	optional FutureProofMessage pollCreationMessageV5 = 94;
+	optional FutureProofMessage statusAddYours = 95;
+	optional FutureProofMessage groupStatusMessage = 96;
     message AppStateFatalExceptionNotification {
         repeated string collectionNames = 1;
         optional int64 timestamp = 2;
+    }
+    message AlbumMessage {
+        optional uint32 expectedImageCount = 2;
+        optional uint32 expectedVideoCount = 3;
+        optional ContextInfo contextInfo = 17;
     }
     
     message AppStateSyncKey {
@@ -1516,6 +1581,7 @@ message Message {
         optional string staticUrl = 29;
         repeated InteractiveAnnotation annotations = 30;
         optional ImageSourceType imageSourceType = 31;
+        optional string accessibilityLabel = 32;
         enum ImageSourceType {
             USER_IMAGE = 0;
             AI_GENERATED = 1;
@@ -1960,6 +2026,8 @@ message Message {
         optional string invokerJid = 19;
         optional Message.RequestWelcomeMessageMetadata requestWelcomeMessageMetadata = 20;
         optional MediaNotifyMessage mediaNotifyMessage = 21;
+        optional CloudAPIThreadControlNotification cloudApiThreadControlNotification = 22;
+	    optional LIDMigrationMappingSyncMessage lidMigrationMappingSyncMessage = 23;
         enum Type {
             REVOKE = 0;
             EPHEMERAL_SETTING = 3;
@@ -1977,8 +2045,26 @@ message Message {
             REQUEST_WELCOME_MESSAGE = 18;
             BOT_FEEDBACK_MESSAGE = 19;
             MEDIA_NOTIFY_MESSAGE = 20;
+            CLOUD_API_THREAD_CONTROL_NOTIFICATION = 21;
+            LID_MIGRATION_MAPPING_SYNC = 22;
+            REMINDER_MESSAGE = 23;
+            BOT_MEMU_ONBOARDING_MESSAGE = 24;
+            STATUS_MENTION_MESSAGE = 25;
         }
     }
+    message CloudAPIThreadControlNotification {
+        enum CloudAPIThreadControl {
+            UNKNOWN = 0;
+            CONTROL_PASSED = 1;
+            CONTROL_TAKEN = 2;
+        }
+    
+        optional CloudAPIThreadControl status = 1;
+        optional int64 senderNotificationTimestampMS = 2;
+        optional string consumerLid = 3;
+        optional string consumerPhoneNumber = 4;
+    }
+    
     
     message ReactionMessage {
         optional MessageKey key = 1;
@@ -3480,4 +3566,7 @@ message WebNotificationsInfo {
     optional uint32 unreadChats = 3;
     optional uint32 notifyMessageCount = 4;
     repeated WebMessageInfo notifyMessages = 5;
+}
+message LIDMigrationMappingSyncMessage {
+	optional bytes encodedMappingPayload = 1;
 }

@@ -905,6 +905,366 @@ export namespace proto {
         public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
+    /** Properties of a StickerPackMessage. */
+    interface IStickerPackMessage {
+
+        /** StickerPackMessage stickerPackID */
+        stickerPackID?: (string|null);
+
+        /** StickerPackMessage name */
+        name?: (string|null);
+
+        /** StickerPackMessage publisher */
+        publisher?: (string|null);
+
+        /** StickerPackMessage stickers */
+        stickers?: (proto.StickerPackMessage.ISticker[]|null);
+
+        /** StickerPackMessage fileLength */
+        fileLength?: (number|Long|null);
+
+        /** StickerPackMessage fileSHA256 */
+        fileSHA256?: (Uint8Array|null);
+
+        /** StickerPackMessage fileEncSHA256 */
+        fileEncSHA256?: (Uint8Array|null);
+
+        /** StickerPackMessage mediaKey */
+        mediaKey?: (Uint8Array|null);
+
+        /** StickerPackMessage directPath */
+        directPath?: (string|null);
+
+        /** StickerPackMessage caption */
+        caption?: (string|null);
+
+        /** StickerPackMessage contextInfo */
+        contextInfo?: (proto.IContextInfo|null);
+
+        /** StickerPackMessage packDescription */
+        packDescription?: (string|null);
+
+        /** StickerPackMessage mediaKeyTimestamp */
+        mediaKeyTimestamp?: (number|Long|null);
+
+        /** StickerPackMessage trayIconFileName */
+        trayIconFileName?: (string|null);
+
+        /** StickerPackMessage thumbnailDirectPath */
+        thumbnailDirectPath?: (string|null);
+
+        /** StickerPackMessage thumbnailSHA256 */
+        thumbnailSHA256?: (Uint8Array|null);
+
+        /** StickerPackMessage thumbnailEncSHA256 */
+        thumbnailEncSHA256?: (Uint8Array|null);
+
+        /** StickerPackMessage thumbnailHeight */
+        thumbnailHeight?: (number|null);
+
+        /** StickerPackMessage thumbnailWidth */
+        thumbnailWidth?: (number|null);
+
+        /** StickerPackMessage imageDataHash */
+        imageDataHash?: (string|null);
+
+        /** StickerPackMessage stickerPackSize */
+        stickerPackSize?: (number|Long|null);
+
+        /** StickerPackMessage stickerPackOrigin */
+        stickerPackOrigin?: (proto.StickerPackMessage.StickerPackOrigin|null);
+    }
+
+    /** Represents a StickerPackMessage. */
+    class StickerPackMessage implements IStickerPackMessage {
+
+        /**
+         * Constructs a new StickerPackMessage.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: proto.IStickerPackMessage);
+
+        /** StickerPackMessage stickerPackID. */
+        public stickerPackID: string;
+
+        /** StickerPackMessage name. */
+        public name: string;
+
+        /** StickerPackMessage publisher. */
+        public publisher: string;
+
+        /** StickerPackMessage stickers. */
+        public stickers: proto.StickerPackMessage.ISticker[];
+
+        /** StickerPackMessage fileLength. */
+        public fileLength: (number|Long);
+
+        /** StickerPackMessage fileSHA256. */
+        public fileSHA256: Uint8Array;
+
+        /** StickerPackMessage fileEncSHA256. */
+        public fileEncSHA256: Uint8Array;
+
+        /** StickerPackMessage mediaKey. */
+        public mediaKey: Uint8Array;
+
+        /** StickerPackMessage directPath. */
+        public directPath: string;
+
+        /** StickerPackMessage caption. */
+        public caption: string;
+
+        /** StickerPackMessage contextInfo. */
+        public contextInfo?: (proto.IContextInfo|null);
+
+        /** StickerPackMessage packDescription. */
+        public packDescription: string;
+
+        /** StickerPackMessage mediaKeyTimestamp. */
+        public mediaKeyTimestamp: (number|Long);
+
+        /** StickerPackMessage trayIconFileName. */
+        public trayIconFileName: string;
+
+        /** StickerPackMessage thumbnailDirectPath. */
+        public thumbnailDirectPath: string;
+
+        /** StickerPackMessage thumbnailSHA256. */
+        public thumbnailSHA256: Uint8Array;
+
+        /** StickerPackMessage thumbnailEncSHA256. */
+        public thumbnailEncSHA256: Uint8Array;
+
+        /** StickerPackMessage thumbnailHeight. */
+        public thumbnailHeight: number;
+
+        /** StickerPackMessage thumbnailWidth. */
+        public thumbnailWidth: number;
+
+        /** StickerPackMessage imageDataHash. */
+        public imageDataHash: string;
+
+        /** StickerPackMessage stickerPackSize. */
+        public stickerPackSize: (number|Long);
+
+        /** StickerPackMessage stickerPackOrigin. */
+        public stickerPackOrigin: proto.StickerPackMessage.StickerPackOrigin;
+
+        /**
+         * Creates a new StickerPackMessage instance using the specified properties.
+         * @param [properties] Properties to set
+         * @returns StickerPackMessage instance
+         */
+        public static create(properties?: proto.IStickerPackMessage): proto.StickerPackMessage;
+
+        /**
+         * Encodes the specified StickerPackMessage message. Does not implicitly {@link proto.StickerPackMessage.verify|verify} messages.
+         * @param message StickerPackMessage message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: proto.IStickerPackMessage, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified StickerPackMessage message, length delimited. Does not implicitly {@link proto.StickerPackMessage.verify|verify} messages.
+         * @param message StickerPackMessage message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: proto.IStickerPackMessage, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a StickerPackMessage message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns StickerPackMessage
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.StickerPackMessage;
+
+        /**
+         * Decodes a StickerPackMessage message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns StickerPackMessage
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.StickerPackMessage;
+
+        /**
+         * Verifies a StickerPackMessage message.
+         * @param message Plain object to verify
+         * @returns `null` if valid, otherwise the reason why it is not
+         */
+        public static verify(message: { [k: string]: any }): (string|null);
+
+        /**
+         * Creates a StickerPackMessage message from a plain object. Also converts values to their respective internal types.
+         * @param object Plain object
+         * @returns StickerPackMessage
+         */
+        public static fromObject(object: { [k: string]: any }): proto.StickerPackMessage;
+
+        /**
+         * Creates a plain object from a StickerPackMessage message. Also converts values to other types if specified.
+         * @param message StickerPackMessage
+         * @param [options] Conversion options
+         * @returns Plain object
+         */
+        public static toObject(message: proto.StickerPackMessage, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+        /**
+         * Converts this StickerPackMessage to JSON.
+         * @returns JSON object
+         */
+        public toJSON(): { [k: string]: any };
+
+        /**
+         * Gets the default type url for StickerPackMessage
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    namespace StickerPackMessage {
+
+        /** StickerPackOrigin enum. */
+        enum StickerPackOrigin {
+            FIRST_PARTY = 0,
+            THIRD_PARTY = 1,
+            USER_CREATED = 2
+        }
+
+        /** Properties of a Sticker. */
+        interface ISticker {
+
+            /** Sticker fileName */
+            fileName?: (string|null);
+
+            /** Sticker isAnimated */
+            isAnimated?: (boolean|null);
+
+            /** Sticker emojis */
+            emojis?: (string[]|null);
+
+            /** Sticker accessibilityLabel */
+            accessibilityLabel?: (string|null);
+
+            /** Sticker isLottie */
+            isLottie?: (boolean|null);
+
+            /** Sticker mimetype */
+            mimetype?: (string|null);
+        }
+
+        /** Represents a Sticker. */
+        class Sticker implements ISticker {
+
+            /**
+             * Constructs a new Sticker.
+             * @param [properties] Properties to set
+             */
+            constructor(properties?: proto.StickerPackMessage.ISticker);
+
+            /** Sticker fileName. */
+            public fileName: string;
+
+            /** Sticker isAnimated. */
+            public isAnimated: boolean;
+
+            /** Sticker emojis. */
+            public emojis: string[];
+
+            /** Sticker accessibilityLabel. */
+            public accessibilityLabel: string;
+
+            /** Sticker isLottie. */
+            public isLottie: boolean;
+
+            /** Sticker mimetype. */
+            public mimetype: string;
+
+            /**
+             * Creates a new Sticker instance using the specified properties.
+             * @param [properties] Properties to set
+             * @returns Sticker instance
+             */
+            public static create(properties?: proto.StickerPackMessage.ISticker): proto.StickerPackMessage.Sticker;
+
+            /**
+             * Encodes the specified Sticker message. Does not implicitly {@link proto.StickerPackMessage.Sticker.verify|verify} messages.
+             * @param message Sticker message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: proto.StickerPackMessage.ISticker, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified Sticker message, length delimited. Does not implicitly {@link proto.StickerPackMessage.Sticker.verify|verify} messages.
+             * @param message Sticker message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: proto.StickerPackMessage.ISticker, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a Sticker message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns Sticker
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.StickerPackMessage.Sticker;
+
+            /**
+             * Decodes a Sticker message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns Sticker
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.StickerPackMessage.Sticker;
+
+            /**
+             * Verifies a Sticker message.
+             * @param message Plain object to verify
+             * @returns `null` if valid, otherwise the reason why it is not
+             */
+            public static verify(message: { [k: string]: any }): (string|null);
+
+            /**
+             * Creates a Sticker message from a plain object. Also converts values to their respective internal types.
+             * @param object Plain object
+             * @returns Sticker
+             */
+            public static fromObject(object: { [k: string]: any }): proto.StickerPackMessage.Sticker;
+
+            /**
+             * Creates a plain object from a Sticker message. Also converts values to other types if specified.
+             * @param message Sticker
+             * @param [options] Conversion options
+             * @returns Plain object
+             */
+            public static toObject(message: proto.StickerPackMessage.Sticker, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+            /**
+             * Converts this Sticker to JSON.
+             * @returns JSON object
+             */
+            public toJSON(): { [k: string]: any };
+
+            /**
+             * Gets the default type url for Sticker
+             * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+             * @returns The default type url
+             */
+            public static getTypeUrl(typeUrlPrefix?: string): string;
+        }
+    }
+
     /** Properties of a BizAccountLinkInfo. */
     interface IBizAccountLinkInfo {
 
@@ -9407,6 +9767,221 @@ export namespace proto {
         public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 
+    /** Properties of a PollResultSnapshotMessage. */
+    interface IPollResultSnapshotMessage {
+
+        /** PollResultSnapshotMessage name */
+        name?: (string|null);
+
+        /** PollResultSnapshotMessage pollVotes */
+        pollVotes?: (proto.PollResultSnapshotMessage.IPollVote[]|null);
+
+        /** PollResultSnapshotMessage contextInfo */
+        contextInfo?: (proto.IContextInfo|null);
+    }
+
+    /** Represents a PollResultSnapshotMessage. */
+    class PollResultSnapshotMessage implements IPollResultSnapshotMessage {
+
+        /**
+         * Constructs a new PollResultSnapshotMessage.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: proto.IPollResultSnapshotMessage);
+
+        /** PollResultSnapshotMessage name. */
+        public name: string;
+
+        /** PollResultSnapshotMessage pollVotes. */
+        public pollVotes: proto.PollResultSnapshotMessage.IPollVote[];
+
+        /** PollResultSnapshotMessage contextInfo. */
+        public contextInfo?: (proto.IContextInfo|null);
+
+        /**
+         * Creates a new PollResultSnapshotMessage instance using the specified properties.
+         * @param [properties] Properties to set
+         * @returns PollResultSnapshotMessage instance
+         */
+        public static create(properties?: proto.IPollResultSnapshotMessage): proto.PollResultSnapshotMessage;
+
+        /**
+         * Encodes the specified PollResultSnapshotMessage message. Does not implicitly {@link proto.PollResultSnapshotMessage.verify|verify} messages.
+         * @param message PollResultSnapshotMessage message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: proto.IPollResultSnapshotMessage, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified PollResultSnapshotMessage message, length delimited. Does not implicitly {@link proto.PollResultSnapshotMessage.verify|verify} messages.
+         * @param message PollResultSnapshotMessage message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: proto.IPollResultSnapshotMessage, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a PollResultSnapshotMessage message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns PollResultSnapshotMessage
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.PollResultSnapshotMessage;
+
+        /**
+         * Decodes a PollResultSnapshotMessage message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns PollResultSnapshotMessage
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.PollResultSnapshotMessage;
+
+        /**
+         * Verifies a PollResultSnapshotMessage message.
+         * @param message Plain object to verify
+         * @returns `null` if valid, otherwise the reason why it is not
+         */
+        public static verify(message: { [k: string]: any }): (string|null);
+
+        /**
+         * Creates a PollResultSnapshotMessage message from a plain object. Also converts values to their respective internal types.
+         * @param object Plain object
+         * @returns PollResultSnapshotMessage
+         */
+        public static fromObject(object: { [k: string]: any }): proto.PollResultSnapshotMessage;
+
+        /**
+         * Creates a plain object from a PollResultSnapshotMessage message. Also converts values to other types if specified.
+         * @param message PollResultSnapshotMessage
+         * @param [options] Conversion options
+         * @returns Plain object
+         */
+        public static toObject(message: proto.PollResultSnapshotMessage, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+        /**
+         * Converts this PollResultSnapshotMessage to JSON.
+         * @returns JSON object
+         */
+        public toJSON(): { [k: string]: any };
+
+        /**
+         * Gets the default type url for PollResultSnapshotMessage
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    namespace PollResultSnapshotMessage {
+
+        /** Properties of a PollVote. */
+        interface IPollVote {
+
+            /** PollVote optionName */
+            optionName?: (string|null);
+
+            /** PollVote optionVoteCount */
+            optionVoteCount?: (number|Long|null);
+        }
+
+        /** Represents a PollVote. */
+        class PollVote implements IPollVote {
+
+            /**
+             * Constructs a new PollVote.
+             * @param [properties] Properties to set
+             */
+            constructor(properties?: proto.PollResultSnapshotMessage.IPollVote);
+
+            /** PollVote optionName. */
+            public optionName: string;
+
+            /** PollVote optionVoteCount. */
+            public optionVoteCount: (number|Long);
+
+            /**
+             * Creates a new PollVote instance using the specified properties.
+             * @param [properties] Properties to set
+             * @returns PollVote instance
+             */
+            public static create(properties?: proto.PollResultSnapshotMessage.IPollVote): proto.PollResultSnapshotMessage.PollVote;
+
+            /**
+             * Encodes the specified PollVote message. Does not implicitly {@link proto.PollResultSnapshotMessage.PollVote.verify|verify} messages.
+             * @param message PollVote message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: proto.PollResultSnapshotMessage.IPollVote, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified PollVote message, length delimited. Does not implicitly {@link proto.PollResultSnapshotMessage.PollVote.verify|verify} messages.
+             * @param message PollVote message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: proto.PollResultSnapshotMessage.IPollVote, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a PollVote message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns PollVote
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.PollResultSnapshotMessage.PollVote;
+
+            /**
+             * Decodes a PollVote message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns PollVote
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.PollResultSnapshotMessage.PollVote;
+
+            /**
+             * Verifies a PollVote message.
+             * @param message Plain object to verify
+             * @returns `null` if valid, otherwise the reason why it is not
+             */
+            public static verify(message: { [k: string]: any }): (string|null);
+
+            /**
+             * Creates a PollVote message from a plain object. Also converts values to their respective internal types.
+             * @param object Plain object
+             * @returns PollVote
+             */
+            public static fromObject(object: { [k: string]: any }): proto.PollResultSnapshotMessage.PollVote;
+
+            /**
+             * Creates a plain object from a PollVote message. Also converts values to other types if specified.
+             * @param message PollVote
+             * @param [options] Conversion options
+             * @returns Plain object
+             */
+            public static toObject(message: proto.PollResultSnapshotMessage.PollVote, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+            /**
+             * Converts this PollVote to JSON.
+             * @returns JSON object
+             */
+            public toJSON(): { [k: string]: any };
+
+            /**
+             * Gets the default type url for PollVote
+             * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+             * @returns The default type url
+             */
+            public static getTypeUrl(typeUrlPrefix?: string): string;
+        }
+    }
+
     /** KeepType enum. */
     enum KeepType {
         UNKNOWN = 0,
@@ -10803,6 +11378,42 @@ export namespace proto {
 
         /** Message secretEncryptedMessage */
         secretEncryptedMessage?: (proto.Message.ISecretEncryptedMessage|null);
+
+        /** Message albumMessage */
+        albumMessage?: (proto.Message.IAlbumMessage|null);
+
+        /** Message eventCoverImage */
+        eventCoverImage?: (proto.Message.IFutureProofMessage|null);
+
+        /** Message stickerPackMessage */
+        stickerPackMessage?: (proto.IStickerPackMessage|null);
+
+        /** Message statusMentionMessage */
+        statusMentionMessage?: (proto.Message.IFutureProofMessage|null);
+
+        /** Message pollResultSnapshotMessage */
+        pollResultSnapshotMessage?: (proto.IPollResultSnapshotMessage|null);
+
+        /** Message pollCreationOptionImageMessage */
+        pollCreationOptionImageMessage?: (proto.Message.IFutureProofMessage|null);
+
+        /** Message associatedChildMessage */
+        associatedChildMessage?: (proto.Message.IFutureProofMessage|null);
+
+        /** Message groupStatusMentionMessage */
+        groupStatusMentionMessage?: (proto.Message.IFutureProofMessage|null);
+
+        /** Message pollCreationMessageV4 */
+        pollCreationMessageV4?: (proto.Message.IFutureProofMessage|null);
+
+        /** Message pollCreationMessageV5 */
+        pollCreationMessageV5?: (proto.Message.IFutureProofMessage|null);
+
+        /** Message statusAddYours */
+        statusAddYours?: (proto.Message.IFutureProofMessage|null);
+
+        /** Message groupStatusMessage */
+        groupStatusMessage?: (proto.Message.IFutureProofMessage|null);
     }
 
     /** Represents a Message. */
@@ -11018,6 +11629,42 @@ export namespace proto {
         /** Message secretEncryptedMessage. */
         public secretEncryptedMessage?: (proto.Message.ISecretEncryptedMessage|null);
 
+        /** Message albumMessage. */
+        public albumMessage?: (proto.Message.IAlbumMessage|null);
+
+        /** Message eventCoverImage. */
+        public eventCoverImage?: (proto.Message.IFutureProofMessage|null);
+
+        /** Message stickerPackMessage. */
+        public stickerPackMessage?: (proto.IStickerPackMessage|null);
+
+        /** Message statusMentionMessage. */
+        public statusMentionMessage?: (proto.Message.IFutureProofMessage|null);
+
+        /** Message pollResultSnapshotMessage. */
+        public pollResultSnapshotMessage?: (proto.IPollResultSnapshotMessage|null);
+
+        /** Message pollCreationOptionImageMessage. */
+        public pollCreationOptionImageMessage?: (proto.Message.IFutureProofMessage|null);
+
+        /** Message associatedChildMessage. */
+        public associatedChildMessage?: (proto.Message.IFutureProofMessage|null);
+
+        /** Message groupStatusMentionMessage. */
+        public groupStatusMentionMessage?: (proto.Message.IFutureProofMessage|null);
+
+        /** Message pollCreationMessageV4. */
+        public pollCreationMessageV4?: (proto.Message.IFutureProofMessage|null);
+
+        /** Message pollCreationMessageV5. */
+        public pollCreationMessageV5?: (proto.Message.IFutureProofMessage|null);
+
+        /** Message statusAddYours. */
+        public statusAddYours?: (proto.Message.IFutureProofMessage|null);
+
+        /** Message groupStatusMessage. */
+        public groupStatusMessage?: (proto.Message.IFutureProofMessage|null);
+
         /**
          * Creates a new Message instance using the specified properties.
          * @param [properties] Properties to set
@@ -11195,6 +11842,115 @@ export namespace proto {
 
             /**
              * Gets the default type url for AppStateFatalExceptionNotification
+             * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+             * @returns The default type url
+             */
+            public static getTypeUrl(typeUrlPrefix?: string): string;
+        }
+
+        /** Properties of an AlbumMessage. */
+        interface IAlbumMessage {
+
+            /** AlbumMessage expectedImageCount */
+            expectedImageCount?: (number|null);
+
+            /** AlbumMessage expectedVideoCount */
+            expectedVideoCount?: (number|null);
+
+            /** AlbumMessage contextInfo */
+            contextInfo?: (proto.IContextInfo|null);
+        }
+
+        /** Represents an AlbumMessage. */
+        class AlbumMessage implements IAlbumMessage {
+
+            /**
+             * Constructs a new AlbumMessage.
+             * @param [properties] Properties to set
+             */
+            constructor(properties?: proto.Message.IAlbumMessage);
+
+            /** AlbumMessage expectedImageCount. */
+            public expectedImageCount: number;
+
+            /** AlbumMessage expectedVideoCount. */
+            public expectedVideoCount: number;
+
+            /** AlbumMessage contextInfo. */
+            public contextInfo?: (proto.IContextInfo|null);
+
+            /**
+             * Creates a new AlbumMessage instance using the specified properties.
+             * @param [properties] Properties to set
+             * @returns AlbumMessage instance
+             */
+            public static create(properties?: proto.Message.IAlbumMessage): proto.Message.AlbumMessage;
+
+            /**
+             * Encodes the specified AlbumMessage message. Does not implicitly {@link proto.Message.AlbumMessage.verify|verify} messages.
+             * @param message AlbumMessage message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: proto.Message.IAlbumMessage, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified AlbumMessage message, length delimited. Does not implicitly {@link proto.Message.AlbumMessage.verify|verify} messages.
+             * @param message AlbumMessage message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: proto.Message.IAlbumMessage, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes an AlbumMessage message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns AlbumMessage
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.Message.AlbumMessage;
+
+            /**
+             * Decodes an AlbumMessage message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns AlbumMessage
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.Message.AlbumMessage;
+
+            /**
+             * Verifies an AlbumMessage message.
+             * @param message Plain object to verify
+             * @returns `null` if valid, otherwise the reason why it is not
+             */
+            public static verify(message: { [k: string]: any }): (string|null);
+
+            /**
+             * Creates an AlbumMessage message from a plain object. Also converts values to their respective internal types.
+             * @param object Plain object
+             * @returns AlbumMessage
+             */
+            public static fromObject(object: { [k: string]: any }): proto.Message.AlbumMessage;
+
+            /**
+             * Creates a plain object from an AlbumMessage message. Also converts values to other types if specified.
+             * @param message AlbumMessage
+             * @param [options] Conversion options
+             * @returns Plain object
+             */
+            public static toObject(message: proto.Message.AlbumMessage, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+            /**
+             * Converts this AlbumMessage to JSON.
+             * @returns JSON object
+             */
+            public toJSON(): { [k: string]: any };
+
+            /**
+             * Gets the default type url for AlbumMessage
              * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
              * @returns The default type url
              */
@@ -16266,6 +17022,9 @@ export namespace proto {
 
             /** ImageMessage imageSourceType */
             imageSourceType?: (proto.Message.ImageMessage.ImageSourceType|null);
+
+            /** ImageMessage accessibilityLabel */
+            accessibilityLabel?: (string|null);
         }
 
         /** Represents an ImageMessage. */
@@ -16360,6 +17119,9 @@ export namespace proto {
 
             /** ImageMessage imageSourceType. */
             public imageSourceType: proto.Message.ImageMessage.ImageSourceType;
+
+            /** ImageMessage accessibilityLabel. */
+            public accessibilityLabel: string;
 
             /**
              * Creates a new ImageMessage instance using the specified properties.
@@ -22525,6 +23287,12 @@ export namespace proto {
 
             /** ProtocolMessage mediaNotifyMessage */
             mediaNotifyMessage?: (proto.IMediaNotifyMessage|null);
+
+            /** ProtocolMessage cloudApiThreadControlNotification */
+            cloudApiThreadControlNotification?: (proto.Message.ICloudAPIThreadControlNotification|null);
+
+            /** ProtocolMessage lidMigrationMappingSyncMessage */
+            lidMigrationMappingSyncMessage?: (proto.ILIDMigrationMappingSyncMessage|null);
         }
 
         /** Represents a ProtocolMessage. */
@@ -22589,6 +23357,12 @@ export namespace proto {
 
             /** ProtocolMessage mediaNotifyMessage. */
             public mediaNotifyMessage?: (proto.IMediaNotifyMessage|null);
+
+            /** ProtocolMessage cloudApiThreadControlNotification. */
+            public cloudApiThreadControlNotification?: (proto.Message.ICloudAPIThreadControlNotification|null);
+
+            /** ProtocolMessage lidMigrationMappingSyncMessage. */
+            public lidMigrationMappingSyncMessage?: (proto.ILIDMigrationMappingSyncMessage|null);
 
             /**
              * Creates a new ProtocolMessage instance using the specified properties.
@@ -22687,7 +23461,137 @@ export namespace proto {
                 PEER_DATA_OPERATION_REQUEST_RESPONSE_MESSAGE = 17,
                 REQUEST_WELCOME_MESSAGE = 18,
                 BOT_FEEDBACK_MESSAGE = 19,
-                MEDIA_NOTIFY_MESSAGE = 20
+                MEDIA_NOTIFY_MESSAGE = 20,
+                CLOUD_API_THREAD_CONTROL_NOTIFICATION = 21,
+                LID_MIGRATION_MAPPING_SYNC = 22,
+                REMINDER_MESSAGE = 23,
+                BOT_MEMU_ONBOARDING_MESSAGE = 24,
+                STATUS_MENTION_MESSAGE = 25
+            }
+        }
+
+        /** Properties of a CloudAPIThreadControlNotification. */
+        interface ICloudAPIThreadControlNotification {
+
+            /** CloudAPIThreadControlNotification status */
+            status?: (proto.Message.CloudAPIThreadControlNotification.CloudAPIThreadControl|null);
+
+            /** CloudAPIThreadControlNotification senderNotificationTimestampMS */
+            senderNotificationTimestampMS?: (number|Long|null);
+
+            /** CloudAPIThreadControlNotification consumerLid */
+            consumerLid?: (string|null);
+
+            /** CloudAPIThreadControlNotification consumerPhoneNumber */
+            consumerPhoneNumber?: (string|null);
+        }
+
+        /** Represents a CloudAPIThreadControlNotification. */
+        class CloudAPIThreadControlNotification implements ICloudAPIThreadControlNotification {
+
+            /**
+             * Constructs a new CloudAPIThreadControlNotification.
+             * @param [properties] Properties to set
+             */
+            constructor(properties?: proto.Message.ICloudAPIThreadControlNotification);
+
+            /** CloudAPIThreadControlNotification status. */
+            public status: proto.Message.CloudAPIThreadControlNotification.CloudAPIThreadControl;
+
+            /** CloudAPIThreadControlNotification senderNotificationTimestampMS. */
+            public senderNotificationTimestampMS: (number|Long);
+
+            /** CloudAPIThreadControlNotification consumerLid. */
+            public consumerLid: string;
+
+            /** CloudAPIThreadControlNotification consumerPhoneNumber. */
+            public consumerPhoneNumber: string;
+
+            /**
+             * Creates a new CloudAPIThreadControlNotification instance using the specified properties.
+             * @param [properties] Properties to set
+             * @returns CloudAPIThreadControlNotification instance
+             */
+            public static create(properties?: proto.Message.ICloudAPIThreadControlNotification): proto.Message.CloudAPIThreadControlNotification;
+
+            /**
+             * Encodes the specified CloudAPIThreadControlNotification message. Does not implicitly {@link proto.Message.CloudAPIThreadControlNotification.verify|verify} messages.
+             * @param message CloudAPIThreadControlNotification message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: proto.Message.ICloudAPIThreadControlNotification, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified CloudAPIThreadControlNotification message, length delimited. Does not implicitly {@link proto.Message.CloudAPIThreadControlNotification.verify|verify} messages.
+             * @param message CloudAPIThreadControlNotification message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: proto.Message.ICloudAPIThreadControlNotification, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a CloudAPIThreadControlNotification message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns CloudAPIThreadControlNotification
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.Message.CloudAPIThreadControlNotification;
+
+            /**
+             * Decodes a CloudAPIThreadControlNotification message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns CloudAPIThreadControlNotification
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.Message.CloudAPIThreadControlNotification;
+
+            /**
+             * Verifies a CloudAPIThreadControlNotification message.
+             * @param message Plain object to verify
+             * @returns `null` if valid, otherwise the reason why it is not
+             */
+            public static verify(message: { [k: string]: any }): (string|null);
+
+            /**
+             * Creates a CloudAPIThreadControlNotification message from a plain object. Also converts values to their respective internal types.
+             * @param object Plain object
+             * @returns CloudAPIThreadControlNotification
+             */
+            public static fromObject(object: { [k: string]: any }): proto.Message.CloudAPIThreadControlNotification;
+
+            /**
+             * Creates a plain object from a CloudAPIThreadControlNotification message. Also converts values to other types if specified.
+             * @param message CloudAPIThreadControlNotification
+             * @param [options] Conversion options
+             * @returns Plain object
+             */
+            public static toObject(message: proto.Message.CloudAPIThreadControlNotification, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+            /**
+             * Converts this CloudAPIThreadControlNotification to JSON.
+             * @returns JSON object
+             */
+            public toJSON(): { [k: string]: any };
+
+            /**
+             * Gets the default type url for CloudAPIThreadControlNotification
+             * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+             * @returns The default type url
+             */
+            public static getTypeUrl(typeUrlPrefix?: string): string;
+        }
+
+        namespace CloudAPIThreadControlNotification {
+
+            /** CloudAPIThreadControl enum. */
+            enum CloudAPIThreadControl {
+                UNKNOWN = 0,
+                CONTROL_PASSED = 1,
+                CONTROL_TAKEN = 2
             }
         }
 
@@ -40630,6 +41534,103 @@ export namespace proto {
 
         /**
          * Gets the default type url for WebNotificationsInfo
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    /** Properties of a LIDMigrationMappingSyncMessage. */
+    interface ILIDMigrationMappingSyncMessage {
+
+        /** LIDMigrationMappingSyncMessage encodedMappingPayload */
+        encodedMappingPayload?: (Uint8Array|null);
+    }
+
+    /** Represents a LIDMigrationMappingSyncMessage. */
+    class LIDMigrationMappingSyncMessage implements ILIDMigrationMappingSyncMessage {
+
+        /**
+         * Constructs a new LIDMigrationMappingSyncMessage.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: proto.ILIDMigrationMappingSyncMessage);
+
+        /** LIDMigrationMappingSyncMessage encodedMappingPayload. */
+        public encodedMappingPayload: Uint8Array;
+
+        /**
+         * Creates a new LIDMigrationMappingSyncMessage instance using the specified properties.
+         * @param [properties] Properties to set
+         * @returns LIDMigrationMappingSyncMessage instance
+         */
+        public static create(properties?: proto.ILIDMigrationMappingSyncMessage): proto.LIDMigrationMappingSyncMessage;
+
+        /**
+         * Encodes the specified LIDMigrationMappingSyncMessage message. Does not implicitly {@link proto.LIDMigrationMappingSyncMessage.verify|verify} messages.
+         * @param message LIDMigrationMappingSyncMessage message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: proto.ILIDMigrationMappingSyncMessage, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified LIDMigrationMappingSyncMessage message, length delimited. Does not implicitly {@link proto.LIDMigrationMappingSyncMessage.verify|verify} messages.
+         * @param message LIDMigrationMappingSyncMessage message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: proto.ILIDMigrationMappingSyncMessage, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a LIDMigrationMappingSyncMessage message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns LIDMigrationMappingSyncMessage
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): proto.LIDMigrationMappingSyncMessage;
+
+        /**
+         * Decodes a LIDMigrationMappingSyncMessage message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns LIDMigrationMappingSyncMessage
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): proto.LIDMigrationMappingSyncMessage;
+
+        /**
+         * Verifies a LIDMigrationMappingSyncMessage message.
+         * @param message Plain object to verify
+         * @returns `null` if valid, otherwise the reason why it is not
+         */
+        public static verify(message: { [k: string]: any }): (string|null);
+
+        /**
+         * Creates a LIDMigrationMappingSyncMessage message from a plain object. Also converts values to their respective internal types.
+         * @param object Plain object
+         * @returns LIDMigrationMappingSyncMessage
+         */
+        public static fromObject(object: { [k: string]: any }): proto.LIDMigrationMappingSyncMessage;
+
+        /**
+         * Creates a plain object from a LIDMigrationMappingSyncMessage message. Also converts values to other types if specified.
+         * @param message LIDMigrationMappingSyncMessage
+         * @param [options] Conversion options
+         * @returns Plain object
+         */
+        public static toObject(message: proto.LIDMigrationMappingSyncMessage, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+        /**
+         * Converts this LIDMigrationMappingSyncMessage to JSON.
+         * @returns JSON object
+         */
+        public toJSON(): { [k: string]: any };
+
+        /**
+         * Gets the default type url for LIDMigrationMappingSyncMessage
          * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
          * @returns The default type url
          */
