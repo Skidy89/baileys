@@ -501,101 +501,147 @@ message CommentMetadata {
 }
 
 message ContextInfo {
-    optional string stanzaId = 1;
-    optional string participant = 2;
-    optional Message quotedMessage = 3;
-    optional string remoteJid = 4;
-    repeated string mentionedJid = 15;
-    optional string conversionSource = 18;
-    optional bytes conversionData = 19;
-    optional uint32 conversionDelaySeconds = 20;
-    optional uint32 forwardingScore = 21;
-    optional bool isForwarded = 22;
-    optional AdReplyInfo quotedAd = 23;
-    optional MessageKey placeholderKey = 24;
-    optional uint32 expiration = 25;
-    optional int64 ephemeralSettingTimestamp = 26;
-    optional bytes ephemeralSharedSecret = 27;
-    optional ExternalAdReplyInfo externalAdReply = 28;
-    optional string entryPointConversionSource = 29;
-    optional string entryPointConversionApp = 30;
-    optional uint32 entryPointConversionDelaySeconds = 31;
-    optional DisappearingMode disappearingMode = 32;
-    optional ActionLink actionLink = 33;
-    optional string groupSubject = 34;
-    optional string parentGroupJid = 35;
-    optional string trustBannerType = 37;
-    optional uint32 trustBannerAction = 38;
-    optional bool isSampled = 39;
-    repeated GroupMention groupMentions = 40;
-    optional UTMInfo utm = 41;
-    optional ForwardedNewsletterMessageInfo forwardedNewsletterMessageInfo = 43;
-    optional BusinessMessageForwardInfo businessMessageForwardInfo = 44;
-    optional string smbClientCampaignId = 45;
-    optional string smbServerCampaignId = 46;
-    optional DataSharingContext dataSharingContext = 47;
-    optional bool alwaysShowAdAttribution = 48;
-    message AdReplyInfo {
-        optional string advertiserName = 1;
-        optional MediaType mediaType = 2;
-        optional bytes jpegThumbnail = 16;
-        optional string caption = 17;
-        enum MediaType {
-            NONE = 0;
-            IMAGE = 1;
-            VIDEO = 2;
-        }
-    }
-    
-    message BusinessMessageForwardInfo {
-        optional string businessOwnerJid = 1;
-    }
-    
-    message DataSharingContext {
-        optional bool showMmDisclosure = 1;
-    }
-    
-    message ExternalAdReplyInfo {
-        optional string title = 1;
-        optional string body = 2;
-        optional MediaType mediaType = 3;
-        optional string thumbnailUrl = 4;
-        optional string mediaUrl = 5;
-        optional bytes thumbnail = 6;
-        optional string sourceType = 7;
-        optional string sourceId = 8;
-        optional string sourceUrl = 9;
-        optional bool containsAutoReply = 10;
-        optional bool renderLargerThumbnail = 11;
-        optional bool showAdAttribution = 12;
-        optional string ctwaClid = 13;
-        optional string ref = 14;
-        enum MediaType {
-            NONE = 0;
-            IMAGE = 1;
-            VIDEO = 2;
-        }
-    }
-    
-    message ForwardedNewsletterMessageInfo {
-        optional string newsletterJid = 1;
-        optional int32 serverMessageId = 2;
-        optional string newsletterName = 3;
-        optional ContentType contentType = 4;
-        optional string accessibilityText = 5;
-        enum ContentType {
-            UPDATE = 1;
-            UPDATE_CARD = 2;
-            LINK_CARD = 3;
-        }
-    }
-    
-    message UTMInfo {
-        optional string utmSource = 1;
-        optional string utmCampaign = 2;
-    }
-    
+	enum StatusAttributionType {
+		NONE = 0;
+		RESHARED_FROM_MENTION = 1;
+	}
+
+	message ForwardedNewsletterMessageInfo {
+		enum ContentType {
+			UPDATE = 1;
+			UPDATE_CARD = 2;
+			LINK_CARD = 3;
+		}
+
+		optional string newsletterJID = 1;
+		optional int32 serverMessageID = 2;
+		optional string newsletterName = 3;
+		optional ContentType contentType = 4;
+		optional string accessibilityText = 5;
+	}
+
+	message ExternalAdReplyInfo {
+		enum MediaType {
+			NONE = 0;
+			IMAGE = 1;
+			VIDEO = 2;
+		}
+
+		optional string title = 1;
+		optional string body = 2;
+		optional MediaType mediaType = 3;
+		optional string thumbnailURL = 4;
+		optional string mediaURL = 5;
+		optional bytes thumbnail = 6;
+		optional string sourceType = 7;
+		optional string sourceID = 8;
+		optional string sourceURL = 9;
+		optional bool containsAutoReply = 10;
+		optional bool renderLargerThumbnail = 11;
+		optional bool showAdAttribution = 12;
+		optional string ctwaClid = 13;
+		optional string ref = 14;
+		optional bool clickToWhatsappCall = 15;
+		optional bool adContextPreviewDismissed = 16;
+		optional string sourceApp = 17;
+		optional bool automatedGreetingMessageShown = 18;
+		optional string greetingMessageBody = 19;
+		optional string ctaPayload = 20;
+		optional bool disableNudge = 21;
+		optional string originalImageURL = 22;
+	}
+
+	message AdReplyInfo {
+		enum MediaType {
+			NONE = 0;
+			IMAGE = 1;
+			VIDEO = 2;
+		}
+
+		optional string advertiserName = 1;
+		optional MediaType mediaType = 2;
+		optional bytes JPEGThumbnail = 16;
+		optional string caption = 17;
+	}
+
+	message FeatureEligibilities {
+		optional bool cannotBeReactedTo = 1;
+		optional bool cannotBeRanked = 2;
+		optional bool canRequestFeedback = 3;
+	}
+
+	message DataSharingContext {
+		message Parameters {
+			optional string key = 1;
+			optional string stringData = 2;
+			optional int64 intData = 3;
+			optional float floatData = 4;
+			optional Parameters contents = 5;
+		}
+
+		optional bool showMmDisclosure = 1;
+		optional string encryptedSignalTokenConsented = 2;
+		repeated Parameters parameters = 3;
+	}
+
+	message ForwardedAIBotMessageInfo {
+		optional string botName = 1;
+		optional string botJID = 2;
+		optional string creatorName = 3;
+	}
+
+	message UTMInfo {
+		optional string utmSource = 1;
+		optional string utmCampaign = 2;
+	}
+
+	message BusinessMessageForwardInfo {
+		optional string businessOwnerJID = 1;
+	}
+
+	optional string stanzaID = 1;
+	optional string participant = 2;
+	optional Message quotedMessage = 3;
+	optional string remoteJID = 4;
+	repeated string mentionedJID = 15;
+	optional string conversionSource = 18;
+	optional bytes conversionData = 19;
+	optional uint32 conversionDelaySeconds = 20;
+	optional uint32 forwardingScore = 21;
+	optional bool isForwarded = 22;
+	optional AdReplyInfo quotedAd = 23;
+	optional WACommon.MessageKey placeholderKey = 24;
+	optional uint32 expiration = 25;
+	optional int64 ephemeralSettingTimestamp = 26;
+	optional bytes ephemeralSharedSecret = 27;
+	optional ExternalAdReplyInfo externalAdReply = 28;
+	optional string entryPointConversionSource = 29;
+	optional string entryPointConversionApp = 30;
+	optional uint32 entryPointConversionDelaySeconds = 31;
+	optional DisappearingMode disappearingMode = 32;
+	optional ActionLink actionLink = 33;
+	optional string groupSubject = 34;
+	optional string parentGroupJID = 35;
+	optional string trustBannerType = 37;
+	optional uint32 trustBannerAction = 38;
+	optional bool isSampled = 39;
+	repeated GroupMention groupMentions = 40;
+	optional UTMInfo utm = 41;
+	optional ForwardedNewsletterMessageInfo forwardedNewsletterMessageInfo = 43;
+	optional BusinessMessageForwardInfo businessMessageForwardInfo = 44;
+	optional string smbClientCampaignID = 45;
+	optional string smbServerCampaignID = 46;
+	optional DataSharingContext dataSharingContext = 47;
+	optional bool alwaysShowAdAttribution = 48;
+	optional FeatureEligibilities featureEligibilities = 49;
+	optional string entryPointConversionExternalSource = 50;
+	optional string entryPointConversionExternalMedium = 51;
+	optional string ctwaSignals = 54;
+	optional bytes ctwaPayload = 55;
+	optional ForwardedAIBotMessageInfo forwardedAiBotMessageInfo = 56;
+	optional StatusAttributionType statusAttributionType = 57;
 }
+
 
 message Conversation {
     required string id = 1;
