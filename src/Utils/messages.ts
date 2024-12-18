@@ -591,13 +591,13 @@ export const generateWAMessageFromContent = (
 
 		const contextInfo: proto.IContextInfo = innerMessage[key].contextInfo || { }
 		contextInfo.participant = jidNormalizedUser(participant!)
-		contextInfo.stanzaId = quoted.key.id
+		contextInfo.stanzaID = quoted.key.id
 		contextInfo.quotedMessage = quotedMsg
 
 		// if a participant is quoted, then it must be a group
 		// hence, remoteJid of group must also be entered
 		if(jid !== quoted.key.remoteJid) {
-			contextInfo.remoteJid = quoted.key.remoteJid
+			contextInfo.remoteJID = quoted.key.remoteJid
 		}
 
 		innerMessage[key].contextInfo = contextInfo
