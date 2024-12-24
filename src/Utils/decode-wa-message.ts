@@ -4,7 +4,7 @@ import { proto } from '../../WAProto'
 import { SignalRepository, WAMessageKey } from '../Types'
 import { areJidsSameUser, BinaryNode, binaryNodeToString, getBinaryNodeChild, isJidBroadcast, isJidGroup, isJidNewsletter, isJidStatusBroadcast, isJidUser, isLidUser, jidNormalizedUser } from '../WABinary'
 import { unpadRandomMax16 } from './generics'
-import { decryptBotMessage } from './process-message'
+import { decryptBotMessage, parseMessageSecret } from './process-message'
 
 export const NO_MESSAGE_FOUND_ERROR_TEXT = 'Message absent from node'
 
@@ -183,37 +183,8 @@ export const decryptMessageNode = (
 							msgBuffer = content
 							break
 						case 'msmsg':
-							const node = getBinaryNodeChild(stanza, 'meta')
-							const bot = getBinaryNodeChild(stanza, 'bot')
-							const from = stanza.attrs.from
-							if(!node || !bot) {
-								throw new Error('missing meta or bot node')
-							}
-							let messageId = node.attrs.target_id
-							let targetSenderJid
-							let targetSenderId
-							if (bot.attrs.edit === editType[editType.inner] || bot.attrs.edit === editType[editType.last]) {
-								targetSenderId = bot.attrs.edit_target_id
-							} else {
-								targetSenderId = msgId
-							}
-							if (node.attrs.target_sender_jid === undefined || node.attrs.target_sender_jid === "" || node.attrs.target_sender_jid === null) {
-								// if target_sender_jid is not present, then the message is sent by the ourselves
-								targetSenderJid = jidNormalizedUser(meId)
-							} else {
-								targetSenderJid = node.attrs.target_sender_jid
-							}
-							console.log("Target Sender JID: " + targetSenderJid)
-							console.log("Target Sender ID: " + targetSenderId)
-							console.log("Author: " + jidNormalizedUser(from))
-							console.log("Message ID: " + messageId)
-							console.log("edit: " + bot.attrs.edit)
-							const secret = saveMessageSecrets.get(messageId)
-							if (!secret) {
-								throw new Error('Message secret not found')
-							}
-							const msg = proto.MessageSecretMessage.decode(content)
-							msgBuffer = decryptBotMessage(msg, { targetSenderJid, targetSenderId, messageID: messageId, sender: jidNormalizedUser(from), messageSecret: secret! })
+							const { secret, targetSenderJid, editTargetID, from, editType } = parseMessage(stanza, meId)
+							msgBuffer = decryptBotMessage(proto.MessageSecretMessage.decode(content), { targetSenderJid, messageID: editTargetID, sender: from, messageSecret: secret! })
 							break
 
 						default:
@@ -257,4 +228,42 @@ export const decryptMessageNode = (
 			}
 		}
 	}
+}
+
+const parseMessage = (stanza: BinaryNode, me: string) => {
+	const meta = getBinaryNodeChild(stanza, 'meta')
+	const bot = getBinaryNodeChild(stanza, 'bot')
+	// this is the bot jid
+	// its not loger jid. now its @bot
+	// 867051314767696@bot
+	// also something weird is happening when you use wa business
+	// the bot uses jid instead of @bot
+	// "13135550202@s.whatsapp.net"
+	const from = stanza.attrs.from
+	const id = stanza.attrs.id
+	const editType = bot?.attrs.edit
+	let editTargetID = bot?.attrs.edit_target_id
+	if (!meta || !bot) {
+		throw new Error('missing meta or bot node')
+	}
+	// get the message id to decrypt
+	if (editTargetID === '' || editTargetID === undefined || editType === "first") {
+		// the editType "first" doesnt not have edit_target_id so its from meta ai
+		editTargetID = id
+	}
+	let targetSenderJid = meta.attrs.target_sender_jid
+	if (targetSenderJid === '' || targetSenderJid === undefined) {
+		// if target_sender_jid is not present, then the message is sent by the ourselves
+		targetSenderJid = jidNormalizedUser(me)
+	}
+	// get the message secret
+	const getSecret = saveMessageSecrets.get(meta.attrs.target_id)
+
+	if (!getSecret) {
+		throw new Error('Message secret not found')
+	}
+	const secret = parseMessageSecret(getSecret)
+	saveMessageSecrets.delete(meta.attrs.target_id)
+
+	return { secret, targetSenderJid, editTargetID, from, editType }
 }
