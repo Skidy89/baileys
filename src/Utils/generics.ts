@@ -52,7 +52,7 @@ export const BufferJSON = {
 export const encodeNewsletterMessage = (message: proto.IMessage) => (
 	proto.Message.encode(message).finish()
 )
-
+export const encodeMessage = (message: proto.IMessage) => proto.Message.encode(message).finish()
 export const getKeyAuthor = (
 	key: proto.IMessageKey | undefined | null,
 	meId = 'me'
@@ -271,33 +271,6 @@ export const fetchLatestBaileysVersion = async(options: AxiosRequestConfig<any> 
 		)
 		return {
 			version: result.data.version,
-			isLatest: true
-		}
-	} catch(error) {
-		return {
-			version: baileysVersion as WAVersion,
-			isLatest: false,
-			error
-		}
-	}
-}
-
-/**
- * A utility that fetches the latest web version of whatsapp.
- * Use to ensure your WA connection is always on the latest version
- */
-export const fetchLatestWaWebVersion = async(options: AxiosRequestConfig<any>) => {
-	try {
-		const result = await axios.get(
-			'https://web.whatsapp.com/check-update?version=1&platform=web',
-			{
-				...options,
-				responseType: 'json'
-			}
-		)
-		const version = result.data.currentVersion.split('.')
-		return {
-			version: [+version[0], +version[1], +version[2]] as WAVersion,
 			isLatest: true
 		}
 	} catch(error) {

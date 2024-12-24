@@ -1,4 +1,6 @@
 # <div align='center'>Baileys - Typescript/Javascript WhatsApp Web API</div>
+> [!IMPORTANT]
+> this an optimized version of baileys, several things has been changed. this fork is to be more efficient than the original one
 
 <div align='center'>
 

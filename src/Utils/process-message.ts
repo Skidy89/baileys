@@ -111,7 +111,13 @@ type PollContext = {
 	/** jid of the person that voted */
 	voterJid: string
 }
-
+type botMessageData = {
+	targetSenderJid: string
+	targetSenderId: string
+	messageID: string
+	sender: string
+	messageSecret: Uint8Array
+}
 /**
  * Decrypt a poll vote
  * @param vote encrypted vote
@@ -446,6 +452,30 @@ const processMessage = async(
 
 	if(Object.keys(chat).length > 1) {
 		ev.emit('chats.update', [chat])
+	}
+}
+
+export function decryptBotMessage(
+	{ encIv, encPayload }: proto.MessageSecretMessage,
+	{ targetSenderJid, targetSenderId, messageID, sender, messageSecret }: botMessageData
+) {
+	const sign = Buffer.concat(
+		[
+			toBinary(targetSenderJid),
+			toBinary(targetSenderId),
+			toBinary(messageID),
+			toBinary(sender),
+			toBinary('Bot Message')
+		]
+	)
+	const key0 = hmacSign(messageSecret, new Uint8Array(32), 'sha256')
+	const decKey = hmacSign(sign, key0, 'sha256')
+	const aad = toBinary(`${messageID}\u0000${sender}`)
+	const decrypted = aesDecryptGCM(encPayload!, decKey, encIv!, aad)
+	return decrypted
+
+	function toBinary(txt: string) {
+		return Buffer.from(txt)
 	}
 }
 

@@ -1,4 +1,4 @@
-import { WAMediaUpload } from './Message'
+/*import { WAMediaUpload } from './Message'
 
 export type CatalogResult = {
 	data: {
@@ -38,9 +38,9 @@ export type ProductBase = {
 }
 
 export type ProductCreate = ProductBase & {
-	/** ISO country code for product origin. Set to undefined for no country */
+
 	originCountryCode: string | undefined
-	/** images of the product */
+
 	images: WAMediaUpload[]
 }
 
@@ -76,10 +76,7 @@ export type OrderDetails = {
 export type CatalogCursor = string
 
 export type GetCatalogOptions = {
-	/** cursor to start from */
 	cursor?: CatalogCursor
-	/** number of products to fetch */
 	limit?: number
-
 	jid?: string
-}
+}*/

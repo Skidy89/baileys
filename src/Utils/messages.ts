@@ -26,7 +26,7 @@ import {
 } from '../Types'
 import { isJidGroup, isJidStatusBroadcast, jidNormalizedUser } from '../WABinary'
 import { sha256 } from './crypto'
-import { generateMessageID, getKeyAuthor, unixTimestampSeconds } from './generics'
+import { encodeMessage, generateMessageID, getKeyAuthor, unixTimestampSeconds } from './generics'
 import { downloadContentFromMessage, encryptedStream, generateThumbnail, getAudioDuration, getAudioWaveform, MediaDownloadOptions } from './messages-media'
 
 type MediaUploadData = {
@@ -211,11 +211,6 @@ export const prepareWAMessageMedia = async(
 					logger?.debug('processed waveform')
 				}
 
-				if(requiresWaveformProcessing) {
-					uploadData.waveform = await getAudioWaveform(bodyPath!, logger)
-					logger?.debug('processed waveform')
-				}
-
 				if(requiresAudioBackground) {
 					uploadData.backgroundArgb = await assertColor(options.backgroundColor)
 					logger?.debug('computed backgroundColor audio status')
@@ -258,25 +253,9 @@ export const prepareWAMessageMedia = async(
 	}
 
 	if(cacheableKey) {
-		// set cache
 		logger?.debug({ cacheableKey }, 'setting cache')
-		const encImg = WAProto.Message.fromObject({
-			[`${mediaType}Message`]: MessageTypeProto[mediaType].fromObject(
-				{
-					url: mediaUrl,
-					directPath,
-					mediaKey,
-					fileEncSha256,
-					fileSha256,
-					fileLength,
-					mediaKeyTimestamp: unixTimestampSeconds(),
-					...uploadData,
-					media: undefined
-				}
-			)
-		})
-		await options.mediaCache!.set(cacheableKey, WAProto.Message.encode(encImg).finish())
-
+		const encImg = encodeMessage(obj)
+		options.mediaCache && await options.mediaCache.set(cacheableKey, encImg)
 	}
 
 	return obj
@@ -313,7 +292,7 @@ export const generateForwardMessageContent = (
 
 	// hacky copy
 	content = normalizeMessageContent(content)
-	content = proto.Message.decode(proto.Message.encode(content!).finish())
+	content = proto.Message.decode(encodeMessage(content!))
 
 	let key = Object.keys(content)[0] as MessageType
 

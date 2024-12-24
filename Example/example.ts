@@ -1,5 +1,5 @@
 import { Boom } from '@hapi/boom'
-import NodeCache from 'node-cache'
+import NodeCache from '@cacheable/node-cache'
 import readline from 'readline'
 import makeWASocket, { AnyMessageContent, BinaryNode, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, fetchLatestBaileysVersion, generateMessageIDV2, makeCacheableSignalKeyStore, prepareWAMessageMedia, proto, useMultiFileAuthState } from '../src'
 import MAIN_LOGGER from '../src/Utils/logger'
@@ -132,6 +132,9 @@ const startSock = async() => {
 							//if (msg?.key.fromMe) return
 					}
 				}
+			}
+			if (events['group-participants.update']) {
+				console.log('group-participants.update', events['group-participants.update'])
 			}
 
 			// messages updated like status delivered, message deleted etc.

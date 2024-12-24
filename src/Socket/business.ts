@@ -1,3 +1,13 @@
+/**
+ * @deprecated
+ * much useless to me
+ */
+
+
+
+
+
+/*
 import { GetCatalogOptions, ProductCreate, ProductUpdate, SocketConfig } from '../Types'
 import { parseCatalogNode, parseCollectionsNode, parseOrderDetailsNode, parseProductNode, toProductNode, uploadingNecessaryImagesOfProduct } from '../Utils/business'
 import { BinaryNode, jidNormalizedUser, S_WHATSAPP_NET } from '../WABinary'
@@ -279,3 +289,4 @@ export const makeBusinessSocket = (config: SocketConfig) => {
 		productUpdate
 	}
 }
+*/
