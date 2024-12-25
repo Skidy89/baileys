@@ -1,5 +1,5 @@
-import { Boom } from '@hapi/boom'
 import NodeCache from '@cacheable/node-cache'
+import { Boom } from '@hapi/boom'
 import { proto } from '../../WAProto'
 import { DEFAULT_CACHE_TTLS, PROCESSABLE_HISTORY_TYPES } from '../Defaults'
 import { ALL_WA_PATCH_NAMES, ChatModification, ChatMutation, LTHashState, MessageUpsertType, PresenceData, SocketConfig, WABusinessHoursConfig, WABusinessProfile, WAMediaUpload, WAMessage, WAPatchCreate, WAPatchName, WAPresence, WAPrivacyCallValue, WAPrivacyGroupAddValue, WAPrivacyOnlineValue, WAPrivacyValue, WAReadReceiptsValue } from '../Types'
@@ -776,17 +776,6 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		return appPatch(patch)
 	}
 
-	/**
-	 * Star or Unstar a message
-	 */
-	const star = (jid: string, messages: { id: string, fromMe?: boolean }[], star: boolean) => {
-		return chatModify({
-			star: {
-				messages,
-				star
-			}
-		}, jid)
-	}
 
 	/**
 	 * Adds label for the chats
@@ -1010,6 +999,5 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		removeChatLabel,
 		addMessageLabel,
 		removeMessageLabel,
-		star
 	}
 }

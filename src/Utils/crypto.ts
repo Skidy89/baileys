@@ -119,19 +119,20 @@ export function hmacSign(buffer: Buffer | Uint8Array, key: Buffer | Uint8Array, 
 export function sha256(buffer: Buffer) {
 	return createHash('sha256').update(buffer).digest()
 }
+
 export function SHA256(key, salt, info, length) {
-    const hkdf = createHmac('sha256', salt || Buffer.alloc(32))
-    hkdf.update(key)
-    hkdf.update(info)
+	const hkdf = createHmac('sha256', salt || Buffer.alloc(32))
+	hkdf.update(key)
+	hkdf.update(info)
 
-    const derivedKey = Buffer.alloc(length)
-    hkdf.digest().copy(derivedKey, 0, 0, length)
+	const derivedKey = Buffer.alloc(length)
+	hkdf.digest().copy(derivedKey, 0, 0, length)
 
-    if (derivedKey.length !== length) {
-        throw new Error(`Didn't read enough bytes (got ${derivedKey.length}, wanted ${length})`)
-    }
+	if(derivedKey.length !== length) {
+		throw new Error(`Didn't read enough bytes (got ${derivedKey.length}, wanted ${length})`)
+	}
 
-    return derivedKey
+	return derivedKey
 }
 
 export function md5(buffer: Buffer) {

@@ -1,6 +1,6 @@
 
-import { Boom } from '@hapi/boom'
 import NodeCache from '@cacheable/node-cache'
+import { Boom } from '@hapi/boom'
 import { proto } from '../../WAProto'
 import { DEFAULT_CACHE_TTLS, WA_DEFAULT_EPHEMERAL } from '../Defaults'
 import { AnyMessageContent, MediaConnInfo, MessageReceiptType, MessageRelayOptions, MiscMessageGenerationOptions, SocketConfig, WAMessageKey } from '../Types'
@@ -8,7 +8,7 @@ import { aggregateMessageKeysNotFromMe, assertMediaContent, bindWaitForEvent, de
 import { getUrlInfo } from '../Utils/link-preview'
 import { areJidsSameUser, BinaryNode, BinaryNodeAttributes, getBinaryNodeChild, getBinaryNodeChildren, isJidGroup, isJidUser, jidDecode, jidEncode, jidNormalizedUser, JidWithDevice, S_WHATSAPP_NET } from '../WABinary'
 import { makeGroupsSocket } from './groups'
-import { makeNewsletterSocket } from './newsletter'
+
 
 export const makeMessagesSocket = (config: SocketConfig) => {
 	const {
@@ -19,7 +19,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		patchMessageBeforeSending,
 		cachedGroupMetadata,
 	} = config
-	const sock = makeNewsletterSocket(config)
+	const sock = makeGroupsSocket(config)
 	const {
 		ev,
 		authState,
@@ -124,9 +124,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 	/** Correctly bulk send receipts to multiple chats, participants */
 	const sendReceipts = async(keys: WAMessageKey[], type: MessageReceiptType) => {
 		const recps = aggregateMessageKeysNotFromMe(keys)
-		for(const { jid, participant, messageIds } of recps) {
-			await sendReceipt(jid, participant, messageIds, type)
-		}
+		await Promise.all(recps.map(({ jid, participant, messageIds }) => sendReceipt(jid, participant, messageIds, type)))
 	}
 
 	/** Bulk read messages. Keys can be from different chats & participants */
@@ -217,53 +215,25 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 	}
 
 	const assertSessions = async(jids: string[], force: boolean) => {
-		let didFetchNewSession = false
-		let jidsRequiringFetch: string[] = []
-		if(force) {
-			jidsRequiringFetch = jids
-		} else {
-			const addrs = jids.map(jid => (
-				signalRepository
-					.jidToSignalProtocolAddress(jid)
-			))
-			const sessions = await authState.keys.get('session', addrs)
-			for(const jid of jids) {
-				const signalId = signalRepository
-					.jidToSignalProtocolAddress(jid)
-				if(!sessions[signalId]) {
-					jidsRequiringFetch.push(jid)
-				}
-			}
-		}
+		let jidsRequiringFetch: string[] = force ? jids : []
+    	if(!force) {
+        	const addrs = jids.map(jid => signalRepository.jidToSignalProtocolAddress(jid))
+        	const sessions = await authState.keys.get('session', addrs)
+        	jidsRequiringFetch = jids.filter(jid => !sessions[signalRepository.jidToSignalProtocolAddress(jid)])
+    	}
 
-		if(jidsRequiringFetch.length) {
-			logger.debug({ jidsRequiringFetch }, 'fetching sessions')
-			const result = await query({
-				tag: 'iq',
-				attrs: {
-					xmlns: 'encrypt',
-					type: 'get',
-					to: S_WHATSAPP_NET,
-				},
-				content: [
-					{
-						tag: 'key',
-						attrs: { },
-						content: jidsRequiringFetch.map(
-							jid => ({
-								tag: 'user',
-								attrs: { jid },
-							})
-						)
-					}
-				]
-			})
+    	if(jidsRequiringFetch.length) {
+        	logger.debug({ jidsRequiringFetch }, 'fetching sessions')
+        	const result = await query({
+            	tag: 'iq',
+            	attrs: { xmlns: 'encrypt', type: 'get', to: S_WHATSAPP_NET },
+            	content: [{ tag: 'key', attrs: {}, content: jidsRequiringFetch.map(jid => ({ tag: 'user', attrs: { jid } })) }]
+        	})
 			await parseAndInjectE2ESessions(result, signalRepository)
+			return true
+   		}
 
-			didFetchNewSession = true
-		}
-
-		return didFetchNewSession
+    	return false
 	}
 
 	const sendPeerDataOperationMessage = async(
@@ -470,14 +440,14 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					})
 
 					await authState.keys.set({ 'sender-key-memory': { [jid]: senderKeyMap } })
-				} else if (isNewsletter) {
-					if (message.protocolMessage?.editedMessage) {
+				} else if(isNewsletter) {
+					if(message.protocolMessage?.editedMessage) {
 						msgId = message.protocolMessage.key?.id!
 						message = message.protocolMessage.editedMessage
 					}
 
 					// Message delete
-					if (message.protocolMessage?.type === proto.Message.ProtocolMessage.Type.REVOKE) {
+					if(message.protocolMessage?.type === proto.Message.ProtocolMessage.Type.REVOKE) {
 						msgId = message.protocolMessage.key?.id!
 						message = {}
 					}
@@ -490,7 +460,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 						attrs: mediaType ? { mediatype: mediaType } : {},
 						content: bytes
 					})
-				}else {
+				} else {
 					const { user: meUser } = jidDecode(meId)!
 
 					if(!participant) {
@@ -585,6 +555,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 
 					logger.debug({ jid }, 'adding device identity')
 				}
+
 				const buttonType = getButtonType(message)
 				if(buttonType && additionalNodes && additionalNodes.length === 0) {
 					(stanza.content as BinaryNode[]).push({
@@ -625,7 +596,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 
 				if(additionalNodes && additionalNodes.length > 0) {
 					(stanza.content as BinaryNode[]).push(...additionalNodes)
-					logger.debug({stanza}, 'inject additionalNodes....')
+					logger.debug({ stanza }, 'inject additionalNodes....')
 				}
 
 				logger.debug({ msgId }, `sending message to ${participants.length} devices`)
@@ -636,6 +607,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 
 		return msgId
 	}
+
 	const getButtonType = (message: proto.IMessage) => {
 		if(message.buttonsMessage) {
 			return 'buttons'
@@ -665,22 +637,23 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 			return {}
 		}
 	}
+
 	const getTypeMessage = (msg: proto.IMessage) => {
-		if (msg.viewOnceMessage) {
+		if(msg.viewOnceMessage) {
 			return getTypeMessage(msg.viewOnceMessage.message!)
-		} else if (msg.viewOnceMessageV2) {
+		} else if(msg.viewOnceMessageV2) {
 			return getTypeMessage(msg.viewOnceMessageV2.message!)
-		} else if (msg.viewOnceMessageV2Extension) {
+		} else if(msg.viewOnceMessageV2Extension) {
 			return getTypeMessage(msg.viewOnceMessageV2Extension.message!)
-		} else if (msg.ephemeralMessage) {
+		} else if(msg.ephemeralMessage) {
 			return getTypeMessage(msg.ephemeralMessage.message!)
-		} else if (msg.documentWithCaptionMessage) {
+		} else if(msg.documentWithCaptionMessage) {
 			return getTypeMessage(msg.documentWithCaptionMessage.message!)
-		} else if (msg.reactionMessage) {
+		} else if(msg.reactionMessage) {
 			return 'reaction'
-		} else if (msg.pollCreationMessage || msg.pollCreationMessageV2 || msg.pollCreationMessageV3 || msg.pollUpdateMessage) {
+		} else if(msg.pollCreationMessage || msg.pollCreationMessageV2 || msg.pollCreationMessageV3 || msg.pollUpdateMessage) {
 			return 'reaction'
-		} else if (getMediaType(msg)) {
+		} else if(getMediaType(msg)) {
 			return 'media'
 		} else {
 			return 'text'

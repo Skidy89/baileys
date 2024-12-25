@@ -8,6 +8,7 @@ import { aesDecryptGCM, hmacSign, SHA256 } from './crypto'
 import { getKeyAuthor, toNumber } from './generics'
 import { downloadAndProcessHistorySyncNotification } from './history'
 
+
 type ProcessMessageContext = {
 	shouldProcessHistoryMsg: boolean
 	placeholderResendCache?: CacheStore
@@ -453,38 +454,7 @@ const processMessage = async(
 		ev.emit('chats.update', [chat])
 	}
 }
-export function parseMessageSecret(secret: Buffer | Uint8Array) {
-	if(secret.length !== 32) {
-		throw new Error('Message secret must be 32 bytes')
-	}
-	const patchedSecret = SHA256(secret, null, Buffer.from("Bot Message"), 32)
-	
-	return patchedSecret
-}
 
-export function decryptBotMessage(
-	{ encIv, encPayload }: proto.MessageSecretMessage,
-	{ targetSenderJid, messageID, sender, messageSecret }: botMessageData
-) {
-	const sign = Buffer.concat(
-		[
-			toBinary(messageID),
-			toBinary(sender),
-			toBinary(targetSenderJid),
-			toBinary(''),
-			new Uint8Array([1])
-		]
-	)
-	const key0 = SHA256(messageSecret, null, sign, 32)
-	const decKey = hmacSign(sign, key0, 'sha256')
-	const aad = toBinary(`${messageID}\u0000${targetSenderJid}`)
-	
-	const decrypted = aesDecryptGCM(encPayload!, decKey, encIv!, aad)
-	return decrypted
 
-	function toBinary(txt: string) {
-		return Buffer.from(txt)
-	}
-}
 
 export default processMessage

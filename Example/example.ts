@@ -130,6 +130,7 @@ const startSock = async() => {
 				if(upsert.type === 'notify') {
 					for (const msg of upsert.messages) {
 							//if (msg?.key.fromMe) return
+
 					}
 				}
 			}

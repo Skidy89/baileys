@@ -2,19 +2,14 @@ import { Boom } from '@hapi/boom'
 import { Logger } from 'pino'
 import { proto } from '../../WAProto'
 import { SignalRepository, WAMessageKey } from '../Types'
-import { areJidsSameUser, BinaryNode, binaryNodeToString, getBinaryNodeChild, isJidBroadcast, isJidGroup, isJidNewsletter, isJidStatusBroadcast, isJidUser, isLidUser, jidNormalizedUser } from '../WABinary'
+import { areJidsSameUser, BinaryNode, isJidBroadcast, isJidGroup, isJidNewsletter, isJidStatusBroadcast, isJidUser, isLidUser } from '../WABinary'
 import { unpadRandomMax16 } from './generics'
-import { decryptBotMessage, parseMessageSecret } from './process-message'
+
 
 export const NO_MESSAGE_FOUND_ERROR_TEXT = 'Message absent from node'
 
 type MessageType = 'chat' | 'peer_broadcast' | 'other_broadcast' | 'group' | 'direct_peer_status' | 'other_status' | 'newsletter'
-enum editType {
-	"first",
-	"inner",
-	"last"
-}
-const saveMessageSecrets = new Map<string, Uint8Array>()
+
 /**
  * Decode the received node as a message.
  * @note this will only parse the message, not decrypt it
@@ -142,11 +137,8 @@ export const decryptMessageNode = (
 						const details = proto.VerifiedNameCertificate.Details.decode(cert.details!)
 						fullMessage.verifiedBizName = details.verifiedName
 					}
-					if (fullMessage?.messageSecret || fullMessage.message?.messageContextInfo?.messageSecret) {
-						console.log("Message secret found")
-						console.log(fullMessage.key.id)
-						saveMessageSecrets.set(fullMessage.key.id!, fullMessage.messageSecret || fullMessage.message?.messageContextInfo?.messageSecret!)
-					}
+
+					
 
 					if(tag !== 'enc' && tag !== 'plaintext') {
 						continue
@@ -183,8 +175,9 @@ export const decryptMessageNode = (
 							msgBuffer = content
 							break
 						case 'msmsg':
-							const { secret, targetSenderJid, editTargetID, from, editType } = parseMessage(stanza, meId)
-							msgBuffer = decryptBotMessage(proto.MessageSecretMessage.decode(content), { targetSenderJid, messageID: editTargetID, sender: from, messageSecret: secret! })
+							//const { secret, targetSenderJid, editTargetID, from, editType } = parseMessage(stanza, meId)
+							//msgBuffer = await decryptBotMessage(proto.MessageSecretMessage.decode(content), { targetSenderJid, messageID: editTargetID, sender: from, messageSecret: secret })
+							msgBuffer = content
 							break
 
 						default:
@@ -230,7 +223,7 @@ export const decryptMessageNode = (
 	}
 }
 
-const parseMessage = (stanza: BinaryNode, me: string) => {
+/*const parseMessage = (stanza: BinaryNode, me: string) => {
 	const meta = getBinaryNodeChild(stanza, 'meta')
 	const bot = getBinaryNodeChild(stanza, 'bot')
 	// this is the bot jid
@@ -243,27 +236,30 @@ const parseMessage = (stanza: BinaryNode, me: string) => {
 	const id = stanza.attrs.id
 	const editType = bot?.attrs.edit
 	let editTargetID = bot?.attrs.edit_target_id
-	if (!meta || !bot) {
+	if(!meta || !bot) {
 		throw new Error('missing meta or bot node')
 	}
+
 	// get the message id to decrypt
-	if (editTargetID === '' || editTargetID === undefined || editType === "first") {
+	if(editTargetID === '' || editTargetID === undefined || editType === 'first') {
 		// the editType "first" doesnt not have edit_target_id so its from meta ai
 		editTargetID = id
 	}
+
 	let targetSenderJid = meta.attrs.target_sender_jid
-	if (targetSenderJid === '' || targetSenderJid === undefined) {
+	if(targetSenderJid === '' || targetSenderJid === undefined) {
 		// if target_sender_jid is not present, then the message is sent by the ourselves
 		targetSenderJid = jidNormalizedUser(me)
 	}
+
 	// get the message secret
 	const getSecret = saveMessageSecrets.get(meta.attrs.target_id)
 
-	if (!getSecret) {
+	if(!getSecret) {
 		throw new Error('Message secret not found')
 	}
+
 	const secret = parseMessageSecret(getSecret)
-	saveMessageSecrets.delete(meta.attrs.target_id)
 
 	return { secret, targetSenderJid, editTargetID, from, editType }
-}
+}*/

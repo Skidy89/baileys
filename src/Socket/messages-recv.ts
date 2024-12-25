@@ -1,7 +1,8 @@
 
-import { Boom } from '@hapi/boom'
-import { randomBytes } from 'node:crypto'
 import NodeCache from '@cacheable/node-cache'
+import { Boom } from '@hapi/boom'
+import Long from 'long'
+import { randomBytes } from 'node:crypto'
 import { proto } from '../../WAProto'
 import { DEFAULT_CACHE_TTLS, KEY_BUNDLE_TYPE, MIN_PREKEY_COUNT } from '../Defaults'
 import { MessageReceiptType, MessageRelayOptions, MessageUserReceipt, SocketConfig, WACallEvent, WAMessageKey, WAMessageStatus, WAMessageStubType, WAPatchName } from '../Types'
@@ -42,7 +43,7 @@ import {
 } from '../WABinary'
 import { extractGroupMetadata } from './groups'
 import { makeMessagesSocket } from './messages-send'
-import Long from 'long'
+
 function toRequiredBuffer(data: Uint8Array | Buffer | undefined) {
 	if(data === undefined) {
 		throw new Boom('Invalid buffer', { statusCode: 400 })
@@ -848,7 +849,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			peerDataOperationRequestType: proto.Message.PeerDataOperationRequestType.HISTORY_SYNC_ON_DEMAND
 		}
 
-		return sendPeerDataOperationMessage(pdoMessage!)
+		return sendPeerDataOperationMessage(pdoMessage)
 	}
 
 	const requestPlaceholderResend = async(messageKey: WAMessageKey): Promise<'RESOLVED'| string | undefined> => {
