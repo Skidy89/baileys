@@ -3,7 +3,7 @@ import NodeCache from '@cacheable/node-cache'
 import readline from 'readline'
 import makeWASocket, { AnyMessageContent, BinaryNode, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, fetchLatestBaileysVersion, generateMessageIDV2, makeCacheableSignalKeyStore, prepareWAMessageMedia, proto, useMultiFileAuthState } from '../src'
 import MAIN_LOGGER from '../src/Utils/logger'
-import { randomBytes } from 'crypto'
+
 
 
 
