@@ -1,7 +1,7 @@
 syntax = "proto3";
 package proto;
 
-/// WhatsApp Version: 2.3000.1019795712
+/// WhatsApp Version: 2.3000.1019998189
 
 message ADVDeviceIdentity {
     optional uint32 rawId = 1;
@@ -250,6 +250,7 @@ message BotLinkedAccount {
 
 message BotLinkedAccountsMetadata {
     repeated BotLinkedAccount accounts = 1;
+    optional bytes acAuthTokens = 2;
 }
 
 message BotMediaMetadata {
@@ -320,6 +321,7 @@ enum BotMetricsEntryPoint {
     PROFILE_MESSAGE_BUTTON = 14;
     FORWARD = 15;
     APP_SHORTCUT = 16;
+    FF_FAMILY = 17;
 }
 message BotMetricsMetadata {
     optional string destinationId = 1;
@@ -538,6 +540,13 @@ message ChatRowOpaqueData {
         
     }
     
+}
+
+message Citation {
+    required string title = 1;
+    required string subtitle = 2;
+    required string cmsId = 3;
+    required string imageUrl = 4;
 }
 
 message ClientPairingProps {
@@ -3975,6 +3984,7 @@ message WebMessageInfo {
     optional StatusMentionMessage statusMentionMessageInfo = 69;
     optional bool isSupportAiMessage = 70;
     repeated string statusMentionSources = 71;
+    repeated Citation supportAiCitations = 72;
     enum BizPrivacyStatus {
         E2EE = 0;
         FB = 2;
@@ -4202,6 +4212,7 @@ message WebMessageInfo {
         CAPI_GROUP_NE2EE_SYSTEM_MESSAGE = 209;
         STATUS_MENTION = 210;
         USER_CONTROLS_SYSTEM_MESSAGE = 211;
+        SUPPORT_SYSTEM_MESSAGE = 212;
     }
 }
 
