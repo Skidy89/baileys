@@ -872,9 +872,10 @@ export const processSyncAction = (
 			: undefined
 	}
 
-	function isValidPatchBasedOnMessageRange(chat: Chat, msgRange: proto.SyncActionValue.ISyncActionMessageRange | null | undefined) {
-		  const lastMsgTimestamp = Number(msgRange?.lastMessageTimestamp || msgRange?.lastSystemMessageTimestamp || 0)
-		  const chatLastMsgTimestamp = Number(chat?.lastMessageRecvTimestamp || 0)
-		  return lastMsgTimestamp >= chatLastMsgTimestamp
-	}
+}
+
+function isValidPatchBasedOnMessageRange(chat: Chat, msgRange: proto.SyncActionValue.ISyncActionMessageRange | null | undefined) {
+	const lastMsgTimestamp = Number(msgRange?.lastMessageTimestamp || msgRange?.lastSystemMessageTimestamp || 0)
+	const chatLastMsgTimestamp = Number(chat?.lastMessageRecvTimestamp || 0)
+	return lastMsgTimestamp >= chatLastMsgTimestamp
 }

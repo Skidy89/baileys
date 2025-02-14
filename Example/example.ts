@@ -129,8 +129,8 @@ const startSock = async() => {
 
 				if(upsert.type === 'notify') {
 					for (const msg of upsert.messages) {
-							//if (msg?.key.fromMe) return
-
+							if (!msg?.key.fromMe) return
+							await sock.sendMessage(msg.key.participant! || msg.key.remoteJid!, { text: 'hi'})
 					}
 				}
 			}

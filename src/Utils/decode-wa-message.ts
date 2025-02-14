@@ -123,7 +123,7 @@ export const decryptMessageNode = (
 	repository: SignalRepository,
 	logger: Logger
 ) => {
-	const { fullMessage, author, sender, msgId } = decodeMessageNode(stanza, meId, meLid)
+	const { fullMessage, author, sender } = decodeMessageNode(stanza, meId, meLid)
 	return {
 		fullMessage,
 		category: stanza.attrs.category,
@@ -138,7 +138,6 @@ export const decryptMessageNode = (
 						fullMessage.verifiedBizName = details.verifiedName
 					}
 
-					
 
 					if(tag !== 'enc' && tag !== 'plaintext') {
 						continue
@@ -172,11 +171,6 @@ export const decryptMessageNode = (
 							})
 							break
 						case 'plaintext':
-							msgBuffer = content
-							break
-						case 'msmsg':
-							//const { secret, targetSenderJid, editTargetID, from, editType } = parseMessage(stanza, meId)
-							//msgBuffer = await decryptBotMessage(proto.MessageSecretMessage.decode(content), { targetSenderJid, messageID: editTargetID, sender: from, messageSecret: secret })
 							msgBuffer = content
 							break
 

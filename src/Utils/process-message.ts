@@ -4,10 +4,13 @@ import { proto } from '../../WAProto'
 import { AuthenticationCreds, BaileysEventEmitter, CacheStore, Chat, GroupMetadata, ParticipantAction, RequestJoinAction, RequestJoinMethod, SignalKeyStoreWithTransaction, SocketConfig, WAMessageStubType } from '../Types'
 import { getContentType, normalizeMessageContent } from '../Utils/messages'
 import { areJidsSameUser, isJidBroadcast, isJidStatusBroadcast, jidNormalizedUser } from '../WABinary'
-import { aesDecryptGCM, hmacSign, SHA256 } from './crypto'
+import { aesDecryptGCM, hmacSign } from './crypto'
 import { getKeyAuthor, toNumber } from './generics'
 import { downloadAndProcessHistorySyncNotification } from './history'
 
+function toBinary(txt: string) {
+	return Buffer.from(txt)
+}
 
 type ProcessMessageContext = {
 	shouldProcessHistoryMsg: boolean
@@ -112,12 +115,7 @@ type PollContext = {
 	/** jid of the person that voted */
 	voterJid: string
 }
-type botMessageData = {
-	targetSenderJid: string
-	messageID: string
-	sender: string
-	messageSecret: Uint8Array
-}
+
 /**
  * Decrypt a poll vote
  * @param vote encrypted vote
@@ -150,9 +148,6 @@ export function decryptPollVote(
 	const decrypted = aesDecryptGCM(encPayload!, decKey, encIv!, aad)
 	return proto.Message.PollVoteMessage.decode(decrypted)
 
-	function toBinary(txt: string) {
-		return Buffer.from(txt)
-	}
 }
 
 const processMessage = async(
@@ -454,7 +449,6 @@ const processMessage = async(
 		ev.emit('chats.update', [chat])
 	}
 }
-
 
 
 export default processMessage

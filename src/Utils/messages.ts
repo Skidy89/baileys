@@ -534,9 +534,10 @@ export const generateWAMessageContent = async(
 		m[messageType] = m[messageType] || {}
 		m[messageType].contextInfo = message.contextInfo
 	}
+
 	m.messageContextInfo = {
 		messageSecret: randomBytes(32)
-	} 
+	}
 
 	return WAProto.Message.fromObject(m)
 }
@@ -672,7 +673,7 @@ export const normalizeMessageContent = (content: WAMessageContent | null | undef
 			 || message?.documentWithCaptionMessage
 			 || message?.viewOnceMessageV2
 			 || message?.viewOnceMessageV2Extension
-			 || message?.editedMessage || message?.botInvokeMessage || message?.groupStatusMentionMessage 
+			 || message?.editedMessage || message?.botInvokeMessage || message?.groupStatusMentionMessage
 		 )
 	 }
 }
