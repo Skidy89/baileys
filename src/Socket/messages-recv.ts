@@ -928,9 +928,22 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 		await sendMessageAck(node)
 	}
-
 	const handleBadAck = async({ attrs }: BinaryNode) => {
 		const key: WAMessageKey = { remoteJid: attrs.from, fromMe: true, id: attrs.id }
+
+		// WARNING: REFRAIN FROM ENABLING THIS FOR NOW. IT WILL CAUSE A LOOP
+		// // current hypothesis is that if pash is sent in the ack
+		// // it means -- the message hasn't reached all devices yet
+		// // we'll retry sending the message here
+		// if(attrs.phash) {
+		// 	logger.info({ attrs }, 'received phash in ack, resending message...')
+		// 	const msg = await getMessage(key)
+		// 	if(msg) {
+		// 		await relayMessage(key.remoteJid!, msg, { messageId: key.id!, useUserDevicesCache: false })
+		// 	} else {
+		// 		logger.warn({ attrs }, 'could not send message again, as it was not found')
+		// 	}
+		// }
 
 		// error in acknowledgement,
 		// device could not display the message
@@ -952,6 +965,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			)
 		}
 	}
+
 
 	/// processes a node with the given function
 	/// and adds the task to the existing buffer if we're buffering events

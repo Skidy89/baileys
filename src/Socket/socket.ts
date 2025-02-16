@@ -662,10 +662,10 @@ export const makeSocket = (config: SocketConfig) => {
 		const reason = +(node.attrs.reason || 500)
 		end(new Boom('Connection Failure', { statusCode: reason, data: node.attrs }))
 	})
-	// the new server handling is now md, so this is useless so far
-	ws.on('CB:ib,,downgrade_webclient', () => {
+	// theres non md sessions anymore so its useless
+	/*ws.on('CB:ib,,downgrade_webclient', () => {
 		end(new Boom('Multi-device beta not joined', { statusCode: DisconnectReason.multideviceMismatch }))
-	})
+	})*/
 
 	ws.on('CB:ib,,offline_preview', (node: BinaryNode) => {
 	  logger.info('offline preview received', node)
