@@ -34,7 +34,7 @@
     "changelog:update": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0",
     "example": "node --inspect -r ts-node/register Example/example.ts",
     "example:mobile": "node --inspect -r ts-node/register Example/example.ts --mobile",
-    "gen:protobuf": "pbjs -t static-module -w commonjs -o ./WAProto/index.js ./WAProto/WAProto.proto && pbts -o ./WAProto/index.d.ts ./WAProto/index.js",
+    "gen:protobuf": "npx pbjs -t static-module -w commonjs -o ./WAProto/index.js ./WAProto/WAProto.proto && npx pbts -o ./WAProto/index.d.ts ./WAProto/index.js",
     "lint": "eslint src --ext .js,.ts,.jsx,.tsx",
     "lint:fix": "eslint src --fix --ext .js,.ts,.jsx,.tsx",
     "prepack": "tsc",
