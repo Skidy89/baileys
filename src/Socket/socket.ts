@@ -707,7 +707,7 @@ export const makeSocket = (config: SocketConfig) => {
 	}
 
 	return {
-		type: 'md' as 'md',
+		type: 'md',
 		ws,
 		ev,
 		authState: { creds, keys },

@@ -2,8 +2,9 @@ import { Boom } from '@hapi/boom'
 import { Logger } from 'pino'
 import { proto } from '../../WAProto'
 import { SignalRepository, WAMessageKey } from '../Types'
-import { areJidsSameUser, BinaryNode, binaryNodeToString, isJidBroadcast, isJidGroup, isJidNewsletter, isJidStatusBroadcast, isJidUser, isLidUser } from '../WABinary'
+import { areJidsSameUser, BinaryNode, isJidBroadcast, isJidGroup, isJidNewsletter, isJidStatusBroadcast, isJidUser, isLidUser } from '../WABinary'
 import { unpadRandomMax16 } from './generics'
+
 
 export const NO_MESSAGE_FOUND_ERROR_TEXT = 'Message absent from node'
 
@@ -110,7 +111,8 @@ export function decodeMessageNode(
 	return {
 		fullMessage,
 		author,
-		sender: msgType === 'chat' ? author : chatId
+		sender: msgType === 'chat' ? author : chatId,
+		msgId
 	}
 }
 
@@ -132,9 +134,10 @@ export const decryptMessageNode = (
 				for(const { tag, attrs, content } of stanza.content) {
 					if(tag === 'verified_name' && content instanceof Uint8Array) {
 						const cert = proto.VerifiedNameCertificate.decode(content)
-						const details = proto.VerifiedNameCertificate.Details.decode(cert.details)
+						const details = proto.VerifiedNameCertificate.Details.decode(cert.details!)
 						fullMessage.verifiedBizName = details.verifiedName
 					}
+
 
 					if(tag !== 'enc' && tag !== 'plaintext') {
 						continue
@@ -168,10 +171,6 @@ export const decryptMessageNode = (
 							})
 							break
 						case 'plaintext':
-							msgBuffer = content
-							break
-						case 'msmsg':
-							// TODO
 							msgBuffer = content
 							break
 
@@ -217,3 +216,44 @@ export const decryptMessageNode = (
 		}
 	}
 }
+
+/*const parseMessage = (stanza: BinaryNode, me: string) => {
+	const meta = getBinaryNodeChild(stanza, 'meta')
+	const bot = getBinaryNodeChild(stanza, 'bot')
+	// this is the bot jid
+	// its not loger jid. now its @bot
+	// 867051314767696@bot
+	// also something weird is happening when you use wa business
+	// the bot uses jid instead of @bot
+	// "13135550202@s.whatsapp.net"
+	const from = stanza.attrs.from
+	const id = stanza.attrs.id
+	const editType = bot?.attrs.edit
+	let editTargetID = bot?.attrs.edit_target_id
+	if(!meta || !bot) {
+		throw new Error('missing meta or bot node')
+	}
+
+	// get the message id to decrypt
+	if(editTargetID === '' || editTargetID === undefined || editType === 'first') {
+		// the editType "first" doesnt not have edit_target_id so its from meta ai
+		editTargetID = id
+	}
+
+	let targetSenderJid = meta.attrs.target_sender_jid
+	if(targetSenderJid === '' || targetSenderJid === undefined) {
+		// if target_sender_jid is not present, then the message is sent by the ourselves
+		targetSenderJid = jidNormalizedUser(me)
+	}
+
+	// get the message secret
+	const getSecret = saveMessageSecrets.get(meta.attrs.target_id)
+
+	if(!getSecret) {
+		throw new Error('Message secret not found')
+	}
+
+	const secret = parseMessageSecret(getSecret)
+
+	return { secret, targetSenderJid, editTargetID, from, editType }
+}*/

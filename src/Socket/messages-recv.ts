@@ -1,7 +1,8 @@
 
+import NodeCache from '@cacheable/node-cache'
 import { Boom } from '@hapi/boom'
+import Long from 'long'
 import { randomBytes } from 'node:crypto'
-import NodeCache from 'node-cache'
 import { proto } from '../../WAProto'
 import { DEFAULT_CACHE_TTLS, KEY_BUNDLE_TYPE, MIN_PREKEY_COUNT } from '../Defaults'
 import { MessageReceiptType, MessageRelayOptions, MessageUserReceipt, SocketConfig, WACallEvent, WAMessageKey, WAMessageStatus, WAMessageStubType, WAPatchName } from '../Types'
@@ -42,7 +43,7 @@ import {
 } from '../WABinary'
 import { extractGroupMetadata } from './groups'
 import { makeMessagesSocket } from './messages-send'
-import Long from 'long'
+
 function toRequiredBuffer(data: Uint8Array | Buffer | undefined) {
 	if(data === undefined) {
 		throw new Boom('Invalid buffer', { statusCode: 400 })
@@ -351,7 +352,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 			break
 		case 'membership_approval_mode':
-			const approvalMode: any = getBinaryNodeChild(child, 'group_join')
+			const approvalMode = getBinaryNodeChild(child, 'group_join')
 			if(approvalMode) {
 				msg.messageStubType = WAMessageStubType.GROUP_MEMBERSHIP_JOIN_APPROVAL_MODE
 				msg.messageStubParameters = [ approvalMode.attrs.state ]
@@ -632,7 +633,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 						(
 							// basically, we only want to know when a message from us has been delivered to/read by the other person
 							// or another device of ours has read some messages
-							status > proto.WebMessageInfo.Status.DELIVERY_ACK ||
+							status >= proto.WebMessageInfo.Status.SERVER_ACK ||
 							!isNodeFromMe
 						)
 						) {
@@ -848,7 +849,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			peerDataOperationRequestType: proto.Message.PeerDataOperationRequestType.HISTORY_SYNC_ON_DEMAND
 		}
 
-		return sendPeerDataOperationMessage(pdoMessage!)
+		return sendPeerDataOperationMessage(pdoMessage)
 	}
 
 	const requestPlaceholderResend = async(messageKey: WAMessageKey): Promise<'RESOLVED'| string | undefined> => {
@@ -930,18 +931,6 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 	const handleBadAck = async({ attrs }: BinaryNode) => {
 		const key: WAMessageKey = { remoteJid: attrs.from, fromMe: true, id: attrs.id }
-		// current hypothesis is that if pash is sent in the ack
-		// it means -- the message hasn't reached all devices yet
-		// we'll retry sending the message here
-		if(attrs.phash) {
-			logger.info({ attrs }, 'received phash in ack, resending message...')
-			const msg = await getMessage(key)
-			if(msg) {
-				await relayMessage(key.remoteJid!, msg, { messageId: key.id!, useUserDevicesCache: false, useCachedGroupMetadata: true })
-			} else {
-				logger.warn({ attrs }, 'could not send message again, as it was not found')
-			}
-		}
 
 		// error in acknowledgement,
 		// device could not display the message

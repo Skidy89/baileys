@@ -1,6 +1,7 @@
 const queue_job = require('./queue_job');
 const SenderKeyMessage = require('./sender_key_message');
 const crypto = require('@skidy89/libsignal-node/src/crypto');
+const SenderKeyRecord = require('./sender_key_record');
 
 class GroupCipher {
   constructor(senderKeyStore, senderKeyName) {
@@ -14,9 +15,11 @@ class GroupCipher {
 
   async encrypt(paddedPlaintext) {
     return await this.queueJob(async () => {
-      const record = await this.senderKeyStore.loadSenderKey(this.senderKeyName);
+      let record = await this.senderKeyStore.loadSenderKey(this.senderKeyName);
       if (!record) {
-        throw new Error("No SenderKeyRecord found for encryption")
+        // Create a new SenderKeyRecord if it does not exist
+      record = new SenderKeyRecord();
+      await this.senderKeyStore.storeSenderKey(this.senderKeyName, record)
       }
       const senderKeyState = record.getSenderKeyState();
       if (!senderKeyState) {
@@ -44,9 +47,11 @@ class GroupCipher {
 
   async decrypt(senderKeyMessageBytes) {
     return await this.queueJob(async () => {
-      const record = await this.senderKeyStore.loadSenderKey(this.senderKeyName);
+      let record = await this.senderKeyStore.loadSenderKey(this.senderKeyName);
       if (!record) {
-        throw new Error("No SenderKeyRecord found for decryption")
+        // Create a new SenderKeyRecord if it does not exist
+        record = new SenderKeyRecord()
+        await this.senderKeyStore.storeSenderKey(this.senderKeyName, record)
       }
       const senderKeyMessage = new SenderKeyMessage(null, null, null, null, senderKeyMessageBytes);
       const senderKeyState = record.getSenderKeyState(senderKeyMessage.getKeyId());
@@ -58,7 +63,7 @@ class GroupCipher {
       const senderKey = this.getSenderKey(senderKeyState, senderKeyMessage.getIteration());
       // senderKeyState.senderKeyStateStructure.senderSigningKey.private =
 
-      const plaintext = await this.getPlainText(
+      const plaintext = this.getPlainText(
         senderKey.getIv(),
         senderKey.getCipherKey(),
         senderKeyMessage.getCipherText()

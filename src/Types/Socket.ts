@@ -16,11 +16,11 @@ export type CacheStore = {
     /** get a cached key and change the stats */
     get<T>(key: string): Promise<T> | undefined
     /** set a key in the cache */
-    set<T>(key: string, value: T): Promise<void> | unknown
+    set<T>(key: string, value: T): Promise<T> | unknown
     /** delete a key from the cache */
-    del(key: string): Promise<void> | unknown
+    del<T>(key: string): Promise<T> | unknown
     /** flush all keys from the cache */
-    flushAll(): Promise<void> | unknown
+    flushAll<T>(): Promise<T> | unknown
 }
 
 export type SocketConfig = {
@@ -32,10 +32,6 @@ export type SocketConfig = {
     defaultQueryTimeoutMs: number | undefined
     /** ping-pong interval for WS connection */
     keepAliveIntervalMs: number
-	/** should baileys use the mobile api instead of the multi device api
-     * @deprecated
-    */
-	mobile?: boolean
     /** proxy agent */
     agent?: Agent
     /** pino logger */

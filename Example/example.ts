@@ -1,8 +1,9 @@
 import { Boom } from '@hapi/boom'
-import NodeCache from 'node-cache'
+import NodeCache from '@cacheable/node-cache'
 import readline from 'readline'
-import makeWASocket, { AnyMessageContent, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, proto, useMultiFileAuthState } from '../src'
+import makeWASocket, { AnyMessageContent, BinaryNode, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, fetchLatestBaileysVersion, generateMessageIDV2, makeCacheableSignalKeyStore, prepareWAMessageMedia, proto, useMultiFileAuthState } from '../src'
 import MAIN_LOGGER from '../src/Utils/logger'
+
 
 
 
@@ -128,9 +129,13 @@ const startSock = async() => {
 
 				if(upsert.type === 'notify') {
 					for (const msg of upsert.messages) {
-						sock.sendMessage(msg.key.remoteJid!, { text: 'hola, prueba xd xd xd xdx'})
+							if (!msg?.key.fromMe) return
+							await sock.sendMessage(msg.key.participant! || msg.key.remoteJid!, { image: { url: "https://i.pinimg.com/736x/e3/8d/38/e38d382544ff95ff6be639677e130a0a.jpg"}})
 					}
 				}
+			}
+			if (events['group-participants.update']) {
+				console.log('group-participants.update', events['group-participants.update'])
 			}
 
 			// messages updated like status delivered, message deleted etc.

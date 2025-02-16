@@ -17,40 +17,40 @@ export const createSignalIdentity = (
 }
 
 function processItem(
-    item: BinaryNode,
-    myUser: string,
-    myDevice: number,
-    excludeZeroDevices: boolean,
-    extracted: JidWithDevice[]
+	item: BinaryNode,
+	myUser: string,
+	myDevice: number,
+	excludeZeroDevices: boolean,
+	extracted: JidWithDevice[]
 ) {
-    const { user } = jidDecode(item.attrs.jid)!
-    const devicesNode = getBinaryNodeChild(item, 'devices')
-    const deviceListNode = getBinaryNodeChild(devicesNode, 'device-list')
-    if (Array.isArray(deviceListNode?.content)) {
-        deviceListNode?.content?.forEach(({ tag, attrs }) => {
-            processDevice(tag, attrs, user, myUser, myDevice, excludeZeroDevices, extracted)
-        })
-    }
+	const { user } = jidDecode(item.attrs.jid)!
+	const devicesNode = getBinaryNodeChild(item, 'devices')
+	const deviceListNode = getBinaryNodeChild(devicesNode, 'device-list')
+	if(Array.isArray(deviceListNode?.content) && deviceListNode?.content) {
+		for(const { tag, attrs } of deviceListNode?.content) {
+			processDevice(tag, attrs, user, myUser, myDevice, excludeZeroDevices, extracted)
+		}
+	}
 }
 
 function processDevice(
-    tag: string,
-    attrs: { [key: string]: string },
-    user: string,
-    myUser: string,
-    myDevice: number,
-    excludeZeroDevices: boolean,
-    extracted: JidWithDevice[]
+	tag: string,
+	attrs: { [key: string]: string },
+	user: string,
+	myUser: string,
+	myDevice: number,
+	excludeZeroDevices: boolean,
+	extracted: JidWithDevice[]
 ) {
-    const device = +attrs.id
-    if (
-        tag === 'device' &&
+	const device = +attrs.id
+	if(
+		tag === 'device' &&
         (!excludeZeroDevices || device !== 0) &&
         (myUser !== user || myDevice !== device) &&
         (device === 0 || !!attrs['key-index'])
-    ) {
-        extracted.push({ user, device })
-    }
+	) {
+		extracted.push({ user, device })
+	}
 }
 
 export const getPreKeys = async({ get }: SignalKeyStore, min: number, limit: number) => {
@@ -152,24 +152,24 @@ export const parseAndInjectE2ESessions = async(
 }
 
 export const extractDeviceJids = (
-    result: BinaryNode,
-    myJid: string,
-    excludeZeroDevices: boolean
+	result: BinaryNode,
+	myJid: string,
+	excludeZeroDevices: boolean
 ): JidWithDevice[] => {
-    const { user: myUser, device: myDevice } = jidDecode(myJid)!
-    const extracted: JidWithDevice[] = []
+	const { user: myUser, device: myDevice } = jidDecode(myJid)!
+	const extracted: JidWithDevice[] = []
 
-    for (const node of result.content as BinaryNode[]) {
-        const list = getBinaryNodeChild(node, 'list')?.content
-        if (list && Array.isArray(list)) {
-            list.forEach(item => processItem(item, myUser, myDevice!, excludeZeroDevices, extracted))
-        }
-    }
+	for(const node of result.content as BinaryNode[]) {
+		const list = getBinaryNodeChild(node, 'list')?.content
+		if(list && Array.isArray(list)) {
+			for(const item of list) {
+				processItem(item, myUser, myDevice!, excludeZeroDevices, extracted)
+			}
+		}
+	}
 
-    return extracted
+	return extracted
 }
-
-
 
 
 /**

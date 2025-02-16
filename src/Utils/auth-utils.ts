@@ -1,10 +1,11 @@
+import NodeCache from '@cacheable/node-cache'
 import { randomBytes } from 'crypto'
-import NodeCache from 'node-cache'
 import type { Logger } from 'pino'
 import { DEFAULT_CACHE_TTLS } from '../Defaults'
 import type { AuthenticationCreds, CacheStore, SignalDataSet, SignalDataTypeMap, SignalKeyStore, SignalKeyStoreWithTransaction, TransactionCapabilityOptions } from '../Types'
 import { Curve, signedKeyPair } from './crypto'
 import { delay, generateRegistrationId } from './generics'
+
 
 /**
  * Adds caching capability to a SignalKeyStore
@@ -17,23 +18,23 @@ export function makeCacheableSignalKeyStore(
 	logger: Logger,
 	_cache?: CacheStore
 ): SignalKeyStore {
-	const cache = _cache || new NodeCache({
+	const cache = _cache ?? new NodeCache({
 		stdTTL: DEFAULT_CACHE_TTLS.SIGNAL_STORE, // 5 minutes
 		useClones: false,
 		deleteOnExpire: true,
 	})
 
-	function getUniqueId(type: string, id: string) {
-		return `${type}.${id}`
-	}
+	const getUniqueId = (type: string, id: string) => `${type}.${id}`
 
 	return {
 		async get(type, ids) {
-			const data: { [_: string]: SignalDataTypeMap[typeof type] } = { }
+			const data: { [_: string]: SignalDataTypeMap[typeof type] } = {}
 			const idsToFetch: string[] = []
+
 			for(const id of ids) {
-				const item = cache.get<SignalDataTypeMap[typeof type]>(getUniqueId(type, id))
-				if(typeof item !== 'undefined') {
+				const uniqueId = getUniqueId(type, id)
+				const item = cache.get<SignalDataTypeMap[typeof type]>(uniqueId)
+				if(item !== undefined) {
 					data[id] = await item
 				} else {
 					idsToFetch.push(id)
@@ -86,59 +87,48 @@ export const addTransactionCapability = (
 	logger: Logger,
 	{ maxCommitRetries, delayBetweenTriesMs }: TransactionCapabilityOptions
 ): SignalKeyStoreWithTransaction => {
-	// number of queries made to the DB during the transaction
-	// only there for logging purposes
 	let dbQueriesInTransaction = 0
-	let transactionCache: SignalDataSet = { }
-	let mutations: SignalDataSet = { }
+	let transactionCache: SignalDataSet = {}
+	let mutations: SignalDataSet = {}
 
 	let transactionsInProgress = 0
 
+	const isInTransaction = () => transactionsInProgress > 0
+
 	return {
-		get: async(type, ids) => {
+		async get(type, ids) {
 			if(isInTransaction()) {
-				const dict = transactionCache[type]
-				const idsRequiringFetch = dict
-					? ids.filter(item => typeof dict[item] === 'undefined')
-					: ids
-				// only fetch if there are any items to fetch
+				const dict = transactionCache[type] ?? {}
+				const idsRequiringFetch = ids.filter(id => dict[id] === undefined)
+
 				if(idsRequiringFetch.length) {
 					dbQueriesInTransaction += 1
 					const result = await state.get(type, idsRequiringFetch)
-
 					transactionCache[type] ||= {}
-					Object.assign(
-						transactionCache[type]!,
-						result
-					)
+					Object.assign(transactionCache[type]!, result)
 				}
 
-				return ids.reduce(
-					(dict, id) => {
-						const value = transactionCache[type]?.[id]
-						if(value) {
-							dict[id] = value
-						}
+				return ids.reduce((acc, id) => {
+					const value = transactionCache[type]?.[id]
+					if(value) {
+						acc[id] = value
+					}
 
-						return dict
-					}, { }
-				)
+					return acc
+				}, {})
 			} else {
 				return state.get(type, ids)
 			}
 		},
-		set: data => {
+		async set(data) {
 			if(isInTransaction()) {
 				logger.trace({ types: Object.keys(data) }, 'caching in transaction')
 				for(const key in data) {
-					transactionCache[key] = transactionCache[key] || { }
-					Object.assign(transactionCache[key], data[key])
-
-					mutations[key] = mutations[key] || { }
-					Object.assign(mutations[key], data[key])
+					transactionCache[key] = { ...transactionCache[key], ...data[key] }
+					mutations[key] = { ...mutations[key], ...data[key] }
 				}
 			} else {
-				return state.set(data)
+				await state.set(data)
 			}
 		},
 		isInTransaction,
@@ -151,43 +141,34 @@ export const addTransactionCapability = (
 
 			try {
 				result = await work()
-				// commit if this is the outermost transaction
-				if(transactionsInProgress === 1) {
-					if(Object.keys(mutations).length) {
-						logger.trace('committing transaction')
-						// retry mechanism to ensure we've some recovery
-						// in case a transaction fails in the first attempt
-						let tries = maxCommitRetries
-						while(tries) {
-							tries -= 1
-							try {
-								await state.set(mutations)
-								logger.trace({ dbQueriesInTransaction }, 'committed transaction')
-								break
-							} catch(error) {
-								logger.warn(`failed to commit ${Object.keys(mutations).length} mutations, tries left=${tries}`)
-								await delay(delayBetweenTriesMs)
-							}
+				if(transactionsInProgress === 1 && Object.keys(mutations).length) {
+					logger.trace('committing transaction')
+					let tries = maxCommitRetries
+					while(tries) {
+						tries -= 1
+						try {
+							await state.set(mutations)
+							logger.trace({ dbQueriesInTransaction }, 'committed transaction')
+							break
+						} catch(error) {
+							logger.warn(`failed to commit ${Object.keys(mutations).length} mutations, tries left=${tries}`)
+							await delay(delayBetweenTriesMs)
 						}
-					} else {
-						logger.trace('no mutations in transaction')
 					}
+				} else if(!Object.keys(mutations).length) {
+					logger.trace('no mutations in transaction')
 				}
 			} finally {
 				transactionsInProgress -= 1
 				if(transactionsInProgress === 0) {
-					transactionCache = { }
-					mutations = { }
+					transactionCache = {}
+					mutations = {}
 					dbQueriesInTransaction = 0
 				}
 			}
 
 			return result
 		}
-	}
-
-	function isInTransaction() {
-		return transactionsInProgress > 0
 	}
 }
 

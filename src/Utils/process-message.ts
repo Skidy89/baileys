@@ -8,6 +8,10 @@ import { aesDecryptGCM, hmacSign } from './crypto'
 import { getKeyAuthor, toNumber } from './generics'
 import { downloadAndProcessHistorySyncNotification } from './history'
 
+function toBinary(txt: string) {
+	return Buffer.from(txt)
+}
+
 type ProcessMessageContext = {
 	shouldProcessHistoryMsg: boolean
 	placeholderResendCache?: CacheStore
@@ -144,9 +148,6 @@ export function decryptPollVote(
 	const decrypted = aesDecryptGCM(encPayload!, decKey, encIv!, aad)
 	return proto.Message.PollVoteMessage.decode(decrypted)
 
-	function toBinary(txt: string) {
-		return Buffer.from(txt)
-	}
 }
 
 const processMessage = async(
@@ -448,5 +449,6 @@ const processMessage = async(
 		ev.emit('chats.update', [chat])
 	}
 }
+
 
 export default processMessage

@@ -1,4 +1,4 @@
-import { Boom } from '@hapi/boom'
+/*import { Boom } from '@hapi/boom'
 import { createHash } from 'crypto'
 import { CatalogCollection, CatalogStatus, OrderDetails, OrderProduct, Product, ProductCreate, ProductUpdate, WAMediaUpload, WAMediaUploadFunction } from '../Types'
 import { BinaryNode, getBinaryNodeChild, getBinaryNodeChildren, getBinaryNodeChildString } from '../WABinary'
@@ -203,9 +203,7 @@ export const parseProductNode = (productNode: BinaryNode) => {
 	return product
 }
 
-/**
- * Uploads images not already uploaded to WA's servers
- */
+
 export async function uploadingNecessaryImagesOfProduct<T extends ProductUpdate | ProductCreate>(product: T, waUploadToServer: WAMediaUploadFunction, timeoutMs = 30_000) {
 	product = {
 		...product,
@@ -214,9 +212,6 @@ export async function uploadingNecessaryImagesOfProduct<T extends ProductUpdate 
 	return product
 }
 
-/**
- * Uploads images not already uploaded to WA's servers
- */
 export const uploadingNecessaryImages = async(
 	images: WAMediaUpload[],
 	waUploadToServer: WAMediaUploadFunction,
@@ -272,4 +267,4 @@ const parseStatusInfo = (mediaNode: BinaryNode): CatalogStatus => {
 		status: getBinaryNodeChildString(node, 'status')!,
 		canAppeal: getBinaryNodeChildString(node, 'can_appeal') === 'true',
 	}
-}
+}*/
