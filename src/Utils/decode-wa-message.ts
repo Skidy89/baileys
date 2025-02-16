@@ -5,8 +5,24 @@ import { SignalRepository, WAMessageKey } from '../Types'
 import { areJidsSameUser, BinaryNode, isJidBroadcast, isJidGroup, isJidNewsletter, isJidStatusBroadcast, isJidUser, isLidUser } from '../WABinary'
 import { unpadRandomMax16 } from './generics'
 
-
 export const NO_MESSAGE_FOUND_ERROR_TEXT = 'Message absent from node'
+export const MISSING_KEYS_ERROR_TEXT = 'Key used already or never filled'
+
+export const NACK_REASONS = {
+	ParsingError: 487,
+	UnrecognizedStanza: 488,
+	UnrecognizedStanzaClass: 489,
+	UnrecognizedStanzaType: 490,
+	InvalidProtobuf: 491,
+	InvalidHostedCompanionStanza: 493,
+	MissingMessageSecret: 495,
+	SignalErrorOldCounter: 496,
+	MessageDeletedOnPeer: 499,
+	UnhandledError: 500,
+	UnsupportedAdminRevoke: 550,
+	UnsupportedLIDGroup: 551,
+	DBOperationFailed: 552
+}
 
 type MessageType = 'chat' | 'peer_broadcast' | 'other_broadcast' | 'group' | 'direct_peer_status' | 'other_status' | 'newsletter'
 
@@ -111,8 +127,7 @@ export function decodeMessageNode(
 	return {
 		fullMessage,
 		author,
-		sender: msgType === 'chat' ? author : chatId,
-		msgId
+		sender: msgType === 'chat' ? author : chatId
 	}
 }
 
@@ -137,7 +152,6 @@ export const decryptMessageNode = (
 						const details = proto.VerifiedNameCertificate.Details.decode(cert.details!)
 						fullMessage.verifiedBizName = details.verifiedName
 					}
-
 
 					if(tag !== 'enc' && tag !== 'plaintext') {
 						continue
@@ -173,7 +187,6 @@ export const decryptMessageNode = (
 						case 'plaintext':
 							msgBuffer = content
 							break
-
 						default:
 							throw new Error(`Unknown e2e type: ${e2eType}`)
 						}
@@ -181,6 +194,7 @@ export const decryptMessageNode = (
 						let msg: proto.IMessage = proto.Message.decode(e2eType !== 'plaintext' ? unpadRandomMax16(msgBuffer) : msgBuffer)
 						msg = msg.deviceSentMessage?.message || msg
 						if(msg.senderKeyDistributionMessage) {
+							//eslint-disable-next-line max-depth
 						    try {
 								await repository.processSenderKeyDistributionMessage({
 									authorJid: author,
@@ -190,7 +204,6 @@ export const decryptMessageNode = (
 								logger.error({ key: fullMessage.key, err }, 'failed to decrypt message')
 						        }
 						}
-
 
 						if(fullMessage.message) {
 							Object.assign(fullMessage.message, msg)
@@ -216,44 +229,3 @@ export const decryptMessageNode = (
 		}
 	}
 }
-
-/*const parseMessage = (stanza: BinaryNode, me: string) => {
-	const meta = getBinaryNodeChild(stanza, 'meta')
-	const bot = getBinaryNodeChild(stanza, 'bot')
-	// this is the bot jid
-	// its not loger jid. now its @bot
-	// 867051314767696@bot
-	// also something weird is happening when you use wa business
-	// the bot uses jid instead of @bot
-	// "13135550202@s.whatsapp.net"
-	const from = stanza.attrs.from
-	const id = stanza.attrs.id
-	const editType = bot?.attrs.edit
-	let editTargetID = bot?.attrs.edit_target_id
-	if(!meta || !bot) {
-		throw new Error('missing meta or bot node')
-	}
-
-	// get the message id to decrypt
-	if(editTargetID === '' || editTargetID === undefined || editType === 'first') {
-		// the editType "first" doesnt not have edit_target_id so its from meta ai
-		editTargetID = id
-	}
-
-	let targetSenderJid = meta.attrs.target_sender_jid
-	if(targetSenderJid === '' || targetSenderJid === undefined) {
-		// if target_sender_jid is not present, then the message is sent by the ourselves
-		targetSenderJid = jidNormalizedUser(me)
-	}
-
-	// get the message secret
-	const getSecret = saveMessageSecrets.get(meta.attrs.target_id)
-
-	if(!getSecret) {
-		throw new Error('Message secret not found')
-	}
-
-	const secret = parseMessageSecret(getSecret)
-
-	return { secret, targetSenderJid, editTargetID, from, editType }
-}*/
