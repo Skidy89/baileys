@@ -1,5 +1,5 @@
 import { Boom } from '@hapi/boom'
-import { randomBytes } from 'node:crypto'
+import { randomBytes } from 'crypto'
 import { URL } from 'url'
 import { promisify } from 'util'
 import { proto } from '../../WAProto'
@@ -68,6 +68,7 @@ export const makeSocket = (config: SocketConfig) => {
 	const url = typeof waWebSocketUrl === 'string' ? new URL(waWebSocketUrl) : waWebSocketUrl
 
 
+	// add routing info to the url if it's a wss connection
 	if(url.protocol === 'wss' && authState?.creds?.routingInfo) {
 		url.searchParams.append('ED', authState.creds.routingInfo.toString('base64url'))
 	}
@@ -237,7 +238,7 @@ export const makeSocket = (config: SocketConfig) => {
 		const keyEnc = noise.processHandshake(handshake, creds.noiseKey)
 
 		let node: proto.IClientPayload
-	 	if(!creds.me) {
+		if(!creds.me) {
 			node = generateRegistrationNode(creds, config)
 			logger.info({ node }, 'not logged in, attempting registration...')
 		} else {
@@ -542,6 +543,23 @@ export const makeSocket = (config: SocketConfig) => {
 		return Buffer.concat([salt, randomIv, ciphered])
 	}
 
+	const sendWAMBuffer = (wamBuffer: Buffer) => {
+		return query({
+			tag: 'iq',
+			attrs: {
+				to: S_WHATSAPP_NET,
+				id: generateMessageTag(),
+				xmlns: 'w:stats'
+			},
+			content: [
+				{
+					tag: 'add',
+					attrs: {},
+					content: wamBuffer
+				}
+			]
+		})
+	}
 
 	ws.on('message', onMessageReceived)
 
@@ -644,9 +662,18 @@ export const makeSocket = (config: SocketConfig) => {
 		const reason = +(node.attrs.reason || 500)
 		end(new Boom('Connection Failure', { statusCode: reason, data: node.attrs }))
 	})
-
+	// the new server handling is now md, so this is useless so far
 	ws.on('CB:ib,,downgrade_webclient', () => {
 		end(new Boom('Multi-device beta not joined', { statusCode: DisconnectReason.multideviceMismatch }))
+	})
+
+	ws.on('CB:ib,,offline_preview', (node: BinaryNode) => {
+	  logger.info('offline preview received', node)
+		sendNode({
+			tag: 'ib',
+			attrs: {},
+			content: [{ tag: 'offline_batch', attrs: { count: '100' } }]
+		})
 	})
 
 	ws.on('CB:ib,,edge_routing', (node: BinaryNode) => {
@@ -707,7 +734,7 @@ export const makeSocket = (config: SocketConfig) => {
 	}
 
 	return {
-		type: 'md',
+		type: 'md' as "md",
 		ws,
 		ev,
 		authState: { creds, keys },
@@ -729,6 +756,7 @@ export const makeSocket = (config: SocketConfig) => {
 		requestPairingCode,
 		/** Waits for the connection to WA to reach a state */
 		waitForConnectionUpdate: bindWaitForConnectionUpdate(ev),
+		sendWAMBuffer,
 	}
 }
 
