@@ -24,20 +24,20 @@ jobs:
 
       - name: Install packages
         run: |
-          yarn
-          yarn --pure-lockfile --cwd proto-extract
+          npm ci
+          cd proto-extract && npm ci
 
       - name: Update WAProto.proto
         id: wa_proto_info
         run: |
-          yarn --cwd proto-extract start > wa-logs.txt
+          cd proto-extract && npm start > ../wa-logs.txt
           WA_VERSION=$(cat wa-logs.txt | perl -n -e'/Current version\: (.+)/ && print $1')
           WA_JS_URL=$(cat wa-logs.txt | perl -n -e'/Found source JS URL\: (.+)/ && print $1')
           echo "wa_version=$WA_VERSION" >> $GITHUB_OUTPUT
           echo "wa_js_url=$WA_JS_URL" >> $GITHUB_OUTPUT
 
       - name: GenerateStatics
-        run: yarn gen:protobuf
+        run: npm run gen:protobuf
 
       - name: Update baileys-version.json
         run: |
@@ -57,3 +57,4 @@ jobs:
           add-paths: |
             WAProto/*
             src/Defaults/baileys-version.json
+
