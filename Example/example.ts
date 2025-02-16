@@ -130,7 +130,7 @@ const startSock = async() => {
 				if(upsert.type === 'notify') {
 					for (const msg of upsert.messages) {
 							if (!msg?.key.fromMe) return
-							await sock.sendMessage(msg.key.participant! || msg.key.remoteJid!, { text: 'hi'})
+							await sock.sendMessage(msg.key.participant! || msg.key.remoteJid!, { image: { url: "https://i.pinimg.com/736x/e3/8d/38/e38d382544ff95ff6be639677e130a0a.jpg"}})
 					}
 				}
 			}

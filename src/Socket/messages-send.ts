@@ -264,25 +264,53 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 	}
 
 	const assertSessions = async(jids: string[], force: boolean) => {
-		let jidsRequiringFetch: string[] = force ? jids : []
-    	if(!force) {
-        	const addrs = jids.map(jid => signalRepository.jidToSignalProtocolAddress(jid))
-        	const sessions = await authState.keys.get('session', addrs)
-        	jidsRequiringFetch = jids.filter(jid => !sessions[signalRepository.jidToSignalProtocolAddress(jid)])
-    	}
+		let didFetchNewSession = false
+		let jidsRequiringFetch: string[] = []
+		if(force) {
+			jidsRequiringFetch = jids
+		} else {
+			const addrs = jids.map(jid => (
+				signalRepository
+					.jidToSignalProtocolAddress(jid)
+			))
+			const sessions = await authState.keys.get('session', addrs)
+			for(const jid of jids) {
+				const signalId = signalRepository
+					.jidToSignalProtocolAddress(jid)
+				if(!sessions[signalId]) {
+					jidsRequiringFetch.push(jid)
+				}
+			}
+		}
 
-    	if(jidsRequiringFetch.length) {
-        	logger.debug({ jidsRequiringFetch }, 'fetching sessions')
-        	const result = await query({
-            	tag: 'iq',
-            	attrs: { xmlns: 'encrypt', type: 'get', to: S_WHATSAPP_NET },
-            	content: [{ tag: 'key', attrs: {}, content: jidsRequiringFetch.map(jid => ({ tag: 'user', attrs: { jid } })) }]
-        	})
+		if(jidsRequiringFetch.length) {
+			logger.debug({ jidsRequiringFetch }, 'fetching sessions')
+			const result = await query({
+				tag: 'iq',
+				attrs: {
+					xmlns: 'encrypt',
+					type: 'get',
+					to: S_WHATSAPP_NET,
+				},
+				content: [
+					{
+						tag: 'key',
+						attrs: { },
+						content: jidsRequiringFetch.map(
+							jid => ({
+								tag: 'user',
+								attrs: { jid },
+							})
+						)
+					}
+				]
+			})
 			await parseAndInjectE2ESessions(result, signalRepository)
-			return true
-   		}
 
-    	return false
+			didFetchNewSession = true
+		}
+
+		return didFetchNewSession
 	}
 
 	const sendPeerDataOperationMessage = async(
