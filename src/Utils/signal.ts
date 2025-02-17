@@ -5,6 +5,7 @@ import { AuthenticationCreds, AuthenticationState, KeyPair, SignalIdentity, Sign
 import { assertNodeErrorFree, BinaryNode, getBinaryNodeChild, getBinaryNodeChildBuffer, getBinaryNodeChildren, getBinaryNodeChildUInt, jidDecode, JidWithDevice, S_WHATSAPP_NET } from '../WABinary'
 import { Curve, generateSignalPubKey } from './crypto'
 import { encodeBigEndian } from './generics'
+import { DeviceListData, ParsedDeviceInfo, USyncQueryResultList } from '../WAUSync'
 
 export const createSignalIdentity = (
 	wid: string,
@@ -151,19 +152,25 @@ export const parseAndInjectE2ESessions = async(
 	}
 }
 
-export const extractDeviceJids = (
-	result: BinaryNode,
-	myJid: string,
-	excludeZeroDevices: boolean
-): JidWithDevice[] => {
+export const extractDeviceJids = (result: USyncQueryResultList[], myJid: string, excludeZeroDevices: boolean) => {
 	const { user: myUser, device: myDevice } = jidDecode(myJid)!
+
 	const extracted: JidWithDevice[] = []
 
-	for(const node of result.content as BinaryNode[]) {
-		const list = getBinaryNodeChild(node, 'list')?.content
-		if(list && Array.isArray(list)) {
-			for(const item of list) {
-				processItem(item, myUser, myDevice!, excludeZeroDevices, extracted)
+
+	for(const userResult of result) {
+		const { devices, id } = userResult as { devices: ParsedDeviceInfo, id: string }
+		const { user } = jidDecode(id)!
+		const deviceList = devices?.deviceList as DeviceListData[]
+		if(Array.isArray(deviceList)) {
+			for(const { id: device, keyIndex } of deviceList) {
+				if(
+					(!excludeZeroDevices || device !== 0) && // if zero devices are not-excluded, or device is non zero
+					(myUser !== user || myDevice !== device) && // either different user or if me user, not this device
+					(device === 0 || !!keyIndex) // ensure that "key-index" is specified for "non-zero" devices, produces a bad req otherwise
+				) {
+					extracted.push({ user, device })
+				}
 			}
 		}
 	}

@@ -8,6 +8,7 @@ import { makeMutex } from '../Utils/make-mutex'
 import processMessage from '../Utils/process-message'
 import { BinaryNode, getBinaryNodeChild, getBinaryNodeChildren, jidNormalizedUser, reduceBinaryNodeToDictionary, S_WHATSAPP_NET } from '../WABinary'
 import { makeSocket } from './socket'
+import { makeUSyncSocket } from './usync'
 
 const MAX_SYNC_ATTEMPTS = 2
 
@@ -21,7 +22,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		shouldIgnoreJid,
 		shouldSyncHistoryMessage,
 	} = config
-	const sock = makeSocket(config)
+	const sock = makeUSyncSocket(config)
 	const {
 		ev,
 		ws,
