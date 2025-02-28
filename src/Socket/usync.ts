@@ -21,17 +21,17 @@ export const makeUSyncSocket = (config: SocketConfig) => {
 		// variable below has only validated users
 		const validUsers = usyncQuery.users
 
-		const userNodes = validUsers.map((user) => {
+		const userNodes = await Promise.all(validUsers.map(async (user) => {
+			const userElements = await Promise.all(usyncQuery.protocols.map(async (a) => a.getUserElement(user)))
 			return {
 				tag: 'user',
 				attrs: {
 					jid: !user.phone ? user.id : undefined,
 				},
-				content: usyncQuery.protocols
-					.map((a) => a.getUserElement(user))
-					.filter(a => a !== null)
+				content: userElements.filter(a => a !== null)
 			} as BinaryNode
-		})
+		}))
+		const getQueryElement = await Promise.all(usyncQuery.protocols.map(async (a) => a.getQueryElement()))
 
 		const listNode: BinaryNode = {
 			tag: 'list',
@@ -42,7 +42,7 @@ export const makeUSyncSocket = (config: SocketConfig) => {
 		const queryNode: BinaryNode = {
 			tag: 'query',
 			attrs: {},
-			content: usyncQuery.protocols.map((a) => a.getQueryElement())
+			content: getQueryElement
 		}
 		const iq = {
 			tag: 'iq',

@@ -153,8 +153,6 @@ export const prepareWAMessageMedia = async(
     const requiresDurationComputation = mediaType === 'audio' && typeof uploadData.seconds === 'undefined'
     const requiresThumbnailComputation = (mediaType === 'image' || mediaType === 'video') &&
                                         (typeof uploadData['jpegThumbnail'] === 'undefined')
-    const requiresWaveformProcessing = mediaType === 'audio' && uploadData.ptt === true
-    const requiresAudioBackground = options.backgroundColor && mediaType === 'audio' && uploadData.ptt === true
     const requiresOriginalForSomeProcessing = requiresDurationComputation || requiresThumbnailComputation
     const {
         mediaKey,
@@ -186,67 +184,36 @@ export const prepareWAMessageMedia = async(
         })(),
 		(async() => {
 			try {
-				const promises: Promise<void>[] = []
-
 				if(requiresThumbnailComputation) {
-					promises.push((async () => {
-						const {
-							thumbnail,
-							originalImageDimensions
-						} = await generateThumbnail(bodyPath!, mediaType as 'image' | 'video', options)
-						uploadData.jpegThumbnail = thumbnail
-						if(!uploadData.width && originalImageDimensions) {
-							uploadData.width = originalImageDimensions.width
-							uploadData.height = originalImageDimensions.height
-							logger?.debug('set dimensions')
-						}
+					const {
+						thumbnail,
+						originalImageDimensions
+					} = await generateThumbnail(bodyPath!, mediaType as 'image' | 'video', options)
+					uploadData.jpegThumbnail = thumbnail
+					if(!uploadData.width && originalImageDimensions) {
+						uploadData.width = originalImageDimensions.width
+						uploadData.height = originalImageDimensions.height
+						logger?.debug('set dimensions')
+					}
 
-						logger?.debug('generated thumbnail')
-					})())
+					logger?.debug('generated thumbnail')
 				}
-
-				if(requiresDurationComputation) {
-					promises.push((async () => {
-						uploadData.seconds = await getAudioDuration(bodyPath!)
-						logger?.debug('computed audio duration')
-					})())
+				if (requiresDurationComputation) {
+					uploadData.seconds = await getAudioDuration(bodyPath!)
 				}
-
-				if(requiresWaveformProcessing) {
-					promises.push((async () => {
-						uploadData.waveform = await getAudioWaveform(bodyPath!, logger)
-						logger?.debug('processed waveform')
-					})())
-				}
-
-				if(requiresAudioBackground) {
-					promises.push((async () => {
-						uploadData.backgroundArgb = await assertColor(options.backgroundColor)
-						logger?.debug('computed backgroundColor audio status')
-					})())
-				}
-				await Promise.all(promises)
+				
 			} catch(error) {
 				logger?.warn({ trace: error.stack }, 'failed to obtain extra info')
 			}
 			return;
 		})(),
     ])
-        .finally(
-            async() => {
-                encWriteStream.destroy()
-                // remove tmp files
-                if(didSaveToTmpPath && bodyPath) {
-                    try {
-                    	await fs.access(bodyPath)
-                        await fs.unlink(bodyPath)
-                        logger?.debug('removed tmp file')
-                    } catch(error) {
-                        logger?.warn('failed to remove tmp file')
-                    }
-                }
-            }
-        )
+	Promise.all([
+		encWriteStream.destroy(),
+		didSaveToTmpPath && bodyPath && fs.unlink(bodyPath)
+	]).catch(error => {
+		logger?.warn({ trace: error.stack }, 'failed to delete tmp file')
+	})
 
     const obj = WAProto.Message.fromObject({
         [`${mediaType}Message`]: MessageTypeProto[mediaType].fromObject(
@@ -259,7 +226,6 @@ export const prepareWAMessageMedia = async(
                 fileLength,
                 mediaKeyTimestamp: unixTimestampSeconds(),
                 ...uploadData,
-                media: undefined
             }
         )
     })
