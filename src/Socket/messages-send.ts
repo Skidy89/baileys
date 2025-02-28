@@ -186,7 +186,6 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				deviceMap[item.user].push(item)
 				deviceResults.push(item)
 			})
-	
 			for(const key in deviceMap) {
 				userDevicesCache.set(key, deviceMap[key])
 			}
@@ -415,14 +414,17 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 	
 					const senderKeyJids: string[] = []
 					// ensure a connection is established with every device
-					for(const { user, device } of devices) {
-						const jid = jidEncode(user, isLid ? 'lid' : 's.whatsapp.net', device)
-						if(!senderKeyMap[jid] || !!participant) {
-							senderKeyJids.push(jid)
-							// store that this person has had the sender keys sent to them
-							senderKeyMap[jid] = true
-						}
-					}
+					Promise.all(
+						devices.map(({ user, device }) => {
+							const jid = jidEncode(user, isLid ? 'lid' : 's.whatsapp.net', device)
+							if(!senderKeyMap[jid] || !!participant) {
+								senderKeyJids.push(jid)
+								// store that this person has had the sender keys sent to them
+								senderKeyMap[jid] = true
+							}
+						})
+					)
+					
 	
 					// if there are some participants with whom the session has not been established
 					// if there are, we re-send the senderkey
@@ -478,17 +480,19 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					const allJids: string[] = []
 					const meJids: string[] = []
 					const otherJids: string[] = []
-					for(const { user, device } of devices) {
-						const isMe = user === meUser
-						const jid = jidEncode(isMe && isLid ? authState.creds?.me?.lid!.split(':')[0] || user : user, isLid ? 'lid' : 's.whatsapp.net', device)
-						if(isMe) {
-							meJids.push(jid)
-						} else {
-							otherJids.push(jid)
-						}
+					await Promise.all(
+						devices.map(async ({ user, device }) => {
+							const isMe = user === meUser
+							const jid = jidEncode(isMe && isLid ? authState.creds?.me?.lid!.split(':')[0] || user : user, isLid ? 'lid' : 's.whatsapp.net', device)
+							if(isMe) {
+								meJids.push(jid)
+							} else {
+								otherJids.push(jid)
+							}
 	
-						allJids.push(jid)
-					}
+							allJids.push(jid)
+						})
+					)
 	
 					await assertSessions(allJids, false)
 	

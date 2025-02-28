@@ -134,7 +134,7 @@ const startSock = async() => {
 					for (const msg of upsert.messages) {
 						if (msg.key.fromMe) {
 							console.log('sent message', msg.key.id)
-							sock.sendMessage(msg.key.remoteJid!, { image: { url: "https://i.pinimg.com/736x/19/09/74/19097463f9b898381e20dfd0129a4110.jpg"}})
+							sock.sendMessage(msg.key.remoteJid!, { text: 'hello' })
 						}
 					}
 				}
