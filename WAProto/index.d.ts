@@ -32551,6 +32551,9 @@ export namespace proto {
 
             /** VideoMessage processedVideos */
             processedVideos?: (proto.IProcessedVideo[]|null);
+
+            /** VideoMessage externalShareFullVideoDurationInSeconds */
+            externalShareFullVideoDurationInSeconds?: (number|null);
         }
 
         /** Represents a VideoMessage. */
@@ -32639,6 +32642,9 @@ export namespace proto {
 
             /** VideoMessage processedVideos. */
             public processedVideos: proto.IProcessedVideo[];
+
+            /** VideoMessage externalShareFullVideoDurationInSeconds. */
+            public externalShareFullVideoDurationInSeconds: number;
 
             /**
              * Creates a new VideoMessage instance using the specified properties.
