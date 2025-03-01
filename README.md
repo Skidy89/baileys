@@ -741,13 +741,6 @@ sock.ev.on('messages.upsert', async ({ [m] }) => {
 }
 ```
 
-### Re-upload Media Message to Whatsapp
-
-- WhatsApp automatically removes old media from their servers. For the device to access said media -- a re-upload is required by another device that has it. This can be accomplished using: 
-```ts
-await sock.updateMediaMessage(msg)
-```
-
 ## Reject Call
 
 - You can obtain `callId` and `callFrom` from `call` event

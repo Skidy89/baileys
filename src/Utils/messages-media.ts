@@ -391,7 +391,7 @@ export const encryptedStream = async(
 
 		onChunk(aes.final())
 
-		const mac = hmac.digest().slice(0, 10)
+		const mac = hmac.digest().subarray(0, 10)
 		sha256Enc = sha256Enc.update(mac)
 
 		const fileSha256 = sha256Plain.digest()

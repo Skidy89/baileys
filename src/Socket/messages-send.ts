@@ -246,33 +246,6 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		return didFetchNewSession
 	}
 
-	const sendPeerDataOperationMessage = async(
-		pdoMessage: proto.Message.IPeerDataOperationRequestMessage
-	): Promise<string> => {
-		//TODO: for later, abstract the logic to send a Peer Message instead of just PDO - useful for App State Key Resync with phone
-		if(!authState.creds.me?.id) {
-			throw new Boom('Not authenticated')
-		}
-
-		const protocolMessage: proto.IMessage = {
-			protocolMessage: {
-				peerDataOperationRequestMessage: pdoMessage,
-				type: proto.Message.ProtocolMessage.Type.PEER_DATA_OPERATION_REQUEST_MESSAGE
-			}
-		}
-
-		const meJid = jidNormalizedUser(authState.creds.me.id)
-
-		const msgId = await relayMessage(meJid, protocolMessage, {
-			additionalAttributes: {
-				category: 'peer',
-				// eslint-disable-next-line camelcase
-				push_priority: 'high_force',
-			},
-		})
-
-		return msgId
-	}
 
 	const createParticipantNodes = async(
 		jids: string[],
@@ -661,60 +634,8 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		refreshMediaConn,
 		waUploadToServer,
 		fetchPrivacySettings,
-		sendPeerDataOperationMessage,
 		createParticipantNodes,
 		getUSyncDevices,
-		updateMediaMessage: async(message: proto.IWebMessageInfo) => {
-			const content = assertMediaContent(message.message)
-			const mediaKey = content.mediaKey!
-			const meId = authState.creds.me!.id
-			const node = encryptMediaRetryRequest(message.key, mediaKey, meId)
-
-			let error: Error | undefined = undefined
-			await Promise.all(
-				[
-					sendNode(node),
-					waitForMsgMediaUpdate(update => {
-						const result = update.find(c => c.key.id === message.key.id)
-						if(result) {
-							if(result.error) {
-								error = result.error
-							} else {
-								try {
-									const media = decryptMediaRetryData(result.media!, mediaKey, result.key.id!)
-									if(media.result !== proto.MediaRetryNotification.ResultType.SUCCESS) {
-										const resultStr = proto.MediaRetryNotification.ResultType[media.result]
-										throw new Boom(
-											`Media re-upload failed by device (${resultStr})`,
-											{ data: media, statusCode: getStatusCodeForMediaRetry(media.result) || 404 }
-										)
-									}
-
-									content.directPath = media.directPath
-									content.url = getUrlFromDirectPath(content.directPath)
-
-									logger.debug({ directPath: media.directPath, key: result.key }, 'media update successful')
-								} catch(err) {
-									error = err
-								}
-							}
-
-							return true
-						}
-					})
-				]
-			)
-
-			if(error) {
-				throw error
-			}
-
-			ev.emit('messages.update', [
-				{ key: message.key, update: { message: message.message } }
-			])
-
-			return message
-		},
 		sendMessage: async(
 			jid: string,
 			content: AnyMessageContent,
