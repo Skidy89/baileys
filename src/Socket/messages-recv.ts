@@ -516,10 +516,10 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 	async function decipherLinkPublicKey(data: Uint8Array | Buffer) {
 		const buffer = toRequiredBuffer(data)
-		const salt = buffer.slice(0, 32)
+		const salt = buffer.subarray(0, 32)
 		const secretKey = await derivePairingCodeKey(authState.creds.pairingCode!, salt)
-		const iv = buffer.slice(32, 48)
-		const payload = buffer.slice(48, 80)
+		const iv = buffer.subarray(32, 48)
+		const payload = buffer.subarray(48, 80)
 		return aesDecryptCTR(payload, secretKey, iv)
 	}
 
@@ -556,18 +556,18 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		// prevents the first message decryption failure
 		const sendToAll = !jidDecode(participant)?.device
 		await assertSessions([participant], true)
-	
+
 		if(isJidGroup(remoteJid)) {
 			await authState.keys.set({ 'sender-key-memory': { [remoteJid]: null } })
 		}
-	
+
 		logger.debug({ participant, sendToAll }, 'forced new session for retry recp')
-	
-		await Promise.all(msgs.map(async (msg, i) => {
+
+		for(const [i, msg] of msgs.entries()) {
 			if(msg) {
 				updateSendMessageAgainCount(ids[i], participant)
 				const msgRelayOpts: MessageRelayOptions = { messageId: ids[i] }
-	
+
 				if(sendToAll) {
 					msgRelayOpts.useUserDevicesCache = false
 				} else {
@@ -576,13 +576,14 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 						count: +retryNode.attrs.count
 					}
 				}
-	
+
 				await relayMessage(key.remoteJid!, msg, msgRelayOpts)
 			} else {
 				logger.debug({ jid: key.remoteJid, id: ids[i] }, 'recv retry request, but message not available')
 			}
-		}))
+		}
 	}
+
 
 	const handleReceipt = async(node: BinaryNode) => {
 		const { attrs, content } = node
@@ -831,6 +832,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 	const handleBadAck = async({ attrs }: BinaryNode) => {
 		const key: WAMessageKey = { remoteJid: attrs.from, fromMe: true, id: attrs.id }
+		
 
 		// WARNING: REFRAIN FROM ENABLING THIS FOR NOW. IT WILL CAUSE A LOOP
 		// // current hypothesis is that if pash is sent in the ack

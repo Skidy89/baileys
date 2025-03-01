@@ -17,11 +17,11 @@ export type ChatMutationMap = { [index: string]: ChatMutation }
 const mutationKeys = (keydata: Uint8Array) => {
 	const expanded = hkdf(keydata, 160, { info: 'WhatsApp Mutation Keys' })
 	return {
-		indexKey: expanded.slice(0, 32),
-		valueEncryptionKey: expanded.slice(32, 64),
-		valueMacKey: expanded.slice(64, 96),
-		snapshotMacKey: expanded.slice(96, 128),
-		patchMacKey: expanded.slice(128, 160)
+		indexKey: expanded.subarray(0, 32),
+		valueEncryptionKey: expanded.subarray(32, 64),
+		valueMacKey: expanded.subarray(64, 96),
+		snapshotMacKey: expanded.subarray(96, 128),
+		patchMacKey: expanded.subarray(128, 160)
 	}
 }
 
@@ -49,7 +49,7 @@ const generateMac = (operation: proto.SyncdMutation.SyncdOperation, data: Buffer
 	const total = Buffer.concat([keyData, data, last])
 	const hmac = hmacSign(total, key, 'sha512')
 
-	return hmac.slice(0, 32)
+	return hmac.subarray(0, 32)
 }
 
 const to64BitNetworkOrder = (e: number) => {
@@ -204,8 +204,8 @@ export const decodeSyncdMutations = async(
 
 		const key = await getKey(record.keyId!.id!)
 		const content = Buffer.from(record.value!.blob!)
-		const encContent = content.slice(0, -32)
-		const ogValueMac = content.slice(-32)
+		const encContent = content.subarray(0, -32)
+		const ogValueMac = content.subarray(-32)
 		if(validateMacs) {
 			const contentHmac = generateMac(operation!, encContent, record.keyId!.id!, key.valueMacKey)
 			if(Buffer.compare(contentHmac, ogValueMac) !== 0) {
