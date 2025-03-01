@@ -554,23 +554,7 @@ export const makeSocket = (config: SocketConfig) => {
 		return Buffer.concat([salt, randomIv, ciphered])
 	}
 
-	const sendWAMBuffer = (wamBuffer: Buffer) => {
-		return query({
-			tag: 'iq',
-			attrs: {
-				to: S_WHATSAPP_NET,
-				id: generateMessageTag(),
-				xmlns: 'w:stats'
-			},
-			content: [
-				{
-					tag: 'add',
-					attrs: {},
-					content: wamBuffer
-				}
-			]
-		})
-	}
+	
 
 	ws.on('message', onMessageReceived)
 
@@ -674,10 +658,6 @@ export const makeSocket = (config: SocketConfig) => {
 		end(new Boom('Connection Failure', { statusCode: reason, data: node.attrs }))
 	})
 
-	ws.on('CB:ib,,downgrade_webclient', () => {
-		end(new Boom('Multi-device beta not joined', { statusCode: DisconnectReason.multideviceMismatch }))
-	})
-
 	ws.on('CB:ib,,offline_preview', (node: BinaryNode) => {
 	  logger.info('offline preview received', node)
 		sendNode({
@@ -767,7 +747,6 @@ export const makeSocket = (config: SocketConfig) => {
 		requestPairingCode,
 		/** Waits for the connection to WA to reach a state */
 		waitForConnectionUpdate: bindWaitForConnectionUpdate(ev),
-		sendWAMBuffer,
 	}
 }
 

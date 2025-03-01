@@ -116,29 +116,27 @@ export const parseAndInjectE2ESessions = async(
 }
 
 export const extractDeviceJids = (result: USyncQueryResultList[], myJid: string, excludeZeroDevices: boolean) => {
-	const { user: myUser, device: myDevice } = jidDecode(myJid)!
+    const { user: myUser, device: myDevice } = jidDecode(myJid)!
 
-	const extracted: JidWithDevice[] = []
+    const extracted: JidWithDevice[] = []
+    for (const userResult of result) {
+        const { devices, id } = userResult as { devices: ParsedDeviceInfo, id: string }
+        const { user } = jidDecode(id)!
+        const deviceList: DeviceListData[] = devices?.deviceList!
+        if (Array.isArray(deviceList)) {
+            for (const { id: device, keyIndex } of deviceList) {
+                if (
+                    (!excludeZeroDevices || device !== 0) && // if zero devices are not-excluded, or device is non zero
+                    (myUser !== user || myDevice !== device) && // either different user or if me user, not this device
+                    (device === 0 || !!keyIndex) // ensure that "key-index" is specified for "non-zero" devices, produces a bad req otherwise
+                ) {
+                    extracted.push({ user, device })
+                }
+            }
+        }
+    }
 
-
-	for(const userResult of result) {
-		const { devices, id } = userResult as { devices: ParsedDeviceInfo, id: string }
-		const { user } = jidDecode(id)!
-		const deviceList = devices?.deviceList as DeviceListData[]
-		if(Array.isArray(deviceList)) {
-			for(const { id: device, keyIndex } of deviceList) {
-				if(
-					(!excludeZeroDevices || device !== 0) && // if zero devices are not-excluded, or device is non zero
-					(myUser !== user || myDevice !== device) && // either different user or if me user, not this device
-					(device === 0 || !!keyIndex) // ensure that "key-index" is specified for "non-zero" devices, produces a bad req otherwise
-				) {
-					extracted.push({ user, device })
-				}
-			}
-		}
-	}
-
-	return extracted
+    return extracted
 }
 
 /**
