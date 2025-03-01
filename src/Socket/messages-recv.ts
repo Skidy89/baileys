@@ -556,18 +556,18 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		// prevents the first message decryption failure
 		const sendToAll = !jidDecode(participant)?.device
 		await assertSessions([participant], true)
-
+	
 		if(isJidGroup(remoteJid)) {
 			await authState.keys.set({ 'sender-key-memory': { [remoteJid]: null } })
 		}
-
+	
 		logger.debug({ participant, sendToAll }, 'forced new session for retry recp')
-
-		for(const [i, msg] of msgs.entries()) {
+	
+		await Promise.all(msgs.map(async (msg, i) => {
 			if(msg) {
 				updateSendMessageAgainCount(ids[i], participant)
 				const msgRelayOpts: MessageRelayOptions = { messageId: ids[i] }
-
+	
 				if(sendToAll) {
 					msgRelayOpts.useUserDevicesCache = false
 				} else {
@@ -576,12 +576,12 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 						count: +retryNode.attrs.count
 					}
 				}
-
+	
 				await relayMessage(key.remoteJid!, msg, msgRelayOpts)
 			} else {
 				logger.debug({ jid: key.remoteJid, id: ids[i] }, 'recv retry request, but message not available')
 			}
-		}
+		}))
 	}
 
 	const handleReceipt = async(node: BinaryNode) => {
