@@ -67,9 +67,9 @@ export function getMediaKeys(buffer: Uint8Array | string | null | undefined, med
 	// expand using HKDF to 112 bytes, also pass in the relevant app info
 	const expandedMediaKey = hkdf(buffer, 112, { info: hkdfInfoKey(mediaType) })
 	return {
-		iv: expandedMediaKey.slice(0, 16),
-		cipherKey: expandedMediaKey.slice(16, 48),
-		macKey: expandedMediaKey.slice(48, 80),
+		iv: expandedMediaKey.subarray(0, 16),
+		cipherKey: expandedMediaKey.subarray(16, 48),
+		macKey: expandedMediaKey.subarray(48, 80),
 	}
 }
 
@@ -525,7 +525,7 @@ export const downloadEncryptedContent = async(
 			const start = bytesFetched >= startByte! ? undefined : Math.max(startByte! - bytesFetched, 0)
 			const end = bytesFetched + bytes.length < endByte! ? undefined : Math.max(endByte! - bytesFetched, 0)
 
-			push(bytes.slice(start, end))
+			push(bytes.subarray(start, end))
 
 			bytesFetched += bytes.length
 		} else {
@@ -538,14 +538,14 @@ export const downloadEncryptedContent = async(
 			let data = Buffer.concat([remainingBytes, chunk])
 
 			const decryptLength = toSmallestChunkSize(data.length)
-			remainingBytes = data.slice(decryptLength)
-			data = data.slice(0, decryptLength)
+			remainingBytes = data.subarray(decryptLength)
+			data = data.subarray(0, decryptLength)
 
 			if(!aes) {
 				let ivValue = iv
 				if(firstBlockIsIV) {
-					ivValue = data.slice(0, AES_CHUNK_SIZE)
-					data = data.slice(AES_CHUNK_SIZE)
+					ivValue = data.subarray(0, AES_CHUNK_SIZE)
+					data = data.subarray(AES_CHUNK_SIZE)
 				}
 
 				aes = Crypto.createDecipheriv('aes-256-cbc', cipherKey, ivValue)
