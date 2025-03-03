@@ -365,31 +365,34 @@ export const encryptedStream = async(
 	let sha256Enc = Crypto.createHash('sha256')
 
 	try {
-		for await (const data of stream) {
-			fileLength += data.length
+		await Promise.all([
+			(async () => {
+				for await (const data of stream) {
+					fileLength += data.length
 
-			if(
-				type === 'remote'
-				&& opts?.maxContentLength
-				&& fileLength + data.length > opts.maxContentLength
-			) {
-				throw new Boom(
-					`content length exceeded when encrypting "${type}"`,
-					{
-						data: { media, type }
+					if (type === "remote" && opts?.maxContentLength && fileLength > opts.maxContentLength) {
+						throw new Boom(`content length exceeded when encrypting "${type}"`, {
+							data: { media, type },
+						})
 					}
-				)
-			}
 
-			sha256Plain = sha256Plain.update(data)
-			if(writeStream && !writeStream.write(data)) {
-				await once(writeStream, 'drain')
-			}
+					sha256Plain.update(data)
+					writeStream?.write(data)
+					onChunk(aes.update(data))
+				}
 
-			onChunk(aes.update(data))
-		}
+				onChunk(aes.final())
+			})(),
 
-		onChunk(aes.final())
+			new Promise<void>((resolve, reject) => {
+				if (writeStream) {
+					writeStream.on("finish", resolve)
+					writeStream.on("error", reject)
+				} else {
+					resolve()
+				}
+			}),
+		])
 
 		const mac = hmac.digest().subarray(0, 10)
 		sha256Enc = sha256Enc.update(mac)

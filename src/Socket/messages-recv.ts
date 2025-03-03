@@ -563,23 +563,42 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 		logger.debug({ participant, sendToAll }, 'forced new session for retry recp')
 
-		for(const [i, msg] of msgs.entries()) {
-			if(msg) {
-				updateSendMessageAgainCount(ids[i], participant)
-				const msgRelayOpts: MessageRelayOptions = { messageId: ids[i] }
+		const p = !isJidGroup(remoteJid) && sendToAll
 
-				if(sendToAll) {
-					msgRelayOpts.useUserDevicesCache = false
-				} else {
-					msgRelayOpts.participant = {
-						jid: participant,
-						count: +retryNode.attrs.count
+		if (p) {
+			// if it's a group, we can send all messages in parallel
+			// currently this maybe can be a bad idea since we can fail to decrypt all bot messages
+			await Promise.all(
+				msgs.map(async (msg, i) => {
+					if (msg) {
+						updateSendMessageAgainCount(ids[i], participant);
+						const msgRelayOpts: MessageRelayOptions = {
+							messageId: ids[i],
+							...(sendToAll
+								? { useUserDevicesCache: false }
+								: { participant: { jid: participant, count: +retryNode.attrs.count } })
+						};
+						await relayMessage(remoteJid, msg, msgRelayOpts);
+					} else {
+						logger.debug({ jid: remoteJid, id: ids[i] }, "recv retry request, but message not available");
 					}
+				})
+			);
+		} else {
+			// Modo secuencial si hay problemas de desencriptación
+			for (const [i, msg] of msgs.entries()) {
+				if (msg) {
+					updateSendMessageAgainCount(ids[i], participant);
+					const msgRelayOpts: MessageRelayOptions = {
+						messageId: ids[i],
+						...(sendToAll
+							? { useUserDevicesCache: false }
+							: { participant: { jid: participant, count: +retryNode.attrs.count } })
+					};
+					await relayMessage(remoteJid, msg, msgRelayOpts); // Forzado a ser secuencial
+				} else {
+					logger.debug({ jid: remoteJid, id: ids[i] }, "recv retry request, but message not available");
 				}
-
-				await relayMessage(key.remoteJid!, msg, msgRelayOpts)
-			} else {
-				logger.debug({ jid: key.remoteJid, id: ids[i] }, 'recv retry request, but message not available')
 			}
 		}
 	}
