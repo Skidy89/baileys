@@ -72,11 +72,11 @@ export const parseAndInjectE2ESessions = async(
 	repository: SignalRepository
 ) => {
 	const extractKey = (key: BinaryNode) => (
-		key ? ({
+		({
 			keyId: getBinaryNodeChildUInt(key, 'id', 3)!,
-			publicKey: generateSignalPubKey(getBinaryNodeChildBuffer(key, 'value')!),
-			signature: getBinaryNodeChildBuffer(key, 'signature')!,
-		}) : undefined
+        	publicKey: generateSignalPubKey(getBinaryNodeChildBuffer(key, 'value')!),
+        	signature: getBinaryNodeChildBuffer(key, 'signature')!
+		})
 	)
 	const nodes = getBinaryNodeChildren(getBinaryNodeChild(node, 'list'), 'user')
 	for(const node of nodes) {
@@ -90,29 +90,31 @@ export const parseAndInjectE2ESessions = async(
 	// It's rare case when you need to E2E sessions for so many users, but it's possible
 	const chunkSize = 100
 	const chunks = chunk(nodes, chunkSize)
-	for(const nodesChunk of chunks) {
-		await Promise.all(
-			nodesChunk.map(
-				async node => {
-					const signedKey = getBinaryNodeChild(node, 'skey')!
-					const key = getBinaryNodeChild(node, 'key')!
-					const identity = getBinaryNodeChildBuffer(node, 'identity')!
-					const jid = node.attrs.jid
-					const registrationId = getBinaryNodeChildUInt(node, 'registration', 4)
+	for (const nodesChunk of chunks) {
+        await Promise.allSettled(
+            nodesChunk.map(async node => {
+                try {
+                    const jid = node.attrs.jid;
+                    const signedKey = getBinaryNodeChild(node, 'skey');
+                    const key = getBinaryNodeChild(node, 'key');
+                    const identity = getBinaryNodeChildBuffer(node, 'identity')!;
+                    const registrationId = getBinaryNodeChildUInt(node, 'registration', 4)!;
 
-					await repository.injectE2ESession({
-						jid,
-						session: {
-							registrationId: registrationId!,
-							identityKey: generateSignalPubKey(identity),
-							signedPreKey: extractKey(signedKey)!,
-							preKey: extractKey(key)!
-						}
-					})
-				}
-			)
-		)
-	}
+                    await repository.injectE2ESession({
+                        jid,
+                        session: {
+                            registrationId,
+                            identityKey: generateSignalPubKey(identity),
+                            signedPreKey: extractKey(signedKey!),
+                            preKey: extractKey(key!)
+                        }
+                    })
+                } catch (error) {
+					// no logger here so no error handling
+                }
+            })
+        )
+    }
 }
 
 export const extractDeviceJids = (result: USyncQueryResultList[], myJid: string, excludeZeroDevices: boolean) => {

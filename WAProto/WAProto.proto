@@ -1,7 +1,7 @@
 syntax = "proto2";
 package proto;
 
-/// WhatsApp Version: 2.3000.1020478634
+/// WhatsApp Version: 2.3000.1020549117
 
 message ADVDeviceIdentity {
     optional uint32 rawId = 1;
@@ -68,6 +68,28 @@ message AIRichResponseMessage {
         }
     }
     
+    message AIRichResponseContentItemsMetadata {
+        repeated AIRichResponseContentItemMetadata itemsMetadata = 1;
+        optional ContentType contentType = 2;
+        message AIRichResponseContentItemMetadata {
+            oneof aIRichResponseContentItem {
+                AIRichResponseMessage.AIRichResponseContentItemsMetadata.AIRichResponseReelItem reelItem = 1;
+            }
+        }
+        
+        message AIRichResponseReelItem {
+            optional string title = 1;
+            optional string profileIconUrl = 2;
+            optional string thumbnailUrl = 3;
+            optional string videoUrl = 4;
+        }
+        
+        enum ContentType {
+            DEFAULT = 0;
+            CAROUSEL = 1;
+        }
+    }
+    
     message AIRichResponseDynamicMetadata {
         optional AIRichResponseDynamicMetadataType type = 1;
         optional uint64 version = 2;
@@ -118,15 +140,15 @@ message AIRichResponseMessage {
     
     message AIRichResponseMapMetadata {
         optional double centerLatitude = 1;
-        optional double centerLongtitude = 2;
+        optional double centerLongitude = 2;
         optional double latitudeDelta = 3;
-        optional double longtitudeDelta = 4;
-        repeated AIRichResponseMapAnnotation anotations = 5;
+        optional double longitudeDelta = 4;
+        repeated AIRichResponseMapAnnotation annotations = 5;
         optional bool showInfoList = 6;
         message AIRichResponseMapAnnotation {
             optional uint32 annotationNumber = 1;
             optional double latitude = 2;
-            optional double longtitude = 3;
+            optional double longitude = 3;
             optional string title = 4;
             optional string body = 5;
         }
@@ -137,17 +159,6 @@ message AIRichResponseMessage {
         AI_RICH_RESPONSE_TYPE_UNKNOWN = 0;
         AI_RICH_RESPONSE_TYPE_STANDARD = 1;
     }
-    message AIRichResponseReelsMetadata {
-        repeated AIRichResponseReelMetadata reelsMetadata = 1;
-        message AIRichResponseReelMetadata {
-            optional string title = 1;
-            optional string profileIconUrl = 2;
-            optional string previewUrl = 3;
-            optional string videoUrl = 4;
-        }
-        
-    }
-    
     message AIRichResponseSubMessage {
         optional AIRichResponseMessage.AIRichResponseSubMessageType messageType = 1;
         optional AIRichResponseMessage.AIRichResponseGridImageMetadata gridImageMetadata = 2;
@@ -158,7 +169,7 @@ message AIRichResponseMessage {
         optional AIRichResponseMessage.AIRichResponseDynamicMetadata dynamicMetadata = 7;
         optional AIRichResponseMessage.AIRichResponseLatexMetadata latexMetadata = 8;
         optional AIRichResponseMessage.AIRichResponseMapMetadata mapMetadata = 9;
-        optional AIRichResponseMessage.AIRichResponseReelsMetadata reelsMetadata = 10;
+        optional AIRichResponseMessage.AIRichResponseContentItemsMetadata contentItemsMetadata = 10;
     }
     
     enum AIRichResponseSubMessageType {
@@ -171,7 +182,7 @@ message AIRichResponseMessage {
         AI_RICH_RESPONSE_DYNAMIC = 6;
         AI_RICH_RESPONSE_MAP = 7;
         AI_RICH_RESPONSE_LATEX = 8;
-        AI_RICH_RESPONSE_INLINE_REELS = 9;
+        AI_RICH_RESPONSE_CONTENT_ITEMS = 9;
     }
     message AIRichResponseTableMetadata {
         repeated AIRichResponseTableRow rows = 1;
@@ -284,6 +295,7 @@ message BotCapabilityMetadata {
         RICH_RESPONSE_MAPS = 25;
         RICH_RESPONSE_INLINE_REELS = 26;
         AGENTIC_PLANNING = 27;
+        ACCOUNT_LINKING = 28;
     }
 }
 

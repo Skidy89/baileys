@@ -620,7 +620,6 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 	}
 
 	const waUploadToServer = getWAUploadToServer(config, refreshMediaConn)
-
 	const waitForMsgMediaUpdate = bindWaitForEvent(ev, 'messages.media-update')
 
 	return {
@@ -636,6 +635,57 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		fetchPrivacySettings,
 		createParticipantNodes,
 		getUSyncDevices,
+		updateMediaMessage: async(message: proto.IWebMessageInfo) => {
+			const content = assertMediaContent(message.message)
+			const mediaKey = content.mediaKey!
+			const meId = authState.creds.me!.id
+			const node = encryptMediaRetryRequest(message.key, mediaKey, meId)
+
+			let error: Error | undefined = undefined
+			await Promise.all(
+				[
+					sendNode(node),
+					waitForMsgMediaUpdate(update => {
+						const result = update.find(c => c.key.id === message.key.id)
+						if(result) {
+							if(result.error) {
+								error = result.error
+							} else {
+								try {
+									const media = decryptMediaRetryData(result.media!, mediaKey, result.key.id!)
+									if(media.result !== proto.MediaRetryNotification.ResultType.SUCCESS) {
+										const resultStr = proto.MediaRetryNotification.ResultType[media.result]
+										throw new Boom(
+											`Media re-upload failed by device (${resultStr})`,
+											{ data: media, statusCode: getStatusCodeForMediaRetry(media.result) || 404 }
+										)
+									}
+
+									content.directPath = media.directPath
+									content.url = getUrlFromDirectPath(content.directPath!)
+
+									logger.debug({ directPath: media.directPath, key: result.key }, 'media update successful')
+								} catch(err) {
+									error = err
+								}
+							}
+
+							return true
+						}
+					})
+				]
+			)
+
+			if(error) {
+				throw error
+			}
+
+			ev.emit('messages.update', [
+				{ key: message.key, update: { message: message.message } }
+			])
+
+			return message
+		},
 		sendMessage: async(
 			jid: string,
 			content: AnyMessageContent,
@@ -675,11 +725,9 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 							},
 						),
 						//TODO: CACHE
-						getProfilePicUrl: sock.profilePictureUrl,
 						upload: waUploadToServer,
 						mediaCache: config.mediaCache,
 						options: config.options,
-						messageId: generateMessageIDV2(sock.user?.id),
 						...options,
 					}
 				)

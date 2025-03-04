@@ -585,7 +585,6 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				})
 			);
 		} else {
-			// Modo secuencial si hay problemas de desencriptación
 			for (const [i, msg] of msgs.entries()) {
 				if (msg) {
 					updateSendMessageAgainCount(ids[i], participant);
@@ -595,7 +594,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 							? { useUserDevicesCache: false }
 							: { participant: { jid: participant, count: +retryNode.attrs.count } })
 					};
-					await relayMessage(remoteJid, msg, msgRelayOpts); // Forzado a ser secuencial
+					await relayMessage(remoteJid, msg, msgRelayOpts)
 				} else {
 					logger.debug({ jid: remoteJid, id: ids[i] }, "recv retry request, but message not available");
 				}
