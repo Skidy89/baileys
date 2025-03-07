@@ -40,7 +40,8 @@
     "prepack": "tsc",
     "prepare": "tsc",
     "release": "release-it",
-    "test": "jest"
+    "test": "jest",
+    "postinstall": "tsc"
   },
   "dependencies": {
     "@adiwajshing/keyed-db": "^0.2.4",
