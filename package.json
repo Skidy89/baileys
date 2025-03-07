@@ -106,5 +106,8 @@
   },
   "bugs": {
     "url": "https://github.com/Skidy89/Baileys/issues"
-  }
+  },
+  "trustedDependencies": [
+    "protobufjs"
+  ]
 }
