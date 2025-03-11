@@ -18,26 +18,20 @@ export function makeCacheableSignalKeyStore(
 	_cache?: CacheStore
 ): SignalKeyStore {
 	const cache = _cache || new NodeCache({
-		stdTTL: DEFAULT_CACHE_TTLS.SIGNAL_STORE, // 5 minutes
+		stdTTL: DEFAULT_CACHE_TTLS.SIGNAL_STORE,
 		useClones: false,
-		deleteOnExpire: true,
+		deleteOnExpire: true
 	})
 
-	function getUniqueId(type: string, id: string) {
-		return `${type}.${id}`
-	}
+	const getUniqueId = (type: string, id: string) => `${type}.${id}`
 
 	return {
 		async get(type, ids) {
-			const data: { [_: string]: SignalDataTypeMap[typeof type] } = { }
+			const data = new Map<string, SignalDataTypeMap[typeof type]>()
 			const idsToFetch: string[] = []
 			for(const id of ids) {
 				const item = cache.get<SignalDataTypeMap[typeof type]>(getUniqueId(type, id))
-				if(typeof item !== 'undefined') {
-					data[id] = item
-				} else {
-					idsToFetch.push(id)
-				}
+				item !== undefined ? data.set(id, item) : idsToFetch.push(id)
 			}
 
 			if(idsToFetch.length) {
@@ -46,25 +40,27 @@ export function makeCacheableSignalKeyStore(
 				for(const id of idsToFetch) {
 					const item = fetched[id]
 					if(item) {
-						data[id] = item
+						data.set(id, item)
 						cache.set(getUniqueId(type, id), item)
 					}
 				}
 			}
 
-			return data
+			return Object.fromEntries(data)
 		},
 		async set(data) {
 			let keys = 0
-			for(const type in data) {
-				for(const id in data[type]) {
-					cache.set(getUniqueId(type, id), data[type][id])
-					keys += 1
-				}
-			}
+
+			await Promise.all(
+				Object.entries(data).flatMap(([type, items]) =>
+					Object.entries(items).map(([id, value]) => {
+						cache.set(getUniqueId(type, id), value)
+						keys++
+					})
+				)
+			)
 
 			logger.trace({ keys }, 'updated cache')
-
 			await store.set(data)
 		},
 		async clear() {
