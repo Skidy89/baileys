@@ -196,26 +196,10 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 
 	const assertSessions = async(jids: string[], force: boolean) => {
 		let didFetchNewSession = false
-		let jidsRequiringFetch: string[] = []
-		if(force) {
-			jidsRequiringFetch = jids
-		} else {
-			const addrs = jids.map(jid => (
-				signalRepository
-					.jidToSignalProtocolAddress(jid)
-			))
-			const sessions = await authState.keys.get('session', addrs)
-			Promise.all(
-				jids.map(async jid => {
-					const signalId = signalRepository
-						.jidToSignalProtocolAddress(jid)
-					if(!sessions[signalId]) {
-						jidsRequiringFetch.push(jid)
-					}
-				}
-			))
-		}
+		let jidsRequiringFetch: string[] = force ? jids : jids.filter(jid => {
+			!authState.keys.get('session', [signalRepository.jidToSignalProtocolAddress(jid)])
 
+		})
 		if(jidsRequiringFetch.length) {
 			logger.debug({ jidsRequiringFetch }, 'fetching sessions')
 			const result = await query({
