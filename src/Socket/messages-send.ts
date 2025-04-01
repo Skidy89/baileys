@@ -243,6 +243,9 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		const nodes = await Promise.all(
 			jids.map(
 				async jid => {
+					if(!jid) {
+						return {} as BinaryNode
+					  }
 					const { type, ciphertext } = await signalRepository
 						.encryptMessage({ jid, data: bytes })
 					if(type === 'pkmsg') {

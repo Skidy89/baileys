@@ -40,6 +40,7 @@ import {
 } from '../WABinary'
 import { extractGroupMetadata } from './groups'
 import { makeMessagesSocket } from './messages-send'
+import { get } from "http"
 
 export const makeMessagesRecvSocket = (config: SocketConfig) => {
 	const {
@@ -551,6 +552,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		const msgs = await Promise.all(ids.map(id => getMessage({ ...key, id })))
 		const remoteJid = key.remoteJid!
 		const participant = key.participant || remoteJid
+		
 		// if it's the primary jid sending the request
 		// just re-send the message to everyone
 		// prevents the first message decryption failure
@@ -703,7 +705,6 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			return
 		}
 
-		try {
 			await Promise.all([
 				processingMutex.mutex(
 					async() => {
@@ -722,13 +723,12 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 							const fullMsg = proto.WebMessageInfo.fromObject(msg)
 							await upsertMessage(fullMsg, 'append')
+							await sendMessageAck(node)
 						}
 					}
 				)
 			])
-		} finally {
-			await sendMessageAck(node)
-		}
+		
 	}
 
 	const handleMessage = async(node: BinaryNode) => {
@@ -736,6 +736,14 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			logger.debug({ key: node.attrs.key }, 'ignored message')
 			await sendMessageAck(node)
 			return
+		}
+		const encNode = getBinaryNodeChild(node, 'enc')
+
+		// TODO: temporary fix for crashes and issues resulting of failed msmsg decryption
+		if(encNode && encNode.attrs.type === 'msmsg') {
+  		logger.debug({ key: node.attrs.key }, 'ignored msmsg')
+  		await sendMessageAck(node)
+  		return
 		}
 
 		const { fullMessage: msg, category, author, decrypt } = decryptMessageNode(

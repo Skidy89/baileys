@@ -1,7 +1,7 @@
 syntax = "proto2";
 package proto;
 
-/// WhatsApp Version: 2.3000.1020772789
+/// WhatsApp Version: 2.3000.1021443186
 
 message ADVDeviceIdentity {
     optional uint32 rawId = 1;
@@ -134,6 +134,10 @@ message AIRichResponseMessage {
             optional double width = 3;
             optional double height = 4;
             optional double fontHeight = 5;
+            optional double imageTopPadding = 6;
+            optional double imageLeadingPadding = 7;
+            optional double imageBottomPadding = 8;
+            optional double imageTrailingPadding = 9;
         }
         
     }
@@ -304,6 +308,7 @@ message BotCapabilityMetadata {
         AGENTIC_PLANNING = 27;
         ACCOUNT_LINKING = 28;
         STREAMING_DISAGGREGATION = 29;
+        RICH_RESPONSE_GRID_IMAGE_3P = 30;
     }
 }
 
@@ -328,6 +333,7 @@ message BotLinkedAccount {
 message BotLinkedAccountsMetadata {
     repeated BotLinkedAccount accounts = 1;
     optional bytes acAuthTokens = 2;
+    optional int32 acErrorCode = 3;
 }
 
 message BotMediaMetadata {
@@ -463,6 +469,7 @@ message BotProgressIndicatorMetadata {
     repeated BotPlanningStepMetadata stepsMetadata = 2;
     message BotPlanningStepMetadata {
         optional string statusTitle = 1;
+        optional string statusBody = 2;
         repeated BotPlanningSearchSourcesMetadata sourcesMetadata = 3;
         optional PlanningStepStatus status = 4;
         optional bool isReasoning = 5;
@@ -494,7 +501,7 @@ message BotProgressIndicatorMetadata {
         }
         
         enum BotSearchSourceProvider {
-            UNKNOWNPROVIDER = 0;
+            UNKNOWN_PROVIDER = 0;
             OTHER = 1;
             GOOGLE = 2;
             BING = 3;
@@ -738,6 +745,12 @@ message ClientPayload {
     optional int32 memClass = 37;
     optional InteropData interopData = 38;
     optional TrafficAnonymization trafficAnonymization = 40;
+    optional bool lidDbMigrated = 41;
+    optional AccountType accountType = 42;
+    enum AccountType {
+        DEFAULT = 0;
+        GUEST = 1;
+    }
     enum ConnectReason {
         PUSH = 0;
         USER_ACTIVATED = 1;
@@ -804,6 +817,7 @@ message ClientPayload {
         MESSENGER = 1;
         INTEROP = 2;
         INTEROP_MSGR = 3;
+        WHATSAPP_LID = 4;
     }
     enum TrafficAnonymization {
         OFF = 0;
@@ -1036,6 +1050,8 @@ message ContextInfo {
         optional string ctaPayload = 20;
         optional bool disableNudge = 21;
         optional string originalImageUrl = 22;
+        optional string automatedGreetingMessageCtaType = 23;
+        optional bool wtwaAdFormat = 24;
         enum MediaType {
             NONE = 0;
             IMAGE = 1;
@@ -1140,6 +1156,8 @@ message Conversation {
     optional string accountLid = 49;
     optional bool limitSharing = 50;
     optional int64 limitSharingSettingTimestamp = 51;
+    optional enum limitSharingTrigger = 52;
+    optional bool limitSharingInitiatedByMe = 53;
     enum EndOfHistoryTransferType {
         COMPLETE_BUT_MORE_MESSAGES_REMAIN_ON_PRIMARY = 0;
         COMPLETE_AND_NO_MORE_MESSAGE_REMAIN_ON_PRIMARY = 1;
@@ -1465,11 +1483,17 @@ message InteractiveAnnotation {
     repeated Point polygonVertices = 1;
     optional bool shouldSkipConfirmation = 4;
     optional EmbeddedContent embeddedContent = 5;
+    optional StatusLinkType statusLinkType = 8;
     oneof action {
         Location location = 2;
         ContextInfo.ForwardedNewsletterMessageInfo newsletter = 3;
         bool embeddedAction = 6;
         TapLinkAction tapAction = 7;
+    }
+    enum StatusLinkType {
+        RASTERIZED_LINK_PREVIEW = 1;
+        RASTERIZED_LINK_TRUNCATED = 2;
+        RASTERIZED_LINK_FULL_URL = 3;
     }
 }
 
@@ -1511,6 +1535,7 @@ message LIDMigrationMappingSyncMessage {
 
 message LIDMigrationMappingSyncPayload {
     repeated LIDMigrationMapping pnToLidMappings = 1;
+    optional uint64 chatDbMigrationTimestamp = 2;
 }
 
 message LegacyMessage {
@@ -1521,9 +1546,13 @@ message LegacyMessage {
 message LimitSharing {
     optional bool sharingLimited = 1;
     optional Trigger trigger = 2;
+    optional int64 limitSharingSettingTimestamp = 3;
+    optional bool initiatedByMe = 4;
     enum Trigger {
-        CHAT_SETTING = 0;
-        BIZ_SUPPORTS_FB_HOSTING = 1;
+        UNKNOWN = 0;
+        CHAT_SETTING = 1;
+        BIZ_SUPPORTS_FB_HOSTING = 2;
+        UNKNOWN_GROUP = 3;
     }
 }
 
@@ -1650,6 +1679,8 @@ message Message {
     optional FutureProofMessage groupStatusMessage = 96;
     optional AIRichResponseMessage richResponseMessage = 97;
     optional StatusNotificationMessage statusNotificationMessage = 98;
+    optional FutureProofMessage limitSharingMessage = 99;
+    optional FutureProofMessage botTaskMessage = 100;
     message AlbumMessage {
         optional uint32 expectedImageCount = 2;
         optional uint32 expectedVideoCount = 3;
@@ -1957,6 +1988,7 @@ message Message {
         optional int64 startTime = 7;
         optional int64 endTime = 8;
         optional bool extraGuestsAllowed = 9;
+        optional bool isScheduleCall = 10;
     }
     
     message EventResponseMessage {
@@ -1998,6 +2030,8 @@ message Message {
         optional uint32 videoHeight = 31;
         optional uint32 videoWidth = 32;
         optional Message.MMSThumbnailMetadata faviconMMSMetadata = 33;
+        optional Message.LinkPreviewMetadata linkPreviewMetadata = 34;
+        optional Message.PaymentLinkMetadata paymentLinkMetadata = 35;
         enum FontType {
             SYSTEM = 0;
             SYSTEM_TEXT = 1;
@@ -2291,6 +2325,12 @@ message Message {
         optional int64 timestampMs = 3;
     }
     
+    message LinkPreviewMetadata {
+        optional Message.PaymentLinkMetadata paymentLinkMetadata = 1;
+        optional Message.URLMetadata urlMetadata = 2;
+        optional uint32 fbExperimentId = 3;
+    }
+    
     message ListMessage {
         optional string title = 1;
         optional string description = 2;
@@ -2446,6 +2486,23 @@ message Message {
             NOVI = 2;
             UPI = 3;
         }
+    }
+    
+    message PaymentLinkMetadata {
+        optional PaymentLinkButton button = 1;
+        optional PaymentLinkHeader header = 2;
+        message PaymentLinkButton {
+            optional string displayText = 1;
+        }
+        
+        message PaymentLinkHeader {
+            optional PaymentLinkHeaderType headerType = 1;
+            enum PaymentLinkHeaderType {
+                LINK_PREVIEW = 0;
+                ORDER = 1;
+            }
+        }
+        
     }
     
     message PeerDataOperationRequestMessage {
@@ -2906,6 +2963,10 @@ message Message {
         
     }
     
+    message URLMetadata {
+        optional uint32 fbExperimentId = 1;
+    }
+    
     message VideoMessage {
         optional string url = 1;
         optional string mimetype = 2;
@@ -2977,13 +3038,15 @@ message MessageAssociation {
         EVENT_COVER_IMAGE = 3;
         STATUS_POLL = 4;
         HD_VIDEO_DUAL_UPLOAD = 5;
-        STATUS_TAPPABLE_MESSAGE = 6;
+        STATUS_EXTERNAL_RESHARE = 6;
         MEDIA_POLL = 7;
         STATUS_ADD_YOURS = 8;
         STATUS_NOTIFICATION = 9;
         HD_IMAGE_DUAL_UPLOAD = 10;
         STICKER_ANNOTATION = 11;
         MOTION_PHOTO = 12;
+        STATUS_LINK_ACTION = 13;
+        VIEW_ALL_REPLIES = 14;
     }
 }
 
@@ -3000,6 +3063,7 @@ message MessageContextInfo {
     optional MessageAssociation messageAssociation = 10;
     optional bool capiCreatedGroup = 11;
     optional string supportPayload = 12;
+    optional LimitSharing limitSharing = 13;
     enum MessageAddonExpiryType {
         STATIC = 1;
         DEPENDENT_ON_PARENT = 2;
@@ -3595,6 +3659,7 @@ message SyncActionValue {
     optional WaffleAccountLinkStateAction waffleAccountLinkStateAction = 58;
     optional UsernameChatStartModeAction usernameChatStartMode = 59;
     optional NotificationActivitySettingAction notificationActivitySettingAction = 60;
+    optional LidContactAction lidContactAction = 61;
     message AgentAction {
         optional string name = 1;
         optional int32 deviceID = 2;
@@ -3635,6 +3700,8 @@ message SyncActionValue {
         optional string firstName = 2;
         optional string lidJid = 3;
         optional bool saveOnPrimaryAddressbook = 4;
+        optional string pnJid = 5;
+        optional string username = 6;
     }
     
     message CustomPaymentMethod {
@@ -3707,6 +3774,13 @@ message SyncActionValue {
     
     message LabelReorderingAction {
         repeated int32 sortedLabelIds = 1;
+    }
+    
+    message LidContactAction {
+        optional string fullName = 1;
+        optional string firstName = 2;
+        optional string username = 3;
+        optional bool saveOnPrimaryAddressbook = 4;
     }
     
     message LocaleSetting {
