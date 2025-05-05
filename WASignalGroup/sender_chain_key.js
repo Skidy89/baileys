@@ -1,5 +1,4 @@
 const SenderMessageKey = require('./sender_message_key');
-//const HKDF = require('./hkdf');
 const crypto = require('libsignal/src/crypto');
 
 class SenderChainKey {

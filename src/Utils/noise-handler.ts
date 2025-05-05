@@ -57,13 +57,13 @@ export const makeNoiseHandler = ({
 		return result
 	}
 
-	const localHKDF = async(data: Uint8Array) => {
-		const key = await hkdf(Buffer.from(data), 64, { salt, info: '' })
+	const localHKDF = (data: Uint8Array) => {
+		const key = hkdf(Buffer.from(data), 64, { salt, info: '' })
 		return [key.subarray(0, 32), key.subarray(32)]
 	}
 
-	const mixIntoKey = async(data: Uint8Array) => {
-		const [write, read] = await localHKDF(data)
+	const mixIntoKey = (data: Uint8Array) => {
+		const [write, read] = localHKDF(data)
 		salt = write
 		encKey = read
 		decKey = read
@@ -71,8 +71,8 @@ export const makeNoiseHandler = ({
 		writeCounter = 0
 	}
 
-	const finishInit = async() => {
-		const [write, read] = await localHKDF(new Uint8Array(0))
+	const finishInit = () => {
+		const [write, read] = localHKDF(new Uint8Array(0))
 		encKey = write
 		decKey = read
 		hash = Buffer.from([])
@@ -102,12 +102,12 @@ export const makeNoiseHandler = ({
 		authenticate,
 		mixIntoKey,
 		finishInit,
-		processHandshake: async({ serverHello }: proto.HandshakeMessage, noiseKey: KeyPair) => {
+		processHandshake: ({ serverHello }: proto.HandshakeMessage, noiseKey: KeyPair) => {
 			authenticate(serverHello!.ephemeral!)
-			await mixIntoKey(Curve.sharedKey(privateKey, serverHello!.ephemeral!))
+			mixIntoKey(Curve.sharedKey(privateKey, serverHello!.ephemeral!))
 
 			const decStaticContent = decrypt(serverHello!.static!)
-			await mixIntoKey(Curve.sharedKey(privateKey, decStaticContent))
+			mixIntoKey(Curve.sharedKey(privateKey, decStaticContent))
 
 			const certDecoded = decrypt(serverHello!.payload!)
 
@@ -120,7 +120,7 @@ export const makeNoiseHandler = ({
 			}
 
 			const keyEnc = encrypt(noiseKey.public)
-			await mixIntoKey(Curve.sharedKey(noiseKey.private, serverHello!.ephemeral!))
+			mixIntoKey(Curve.sharedKey(noiseKey.private, serverHello!.ephemeral!))
 
 			return keyEnc
 		},
