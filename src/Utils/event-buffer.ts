@@ -3,7 +3,7 @@ import { proto } from '../../WAProto'
 import { BaileysEvent, BaileysEventEmitter, BaileysEventMap, BufferedEventData, Chat, ChatUpdate, Contact, WAMessage, WAMessageStatus } from '../Types'
 import { trimUndefined } from './generics'
 import { ILogger } from './logger'
-import { updateMessageWithReaction, updateMessageWithReceipt } from './messages'
+import { updateMessageWithReceipt } from './messages'
 import { isRealMessage, shouldIncrementChatUnread } from './process-message'
 
 const BUFFERABLE_EVENT = [
@@ -16,7 +16,6 @@ const BUFFERABLE_EVENT = [
 	'messages.upsert',
 	'messages.update',
 	'messages.delete',
-	'messages.reaction',
 	'message-receipt.update',
 	'groups.update',
 ] as const
@@ -435,21 +434,6 @@ function append<E extends BufferableEvent>(
 		}
 
 		break
-	case 'messages.reaction':
-		const reactions = eventData as BaileysEventMap['messages.reaction']
-		for(const { key, reaction } of reactions) {
-			const keyStr = stringifyMessageKey(key)
-			const existing = data.messageUpserts[keyStr]
-			if(existing) {
-				updateMessageWithReaction(existing.message, reaction)
-			} else {
-				data.messageReactions[keyStr] = data.messageReactions[keyStr]
-					|| { key, reactions: [] }
-				updateMessageWithReaction(data.messageReactions[keyStr], reaction)
-			}
-		}
-
-		break
 	case 'message-receipt.update':
 		const receipts = eventData as BaileysEventMap['message-receipt.update']
 		for(const { key, receipt } of receipts) {
@@ -565,13 +549,6 @@ function consolidateEvents(data: BufferedEventData) {
 	const messageDeleteList = Object.values(data.messageDeletes)
 	if(messageDeleteList.length) {
 		map['messages.delete'] = { keys: messageDeleteList }
-	}
-
-	const messageReactionList = Object.values(data.messageReactions).flatMap(
-		({ key, reactions }) => reactions.flatMap(reaction => ({ key, reaction }))
-	)
-	if(messageReactionList.length) {
-		map['messages.reaction'] = messageReactionList
 	}
 
 	const messageReceiptList = Object.values(data.messageReceipts).flatMap(

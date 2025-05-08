@@ -47,9 +47,6 @@ export type BaileysEventMap = {
      * if requestId is provided, then the messages was received from the phone due to it being unavailable
      *  */
     'messages.upsert': { messages: WAMessage[], type: MessageUpsertType, requestId?: string }
-    /** message was reacted to. If reaction was removed -- then "reaction.text" will be falsey */
-    'messages.reaction': { key: WAMessageKey, reaction: proto.IReaction }[]
-
     'message-receipt.update': MessageUserReceiptUpdate[]
 
     'groups.upsert': GroupMetadata[]

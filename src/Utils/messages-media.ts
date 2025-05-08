@@ -16,6 +16,8 @@ import { BinaryNode, getBinaryNodeChild, getBinaryNodeChildBuffer, jidNormalized
 import { aesDecryptGCM, aesEncryptGCM, hkdf } from './crypto'
 import { generateMessageID } from './generics'
 import { ILogger } from './logger'
+import got from 'got'
+
 
 const getTmpFilesDirectory = () => tmpdir()
 
@@ -188,7 +190,7 @@ export const getStream = async(item: WAMediaUpload, opts?: AxiosRequestConfig) =
 	}
 
 	if(item.url.toString().startsWith('http://') || item.url.toString().startsWith('https://')) {
-		return { stream: await getHttpStream(item.url, opts), type: 'remote' } as const
+		return { stream: await getHttpStreamed(item.url), type: 'remote' } as const
 	}
 
 	return { stream: createReadStream(item.url), type: 'file' } as const
@@ -232,9 +234,10 @@ export async function generateThumbnail(
 	}
 }
 
-export const getHttpStream = async(url: string | URL, options: AxiosRequestConfig & { isStream?: true } = {}) => {
-	const fetched = await axios.get(url.toString(), { ...options, responseType: 'stream' })
-	return fetched.data as Readable
+
+export const getHttpStreamed = (url: string | URL) => {
+	const streamed = got.stream(url)
+	return streamed as Readable
 }
 
 type EncryptedStreamOptions = {
@@ -415,15 +418,7 @@ export const downloadEncryptedContent = async(
 	}
 
 	// download the message
-	const fetched = await getHttpStream(
-		downloadUrl,
-		{
-			...options || { },
-			headers,
-			maxBodyLength: Infinity,
-			maxContentLength: Infinity,
-		}
-	)
+	const fetched = getHttpStreamed(downloadUrl)
 
 	let remainingBytes = Buffer.from([])
 

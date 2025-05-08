@@ -2,7 +2,7 @@ import { AxiosRequestConfig } from 'axios'
 import { WAMediaUploadFunction, WAUrlInfo } from '../Types'
 import { ILogger } from './logger'
 import { prepareWAMessageMedia } from './messages'
-import { extractImageThumb, getHttpStream } from './messages-media'
+import { extractImageThumb, getHttpStreamed } from './messages-media'
 
 const THUMBNAIL_WIDTH_PX = 192
 
@@ -11,7 +11,7 @@ const getCompressedJpegThumbnail = async(
 	url: string,
 	{ thumbnailWidth, fetchOpts }: URLGenerationOptions
 ) => {
-	const stream = await getHttpStream(url, fetchOpts)
+	const stream = getHttpStreamed(url)
 	const result = await extractImageThumb(stream, thumbnailWidth)
 	return result
 }

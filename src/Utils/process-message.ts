@@ -319,15 +319,6 @@ const processMessage = async(
 			)
 			break
 		}
-	} else if(content?.reactionMessage) {
-		const reaction: proto.IReaction = {
-			...content.reactionMessage,
-			key: message.key,
-		}
-		ev.emit('messages.reaction', [{
-			reaction,
-			key: content.reactionMessage?.key!,
-		}])
 	} else if(message.messageStubType) {
 		const jid = message.key?.remoteJid!
 		//let actor = whatsappID (message.participant)

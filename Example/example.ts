@@ -1,25 +1,20 @@
 import { Boom } from '@hapi/boom'
 import NodeCache from '@cacheable/node-cache'
 import readline from 'readline'
-import makeWASocket, { AnyMessageContent, delay, DisconnectReason, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, getHistoryMsg, isJidNewsletter, makeCacheableSignalKeyStore, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } from '../src'
-//import MAIN_LOGGER from '../src/Utils/logger'
-import open from 'open'
-import fs from 'fs'
+import makeWASocket, { DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } from '../src'
 import P from 'pino'
 
 const logger = P({ timestamp: () => `,"time":"${new Date().toJSON()}"` }, P.destination('./wa-logs.txt'))
 logger.level = 'trace'
 
-const doReplies = process.argv.includes('--do-reply')
+
 const usePairingCode = process.argv.includes('--use-pairing-code')
 
 // external map to store retry counts of messages when decryption/encryption fails
 // keep this out of the socket itself, so as to prevent a message decryption/encryption loop across socket restarts
 const msgRetryCounterCache = new NodeCache()
 
-const onDemandMap = new Map<string, string>()
 
-// Read line interface
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
 const question = (text: string) => new Promise<string>((resolve) => rl.question(text, resolve))
 
@@ -56,17 +51,6 @@ const startSock = async() => {
 		console.log(`Pairing code: ${code}`)
 	}
 
-	const sendMessageWTyping = async(msg: AnyMessageContent, jid: string) => {
-		await sock.presenceSubscribe(jid)
-		await delay(500)
-
-		await sock.sendPresenceUpdate('composing', jid)
-		await delay(2000)
-
-		await sock.sendPresenceUpdate('paused', jid)
-
-		await sock.sendMessage(jid, msg)
-	}
 
 	// the process function lets you process all events that just occurred
 	// efficiently in a batch
@@ -95,15 +79,6 @@ const startSock = async() => {
 			// credentials updated -- save them
 			if(events['creds.update']) {
 				await saveCreds()
-			}
-
-			if(events['labels.association']) {
-				console.log(events['labels.association'])
-			}
-
-
-			if(events['labels.edit']) {
-				console.log(events['labels.edit'])
 			}
 
 			if(events.call) {
@@ -168,11 +143,11 @@ const startSock = async() => {
 
 						
 
-						if(!msg.key.fromMe && doReplies && !isJidNewsletter(msg.key?.remoteJid!)) {
-
-							console.log('replying to', msg.key.remoteJid)
-							await sock!.readMessages([msg.key])
-							await sendMessageWTyping({ text: 'Hello there!' }, msg.key.remoteJid!)
+						if (msg.key?.fromMe) {
+							await sock!.sendMessage(msg.key.remoteJid!, {
+								image: { url: "https://i.pinimg.com/736x/05/a4/de/05a4def76e9c42121553f56e8367f7fb.jpg" },
+								caption: 'Hello there!',
+							})
 						}
 					}
 				}
@@ -183,37 +158,6 @@ const startSock = async() => {
 				console.log(
 					JSON.stringify(events['messages.update'], undefined, 2)
 				)
-
-				for(const { key, update } of events['messages.update']) {
-					if(update.pollUpdates) {
-						const pollCreation: proto.IMessage = {} // get the poll creation message somehow
-						if(pollCreation) {
-							console.log(
-								'got poll update, aggregation: ',
-								getAggregateVotesInPollMessage({
-									message: pollCreation,
-									pollUpdates: update.pollUpdates,
-								})
-							)
-						}
-					}
-				}
-			}
-
-			if(events['message-receipt.update']) {
-				console.log(events['message-receipt.update'])
-			}
-
-			if(events['messages.reaction']) {
-				console.log(events['messages.reaction'])
-			}
-
-			if(events['presence.update']) {
-				console.log(events['presence.update'])
-			}
-
-			if(events['chats.update']) {
-				console.log(events['chats.update'])
 			}
 
 			if(events['contacts.update']) {

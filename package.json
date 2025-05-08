@@ -45,6 +45,7 @@
     "async-mutex": "^0.5.0",
     "axios": "^1.6.0",
     "futoin-hkdf": "^1.5.3",
+    "got": "^11.8.6",
     "libsignal": "github:WhiskeySockets/libsignal-node",
     "lodash": "^4.17.21",
     "music-metadata": "^7.12.3",

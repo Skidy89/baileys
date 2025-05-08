@@ -6,6 +6,7 @@ import { proto } from '../../WAProto'
 import { version as baileysVersion } from '../Defaults/baileys-version.json'
 import { BaileysEventEmitter, BaileysEventMap, BrowsersMap, ConnectionState, DisconnectReason, WACallUpdateType, WAVersion } from '../Types'
 import { BinaryNode, getAllBinaryNodeChildren, jidDecode } from '../WABinary'
+import got from 'got'
 
 const PLATFORM_MAP = {
 	'aix': 'AIX',
@@ -246,17 +247,16 @@ export const bindWaitForConnectionUpdate = (ev: BaileysEventEmitter) => bindWait
  * Use to ensure your WA connection is always on the latest version
  */
 export const fetchLatestBaileysVersion = async(options: AxiosRequestConfig<{}> = { }) => {
-	const URL = 'https://raw.githubusercontent.com/WhiskeySockets/Baileys/master/src/Defaults/baileys-version.json'
+	const URL = 'https://raw.githubusercontent.com/Skidy89/Baileys/master/src/Defaults/baileys-version.json'
 	try {
-		const result = await axios.get<{ version: WAVersion }>(
+		const result = await got.get<{ version: WAVersion }>(
 			URL,
 			{
-				...options,
 				responseType: 'json'
 			}
 		)
 		return {
-			version: result.data.version,
+			version: result.body.version,
 			isLatest: true
 		}
 	} catch(error) {
