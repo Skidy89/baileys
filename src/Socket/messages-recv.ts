@@ -738,9 +738,6 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			logger,
 		)
 
-		if(msg.message?.protocolMessage?.type === proto.Message.ProtocolMessage.Type.SHARE_PHONE_NUMBER && node.attrs.sender_pn) {
-			ev.emit('chats.phoneNumberShare', { lid: node.attrs.from, jid: node.attrs.sender_pn })
-		}
 
 		try {
 			await Promise.all([

@@ -5,8 +5,6 @@ import { WACallEvent } from './Call'
 import { Chat, ChatUpdate, PresenceData } from './Chat'
 import { Contact } from './Contact'
 import { GroupMetadata, ParticipantAction, RequestJoinAction, RequestJoinMethod } from './GroupMetadata'
-import { Label } from './Label'
-import { LabelAssociation } from './LabelAssociation'
 import { MessageUpsertType, MessageUserReceiptUpdate, WAMessage, WAMessageKey, WAMessageUpdate } from './Message'
 import { ConnectionState } from './State'
 
@@ -29,7 +27,6 @@ export type BaileysEventMap = {
     'chats.upsert': Chat[]
     /** update the given chats */
     'chats.update': ChatUpdate[]
-    'chats.phoneNumberShare': {lid: string, jid: string}
     /** delete chats with given ID */
     'chats.delete': string[]
     /** presence of contact in a chat updated */
@@ -60,8 +57,6 @@ export type BaileysEventMap = {
 
     /** Receive an update on a call, including when the call was received, rejected, accepted */
     'call': WACallEvent[]
-    'labels.edit': Label
-    'labels.association': { association: LabelAssociation, type: 'add' | 'remove' }
 }
 
 export type BufferedEventData = {

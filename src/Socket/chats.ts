@@ -3,7 +3,6 @@ import { Boom } from '@hapi/boom'
 import { proto } from '../../WAProto'
 import { PROCESSABLE_HISTORY_TYPES } from '../Defaults'
 import { ALL_WA_PATCH_NAMES, BotListInfo, ChatModification, ChatMutation, LTHashState, MessageUpsertType, PresenceData, SocketConfig, WABusinessHoursConfig, WABusinessProfile, WAMediaUpload, WAMessage, WAPatchCreate, WAPatchName, WAPresence, WAPrivacyCallValue, WAPrivacyGroupAddValue, WAPrivacyMessagesValue, WAPrivacyOnlineValue, WAPrivacyValue, WAReadReceiptsValue } from '../Types'
-import { LabelActionBody } from '../Types/Label'
 import { chatModificationToAppPatch, ChatMutationMap, decodePatches, decodeSyncdSnapshot, encodeSyncdPatch, extractSyncdPatches, generateProfilePicture, getHistoryMsg, newLTHashState, processSyncAction } from '../Utils'
 import { makeMutex } from '../Utils/make-mutex'
 import processMessage from '../Utils/process-message'
@@ -802,62 +801,6 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		}, jid)
 	}
 
-	/**
-	 * Adds label
-	 */
-	const addLabel = (jid: string, labels: LabelActionBody) => {
-		return chatModify({
-			addLabel: {
-				...labels
-			}
-		}, jid)
-	}
-
-	/**
-	 * Adds label for the chats
-	 */
-	const addChatLabel = (jid: string, labelId: string) => {
-		return chatModify({
-			addChatLabel: {
-				labelId
-			}
-		}, jid)
-	}
-
-	/**
-	 * Removes label for the chat
-	 */
-	const removeChatLabel = (jid: string, labelId: string) => {
-		return chatModify({
-			removeChatLabel: {
-				labelId
-			}
-		}, jid)
-	}
-
-	/**
-	 * Adds label for the message
-	 */
-	const addMessageLabel = (jid: string, messageId: string, labelId: string) => {
-		return chatModify({
-			addMessageLabel: {
-				messageId,
-				labelId
-			}
-		}, jid)
-	}
-
-	/**
-	 * Removes label for the message
-	 */
-	const removeMessageLabel = (jid: string, messageId: string, labelId: string) => {
-		return chatModify({
-			removeMessageLabel: {
-				messageId,
-				labelId
-			}
-		}, jid)
-	}
 
 	/**
 	 * queries need to be fired on connection open
@@ -1033,11 +976,6 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		resyncAppState,
 		chatModify,
 		cleanDirtyBits,
-		addLabel,
-		addChatLabel,
-		removeChatLabel,
-		addMessageLabel,
-		removeMessageLabel,
 		star
 	}
 }
