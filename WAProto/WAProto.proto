@@ -1,7 +1,7 @@
-syntax = "proto2";
+syntax = "proto3";
 package proto;
 
-/// WhatsApp Version: 2.3000.1022185259
+/// WhatsApp Version: 2.3000.1022722488
 
 message ADVDeviceIdentity {
     optional uint32 rawId = 1;
@@ -399,6 +399,8 @@ message BotMetadata {
     optional BotSourcesMetadata richResponseSourcesMetadata = 19;
     optional bytes aiConversationContext = 20;
     optional BotPromotionMessageMetadata botPromotionMessageMetadata = 21;
+    optional BotModeSelectionMetadata botModeSelectionMetadata = 22;
+    optional BotQuotaMetadata botQuotaMetadata = 23;
 }
 
 enum BotMetricsEntryPoint {
@@ -423,6 +425,9 @@ enum BotMetricsEntryPoint {
     AI_HOME = 19;
     AI_DEEPLINK_IMMERSIVE = 20;
     AI_DEEPLINK = 21;
+    META_AI_CHAT_SHORTCUT_AI_STUDIO = 22;
+    UGC_CHAT_SHORTCUT_AI_STUDIO = 23;
+    NEW_CHAT_AI_STUDIO = 24;
 }
 message BotMetricsMetadata {
     optional string destinationId = 1;
@@ -436,6 +441,14 @@ enum BotMetricsThreadEntryPoint {
     AI_DEEPLINK_IMMERSIVE_THREAD = 3;
     AI_DEEPLINK_THREAD = 4;
 }
+message BotModeSelectionMetadata {
+    repeated BotUserSelectionMode mode = 1;
+    enum BotUserSelectionMode {
+        UNKNOWN_MODE = 0;
+        REASONING_MODE = 1;
+    }
+}
+
 message BotModelMetadata {
     optional ModelType modelType = 1;
     optional PremiumModelStatus premiumModelStatus = 2;
@@ -545,6 +558,20 @@ message BotPromptSuggestion {
 
 message BotPromptSuggestions {
     repeated BotPromptSuggestion suggestions = 1;
+}
+
+message BotQuotaMetadata {
+    repeated BotFeatureQuotaMetadata botFeatureQuotaMetadata = 1;
+    message BotFeatureQuotaMetadata {
+        optional BotFeatureType featureType = 1;
+        optional uint32 remainingQuota = 2;
+        optional uint64 expirationTimestamp = 3;
+        enum BotFeatureType {
+            UNKNOWN_FEATURE = 0;
+            REASONING_FEATURE = 1;
+        }
+    }
+    
 }
 
 message BotReminderMetadata {
@@ -1021,6 +1048,7 @@ message ContextInfo {
     optional uint32 rankingVersion = 60;
     optional MemberLabel memberLabel = 62;
     optional bool isQuestion = 63;
+    optional StatusSourceType statusSourceType = 64;
     message AdReplyInfo {
         optional string advertiserName = 1;
         optional MediaType mediaType = 2;
@@ -1126,6 +1154,14 @@ message ContextInfo {
         RESHARED_FROM_MENTION = 1;
         RESHARED_FROM_POST = 2;
     }
+    enum StatusSourceType {
+        IMAGE = 0;
+        VIDEO = 1;
+        GIF = 2;
+        AUDIO = 3;
+        TEXT = 4;
+        MUSIC_FIRST = 5;
+    }
     message UTMInfo {
         optional string utmSource = 1;
         optional string utmCampaign = 2;
@@ -1134,11 +1170,6 @@ message ContextInfo {
 }
 
 message Conversation {
-    enum EndOfHistoryTransferType {
-        COMPLETE_BUT_MORE_MESSAGES_REMAIN_ON_PRIMARY = 0;
-        COMPLETE_AND_NO_MORE_MESSAGE_REMAIN_ON_PRIMARY = 1;
-        COMPLETE_ON_DEMAND_SYNC_BUT_MORE_MSG_REMAIN_ON_PRIMARY = 2;
-    }
     required string id = 1;
     repeated HistorySyncMsg messages = 2;
     optional string newJid = 3;
@@ -1192,6 +1223,11 @@ message Conversation {
     optional int64 limitSharingSettingTimestamp = 51;
     optional LimitSharing.Trigger limitSharingTrigger  = 52;
     optional bool limitSharingInitiatedByMe = 53;
+    enum EndOfHistoryTransferType {
+        COMPLETE_BUT_MORE_MESSAGES_REMAIN_ON_PRIMARY = 0;
+        COMPLETE_AND_NO_MORE_MESSAGE_REMAIN_ON_PRIMARY = 1;
+        COMPLETE_ON_DEMAND_SYNC_BUT_MORE_MSG_REMAIN_ON_PRIMARY = 2;
+    }
 }
 
 message DeviceCapabilities {
@@ -1717,6 +1753,7 @@ message Message {
     optional FutureProofMessage limitSharingMessage = 99;
     optional FutureProofMessage botTaskMessage = 100;
     optional FutureProofMessage questionMessage = 101;
+    optional MessageHistoryNotice messageHistoryNotice = 102;
     message AlbumMessage {
         optional uint32 expectedImageCount = 2;
         optional uint32 expectedVideoCount = 3;
@@ -1894,6 +1931,7 @@ message Message {
         optional uint32 conversionDelaySeconds = 4;
         optional string ctwaSignals = 5;
         optional bytes ctwaPayload = 6;
+        optional ContextInfo contextInfo = 7;
     }
     
     message CallLogMessage {
@@ -1938,11 +1976,17 @@ message Message {
         optional int64 senderNotificationTimestampMs = 2;
         optional string consumerLid = 3;
         optional string consumerPhoneNumber = 4;
+        optional CloudAPIThreadControlNotificationContent notificationContent = 5;
         enum CloudAPIThreadControl {
             UNKNOWN = 0;
             CONTROL_PASSED = 1;
             CONTROL_TAKEN = 2;
         }
+        message CloudAPIThreadControlNotificationContent {
+            optional string handoffNotificationText = 1;
+            optional string extraJson = 2;
+        }
+        
     }
     
     message CommentMessage {
@@ -2514,6 +2558,7 @@ message Message {
         optional ContextInfo contextInfo = 17;
         optional int32 messageVersion = 12;
         optional MessageKey orderRequestMessageId = 13;
+        optional string catalogType = 15;
         enum OrderStatus {
             INQUIRY = 1;
             ACCEPTED = 2;
@@ -2559,6 +2604,7 @@ message Message {
         optional HistorySyncOnDemandRequest historySyncOnDemandRequest = 4;
         repeated PlaceholderMessageResendRequest placeholderMessageResendRequest = 5;
         optional FullHistorySyncOnDemandRequest fullHistorySyncOnDemandRequest = 6;
+        optional SyncDCollectionFatalRecoveryRequest syncdCollectionFatalRecoveryRequest = 7;
         message FullHistorySyncOnDemandRequest {
             optional Message.FullHistorySyncOnDemandRequestMetadata requestMetadata = 1;
             optional DeviceProps.HistorySyncConfig historySyncConfig = 2;
@@ -2586,6 +2632,11 @@ message Message {
             optional bool includeHqThumbnail = 2;
         }
         
+        message SyncDCollectionFatalRecoveryRequest {
+            optional string collectionName = 1;
+            optional int64 timestamp = 2;
+        }
+        
     }
     
     message PeerDataOperationRequestResponseMessage {
@@ -2600,6 +2651,7 @@ message Message {
             optional WaffleNonceFetchResponse waffleNonceFetchRequestResponse = 5;
             optional FullHistorySyncOnDemandRequestResponse fullHistorySyncOnDemandRequestResponse = 6;
             optional CompanionMetaNonceFetchResponse companionMetaNonceFetchRequestResponse = 7;
+            optional SyncDSnapshotFatalRecoveryResponse syncdSnapshotFatalRecoveryResponse = 8;
             message CompanionMetaNonceFetchResponse {
                 optional string nonce = 1;
             }
@@ -2642,6 +2694,11 @@ message Message {
                 optional bytes webMessageInfoBytes = 1;
             }
             
+            message SyncDSnapshotFatalRecoveryResponse {
+                optional bytes collectionSnapshot = 1;
+                optional bool isCompressed = 2;
+            }
+            
             message WaffleNonceFetchResponse {
                 optional string nonce = 1;
                 optional string waEntFbid = 2;
@@ -2660,6 +2717,7 @@ message Message {
         WAFFLE_LINKING_NONCE_FETCH = 5;
         FULL_HISTORY_SYNC_ON_DEMAND = 6;
         COMPANION_META_NONCE_FETCH = 7;
+        COMPANION_SYNCD_SNAPSHOT_FATAL_RECOVERY = 8;
     }
     message PinInChatMessage {
         optional MessageKey key = 1;
@@ -2876,6 +2934,7 @@ message Message {
         enum SecretEncType {
             UNKNOWN = 0;
             EVENT_EDIT = 1;
+            MESSAGE_EDIT = 2;
         }
     }
     
@@ -4544,6 +4603,7 @@ message WebMessageInfo {
         BIZ_CUSTOMER_3PD_DATA_SHARING_OPT_IN_MESSAGE = 214;
         BIZ_CUSTOMER_3PD_DATA_SHARING_OPT_OUT_MESSAGE = 215;
         CHANGE_LIMIT_SHARING = 216;
+        GROUP_MEMBER_LINK_MODE = 217;
     }
 }
 
