@@ -296,6 +296,7 @@ export const makeSocket = (config: SocketConfig) => {
 			}
 		)
 	}
+	
 
 	const uploadPreKeysToServerIfRequired = async() => {
 		const preKeyCount = await getAvailablePreKeysOnServer()

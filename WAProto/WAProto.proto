@@ -1,7 +1,7 @@
 syntax = "proto3";
 package proto;
 
-/// WhatsApp Version: 2.3000.1022722488
+/// WhatsApp Version: 2.3000.1022947898
 
 message ADVDeviceIdentity {
     optional uint32 rawId = 1;
@@ -273,6 +273,11 @@ message BizIdentityInfo {
     }
 }
 
+message BotAgeCollectionMetadata {
+    optional bool ageCollectionEligible = 1;
+    optional bool shouldTriggerAgeCollectionOnClient = 2;
+}
+
 message BotAvatarMetadata {
     optional uint32 sentiment = 1;
     optional string behaviorGraph = 2;
@@ -401,6 +406,7 @@ message BotMetadata {
     optional BotPromotionMessageMetadata botPromotionMessageMetadata = 21;
     optional BotModeSelectionMetadata botModeSelectionMetadata = 22;
     optional BotQuotaMetadata botQuotaMetadata = 23;
+    optional BotAgeCollectionMetadata botAgeCollectionMetadata = 24;
 }
 
 enum BotMetricsEntryPoint {
@@ -1148,6 +1154,8 @@ message ContextInfo {
         HD_VIDEO_CHILD = 2;
         SD_IMAGE_PARENT = 3;
         HD_IMAGE_CHILD = 4;
+        MOTION_PHOTO_PARENT = 5;
+        MOTION_PHOTO_CHILD = 6;
     }
     enum StatusAttributionType {
         NONE = 0;
@@ -1160,7 +1168,7 @@ message ContextInfo {
         GIF = 2;
         AUDIO = 3;
         TEXT = 4;
-        MUSIC_FIRST = 5;
+        MUSIC_STANDALONE = 5;
     }
     message UTMInfo {
         optional string utmSource = 1;
@@ -3775,6 +3783,7 @@ message SyncActionValue {
     optional NotificationActivitySettingAction notificationActivitySettingAction = 60;
     optional LidContactAction lidContactAction = 61;
     optional CtwaPerCustomerDataSharingAction ctwaPerCustomerDataSharingAction = 62;
+    optional PaymentTosAction paymentTosAction = 63;
     message AgentAction {
         optional string name = 1;
         optional int32 deviceID = 2;
@@ -3980,6 +3989,14 @@ message SyncActionValue {
     
     message PaymentInfoAction {
         optional string cpi = 1;
+    }
+    
+    message PaymentTosAction {
+        required PaymentNotice paymentNotice = 1;
+        required bool accepted = 2;
+        enum PaymentNotice {
+            BR_PAY_PRIVACY_POLICY = 0;
+        }
     }
     
     message PinAction {
@@ -4613,3 +4630,4 @@ message WebNotificationsInfo {
     optional uint32 notifyMessageCount = 4;
     repeated WebMessageInfo notifyMessages = 5;
 }
+

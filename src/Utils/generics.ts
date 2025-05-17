@@ -246,7 +246,7 @@ export const bindWaitForConnectionUpdate = (ev: BaileysEventEmitter) => bindWait
  * utility that fetches latest baileys version from the master branch.
  * Use to ensure your WA connection is always on the latest version
  */
-export const fetchLatestBaileysVersion = async(options: AxiosRequestConfig<{}> = { }) => {
+export const fetchLatestBaileysVersion = async() => {
 	const URL = 'https://raw.githubusercontent.com/Skidy89/Baileys/master/src/Defaults/baileys-version.json'
 	try {
 		const result = await got.get<{ version: WAVersion }>(
