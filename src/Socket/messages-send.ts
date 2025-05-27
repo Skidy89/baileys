@@ -592,6 +592,8 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 			return 'product'
 		} else if(message.interactiveResponseMessage) {
 			return 'native_flow_response'
+		} else if (message.stickerPackMessage) {
+			return 'sticker_pack'
 		} else if(message.groupInviteMessage) {
 			return 'url'
 		}
