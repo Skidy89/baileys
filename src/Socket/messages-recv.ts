@@ -620,7 +620,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		}
 
 		try {
-				processingMutex.mutex(
+			await processingMutex.mutex(
 					async() => {
 						const status = getStatusFromReceiptType(attrs.type)
 						if(
