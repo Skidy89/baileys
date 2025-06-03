@@ -203,7 +203,13 @@ export const generateMessageIDV2 = (userId?: string): string => {
 }
 
 // generate a random ID to attach to a message
-export const generateMessageID = () => '3EB0' + randomBytes(9).toString('hex').toUpperCase()
+/**
+ * Generates a random message ID, starting with 3EB0
+ * this is used for messages, its deprecated in whatsapp web, in order for a new message id created with sha256
+ * its more secure use generateMessageIDV2, but less efficient
+ * @returns a random message ID, starting with 3EB0
+ */
+export const generateMessageID = () => '3EB0' + randomBytes(8).toString('hex').toUpperCase()
 
 
 export function bindWaitForEvent<T extends keyof BaileysEventMap>(ev: BaileysEventEmitter, event: T) {
