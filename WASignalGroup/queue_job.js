@@ -60,6 +60,10 @@ async function _asyncQueueExecutor(queue, cleanup) {
     }
     cleanup();
 }
+module.exports.cleanupQueues = function () {
+    /* Cleanup all queues. */
+    _queueAsyncBuckets.clear()
+}
 
 module.exports = function (bucket, awaitable) {
     /* Run the async awaitable only when all other async calls registered
