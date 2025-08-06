@@ -98,7 +98,7 @@ const startSock = async() => {
 			if(events['messages.upsert']) {
 				const upsert = events['messages.upsert']
 				console.log('recv messages ', JSON.stringify(upsert, undefined, 2))
-
+				console.log('upsert type', upsert.messages)
 				if(upsert.type === 'notify') {
 					for (const msg of upsert.messages) {
 						//TODO: More built-in implementation of this
@@ -143,12 +143,7 @@ const startSock = async() => {
 
 						
 
-						if (msg.key?.fromMe) {
-							await sock!.sendMessage(msg.key.remoteJid!, {
-								image: { url: "https://i.pinimg.com/736x/05/a4/de/05a4def76e9c42121553f56e8367f7fb.jpg" },
-								caption: 'Hello there!',
-							})
-						}
+						// process the message
 					}
 				}
 			}
