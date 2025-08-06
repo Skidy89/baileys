@@ -63,3 +63,7 @@ export default function queueJob<T>(bucket: string | number, awaitable: () => Pr
 
 	return job
 }
+
+export function cleanupQueues(): void {
+	_queueAsyncBuckets.clear()
+}
