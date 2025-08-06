@@ -1,4 +1,5 @@
 import { DEFAULT_CONNECTION_CONFIG } from '../Defaults'
+import { cleanupQueues } from '../Signal/Group/queue-job'
 import { UserFacingSocketConfig } from '../Types'
 import { makeMessagesRecvSocket } from './messages-recv'
 
@@ -10,5 +11,8 @@ const makeWASocket = (config: UserFacingSocketConfig) => (
 		...config
 	})
 )
+export const cleanQueues = () => {
+	cleanupQueues()
+}
 
 export default makeWASocket

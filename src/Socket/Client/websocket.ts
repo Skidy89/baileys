@@ -1,6 +1,7 @@
 import WebSocket from 'ws'
 import { DEFAULT_ORIGIN } from '../../Defaults'
 import { AbstractSocketClient } from './types'
+import { cleanQueues } from '..'
 
 export class WebSocketClient extends AbstractSocketClient {
 
@@ -45,6 +46,7 @@ export class WebSocketClient extends AbstractSocketClient {
 		if(!this.socket) {
 			return
 		}
+		cleanQueues()
 
 		this.socket.close()
 		this.socket = null

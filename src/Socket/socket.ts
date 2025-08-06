@@ -42,6 +42,7 @@ import {
 } from '../WABinary'
 import { WebSocketClient } from './Client'
 
+
 /**
  * Connects to WA servers and performs:
  * - simple queries (no retry mechanism, wait for connection establishment)
@@ -143,8 +144,8 @@ export const makeSocket = (config: SocketConfig) => {
 	}
 
 	/** await the next incoming message */
-	const awaitNextMessage = async<T>(sendMsg?: Uint8Array) => {
-		if(!ws.isOpen) {
+	const awaitNextMessage = async <T>(sendMsg?: Uint8Array) => {
+		if (!ws.isOpen) {
 			throw new Boom('Connection Closed', {
 				statusCode: DisconnectReason.connectionClosed
 			})
@@ -159,14 +160,13 @@ export const makeSocket = (config: SocketConfig) => {
 			ws.on('frame', onOpen)
 			ws.on('close', onClose)
 			ws.on('error', onClose)
+		}).finally(() => {
+			ws.off('frame', onOpen)
+			ws.off('close', onClose)
+			ws.off('error', onClose)
 		})
-			.finally(() => {
-				ws.off('frame', onOpen)
-				ws.off('close', onClose)
-				ws.off('error', onClose)
-			})
 
-		if(sendMsg) {
+		if (sendMsg) {
 			sendRawMessage(sendMsg).catch(onClose!)
 		}
 
@@ -178,28 +178,45 @@ export const makeSocket = (config: SocketConfig) => {
 	 * @param msgId the message tag to await
 	 * @param timeoutMs timeout after which the promise will reject
 	 */
-	const waitForMessage = async<T>(msgId: string, timeoutMs = defaultQueryTimeoutMs) => {
-		let onRecv: (json) => void
-		let onErr: (err) => void
+	const waitForMessage = async <T>(msgId: string, timeoutMs = defaultQueryTimeoutMs) => {
+		let onRecv: ((data: T) => void) | undefined
+		let onErr: ((err: Error) => void) | undefined
 		try {
-			const result = await promiseTimeout<T>(timeoutMs,
-				(resolve, reject) => {
-					onRecv = resolve
-					onErr = err => {
-						reject(err || new Boom('Connection Closed', { statusCode: DisconnectReason.connectionClosed }))
-					}
+			const result = await promiseTimeout<T>(timeoutMs, (resolve, reject) => {
+				onRecv = data => {
+					resolve(data)
+				}
 
-					ws.on(`TAG:${msgId}`, onRecv)
-					ws.on('close', onErr) // if the socket closes, you'll never receive the message
-					ws.off('error', onErr)
-				},
-			)
+				onErr = err => {
+					reject(
+						err ||
+							new Boom('Connection Closed', {
+								statusCode: DisconnectReason.connectionClosed
+							})
+					)
+				}
 
-			return result as any
+				ws.on(`TAG:${msgId}`, onRecv)
+				ws.on('close', onErr)
+				ws.on('error', onErr)
+
+				return () => reject(new Boom('Query Cancelled'))
+			})
+			return result
+		} catch (error) {
+			// Catch timeout and return undefined instead of throwing
+			if (error instanceof Boom && error.output?.statusCode === DisconnectReason.timedOut) {
+				logger?.warn?.({ msgId }, 'timed out waiting for message')
+				return undefined
+			}
+
+			throw error
 		} finally {
-			ws.off(`TAG:${msgId}`, onRecv!)
-			ws.off('close', onErr!) // if the socket closes, you'll never receive the message
-			ws.off('error', onErr!)
+			if (onRecv) ws.off(`TAG:${msgId}`, onRecv)
+			if (onErr) {
+				ws.off('close', onErr)
+				ws.off('error', onErr)
+			}
 		}
 	}
 
@@ -211,12 +228,14 @@ export const makeSocket = (config: SocketConfig) => {
 
 		const msgId = node.attrs.id
 
-		const [result] = await Promise.all([
-			waitForMessage(msgId, timeoutMs),
+		const result = await promiseTimeout<any>(timeoutMs, async (resolve, reject) => {
+			const result = await waitForMessage(msgId, timeoutMs).catch(reject)
 			sendNode(node)
-		])
+				.then(() => resolve(result))
+				.catch(reject)
+		})
 
-		if('tag' in result) {
+		if(result && 'tag' in result) {
 			assertNodeErrorFree(result)
 		}
 
@@ -346,29 +365,25 @@ export const makeSocket = (config: SocketConfig) => {
 	}
 
 	const end = (error: Error | undefined) => {
-		if(closed) {
+		if (closed) {
 			logger.trace({ trace: error?.stack }, 'connection already closed')
 			return
 		}
 
 		closed = true
-		logger.info(
-			{ trace: error?.stack },
-			error ? 'connection errored' : 'connection closed'
-		)
+		logger.info({ trace: error?.stack }, error ? 'connection errored' : 'connection closed')
 
 		clearInterval(keepAliveReq)
 		clearTimeout(qrTimer)
 
 		ws.removeAllListeners('close')
-		ws.removeAllListeners('error')
 		ws.removeAllListeners('open')
 		ws.removeAllListeners('message')
 
-		if(!ws.isClosed && !ws.isClosing) {
+		if (!ws.isClosed && !ws.isClosing) {
 			try {
 				ws.close()
-			} catch{ }
+			} catch {}
 		}
 
 		ev.emit('connection.update', {
@@ -644,8 +659,12 @@ export const makeSocket = (config: SocketConfig) => {
 	})
 	// login complete
 	ws.on('CB:success', async(node: BinaryNode) => {
-		await uploadPreKeysToServerIfRequired()
-		await sendPassiveIq('active')
+		try {
+			await uploadPreKeysToServerIfRequired()
+			await sendPassiveIq('active')
+		} catch (err) {
+			logger.warn({ err }, 'failed to send initial passive iq')
+		}
 
 		logger.info('opened connection to WA')
 		clearTimeout(qrTimer) // will never happen in all likelyhood -- but just in case WA sends success on first try
