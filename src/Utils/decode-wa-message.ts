@@ -1,6 +1,6 @@
 import { Boom } from '@hapi/boom'
 import { proto } from '../../WAProto'
-import { SignalRepository, WAMessageKey } from '../Types'
+import { SignalRepository, WAMessage, WAMessageKey } from '../Types'
 import {
 	areJidsSameUser,
 	BinaryNode,
@@ -116,7 +116,7 @@ export function decodeMessageNode(stanza: BinaryNode, meId: string, meLid: strin
 		participantLid: stanza?.attrs?.participant_lid
 	}
 
-	const fullMessage: proto.IWebMessageInfo = {
+	const fullMessage: WAMessage  = {
 		key,
 		messageTimestamp: +stanza.attrs.t,
 		pushName: pushname,
@@ -155,6 +155,10 @@ export const decryptMessageNode = (
 						const details = proto.VerifiedNameCertificate.Details.decode(cert.details!)
 						fullMessage.verifiedBizName = details.verifiedName
 					}
+					if (tag === 'unavailable' && attrs.type === 'view_once') {
+						fullMessage.key.isViewOnce = true
+					}
+
 
 					if (tag !== 'enc' && tag !== 'plaintext') {
 						continue
