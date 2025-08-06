@@ -1,7 +1,8 @@
 import { DEFAULT_CONNECTION_CONFIG } from '../Defaults'
+import { cleanupQueues } from '../Signal/Group/queue-job'
 import { UserFacingSocketConfig } from '../Types'
 import { makeMessagesRecvSocket } from './messages-recv'
-import { cleanupQueues } from '../../WASignalGroup/queue_job'
+
 
 // export the last socket layer
 const makeWASocket = (config: UserFacingSocketConfig) => (
