@@ -113,10 +113,12 @@ export function decodeMessageNode(stanza: BinaryNode, meId: string, meLid: strin
 		senderLid: stanza?.attrs?.sender_lid,
 		senderPn: stanza?.attrs?.sender_pn,
 		participant,
-		participantLid: stanza?.attrs?.participant_lid
+		participantPn: stanza?.attrs?.participant_pn,
+		participantLid: stanza?.attrs?.participant_lid,
+		...(msgType === 'newsletter' && stanza.attrs.server_id ? { server_id: stanza.attrs.server_id } : {})
 	}
 
-	const fullMessage: WAMessage  = {
+	const fullMessage: WAMessage = {
 		key,
 		messageTimestamp: +stanza.attrs.t,
 		pushName: pushname,
@@ -155,10 +157,10 @@ export const decryptMessageNode = (
 						const details = proto.VerifiedNameCertificate.Details.decode(cert.details!)
 						fullMessage.verifiedBizName = details.verifiedName
 					}
+
 					if (tag === 'unavailable' && attrs.type === 'view_once') {
 						fullMessage.key.isViewOnce = true
 					}
-
 
 					if (tag !== 'enc' && tag !== 'plaintext') {
 						continue
