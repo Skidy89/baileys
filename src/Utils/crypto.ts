@@ -1,38 +1,34 @@
-import { createCipheriv, createDecipheriv, createHash, createHmac, pbkdf2, randomBytes } from 'crypto'
-import * as libsignal from 'libsignal'
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from 'crypto'
+import * as curve from 'libsignal/src/curve'
 import { KEY_BUNDLE_TYPE } from '../Defaults'
-import { KeyPair } from '../Types'
-import HKDF from 'futoin-hkdf'
-import { promisify } from 'util'
-const pbkdf2Promise = promisify(pbkdf2)
+import type { KeyPair } from '../Types'
+
+// insure browser & node compatibility
+const { subtle } = globalThis.crypto
+
 /** prefix version byte to the pub keys, required for some curve crypto functions */
-export const generateSignalPubKey = (pubKey: Uint8Array | Buffer) => (
-	pubKey.length === 33
-		? pubKey
-		: Buffer.concat([ KEY_BUNDLE_TYPE, pubKey ])
-)
+export const generateSignalPubKey = (pubKey: Uint8Array | Buffer) =>
+	pubKey.length === 33 ? pubKey : Buffer.concat([KEY_BUNDLE_TYPE, pubKey])
 
 export const Curve = {
 	generateKeyPair: (): KeyPair => {
-		const { pubKey, privKey } = libsignal.curve.generateKeyPair()
+		const { pubKey, privKey } = curve.generateKeyPair()
 		return {
 			private: Buffer.from(privKey),
 			// remove version byte
-			public: Buffer.from((pubKey as Uint8Array).slice(1))
+			public: Buffer.from(pubKey.slice(1))
 		}
 	},
 	sharedKey: (privateKey: Uint8Array, publicKey: Uint8Array) => {
-		const shared = libsignal.curve.calculateAgreement(generateSignalPubKey(publicKey), privateKey)
+		const shared = curve.calculateAgreement(generateSignalPubKey(publicKey), privateKey)
 		return Buffer.from(shared)
 	},
-	sign: (privateKey: Uint8Array, buf: Uint8Array) => (
-		libsignal.curve.calculateSignature(privateKey, buf)
-	),
+	sign: (privateKey: Uint8Array, buf: Uint8Array) => curve.calculateSignature(privateKey, buf),
 	verify: (pubKey: Uint8Array, message: Uint8Array, signature: Uint8Array) => {
 		try {
-			libsignal.curve.verifySignature(generateSignalPubKey(pubKey), message, signature)
+			curve.verifySignature(generateSignalPubKey(pubKey), message, signature)
 			return true
-		} catch(error) {
+		} catch (error) {
 			return false
 		}
 	}
@@ -72,7 +68,7 @@ export function aesDecryptGCM(ciphertext: Uint8Array, key: Uint8Array, iv: Uint8
 	decipher.setAAD(additionalData)
 	decipher.setAuthTag(tag)
 
-	return Buffer.concat([ decipher.update(enc), decipher.final() ])
+	return Buffer.concat([decipher.update(enc), decipher.final()])
 }
 
 export function aesEncryptCTR(plaintext: Uint8Array, key: Uint8Array, iv: Uint8Array) {
@@ -87,7 +83,7 @@ export function aesDecryptCTR(ciphertext: Uint8Array, key: Uint8Array, iv: Uint8
 
 /** decrypt AES 256 CBC; where the IV is prefixed to the buffer */
 export function aesDecrypt(buffer: Buffer, key: Buffer) {
-	return aesDecryptWithIV(buffer.subarray(16, buffer.length), key, buffer.subarray(0, 16))
+	return aesDecryptWithIV(buffer.slice(16, buffer.length), key, buffer.slice(0, 16))
 }
 
 /** decrypt AES 256 CBC */
@@ -110,7 +106,11 @@ export function aesEncrypWithIV(buffer: Buffer, key: Buffer, IV: Buffer) {
 }
 
 // sign HMAC using SHA 256
-export function hmacSign(buffer: Buffer | Uint8Array, key: Buffer | Uint8Array, variant: 'sha256' | 'sha512' = 'sha256') {
+export function hmacSign(
+	buffer: Buffer | Uint8Array,
+	key: Buffer | Uint8Array,
+	variant: 'sha256' | 'sha512' = 'sha256'
+) {
 	return createHmac(variant, key).update(buffer).digest()
 }
 
@@ -122,9 +122,63 @@ export function md5(buffer: Buffer) {
 	return createHash('md5').update(buffer).digest()
 }
 
-export function hkdf(buffer: Uint8Array | Buffer, expandedLength: number, info: { salt?: Buffer, info?: string }) {
-	return HKDF(!Buffer.isBuffer(buffer) ? Buffer.from(buffer) : buffer, expandedLength, info)
+// HKDF key expansion
+export async function hkdf(
+	buffer: Uint8Array | Buffer,
+	expandedLength: number,
+	info: { salt?: Buffer; info?: string }
+): Promise<Buffer> {
+	// Normalize to a Uint8Array whose underlying buffer is a regular ArrayBuffer (not ArrayBufferLike)
+	// Cloning via new Uint8Array(...) guarantees the generic parameter is ArrayBuffer which satisfies WebCrypto types.
+	const inputKeyMaterial = new Uint8Array(buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer))
+
+	// Set default values if not provided
+	const salt = info.salt ? new Uint8Array(info.salt) : new Uint8Array(0)
+	const infoBytes = info.info ? new TextEncoder().encode(info.info) : new Uint8Array(0)
+
+	// Import the input key material (cast to BufferSource to appease TS DOM typings)
+	const importedKey = await subtle.importKey('raw', inputKeyMaterial as BufferSource, { name: 'HKDF' }, false, [
+		'deriveBits'
+	])
+
+	// Derive bits using HKDF
+	const derivedBits = await subtle.deriveBits(
+		{
+			name: 'HKDF',
+			hash: 'SHA-256',
+			salt: salt,
+			info: infoBytes
+		},
+		importedKey,
+		expandedLength * 8 // Convert bytes to bits
+	)
+
+	return Buffer.from(derivedBits)
 }
+
 export async function derivePairingCodeKey(pairingCode: string, salt: Buffer): Promise<Buffer> {
-	return await pbkdf2Promise(pairingCode, salt, 2 << 16, 32, 'sha256')
+	// Convert inputs to formats Web Crypto API can work with
+	const encoder = new TextEncoder()
+	const pairingCodeBuffer = encoder.encode(pairingCode)
+	const saltBuffer = new Uint8Array(salt instanceof Uint8Array ? salt : new Uint8Array(salt))
+
+	// Import the pairing code as key material
+	const keyMaterial = await subtle.importKey('raw', pairingCodeBuffer as BufferSource, { name: 'PBKDF2' }, false, [
+		'deriveBits'
+	])
+
+	// Derive bits using PBKDF2 with the same parameters
+	// 2 << 16 = 131,072 iterations
+	const derivedBits = await subtle.deriveBits(
+		{
+			name: 'PBKDF2',
+			salt: saltBuffer as BufferSource,
+			iterations: 2 << 16,
+			hash: 'SHA-256'
+		},
+		keyMaterial,
+		32 * 8 // 32 bytes * 8 = 256 bits
+	)
+
+	return Buffer.from(derivedBits)
 }

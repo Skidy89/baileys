@@ -1,20 +1,42 @@
 import { Boom } from '@hapi/boom'
 import NodeCache from '@cacheable/node-cache'
 import readline from 'readline'
-import makeWASocket, { DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } from '../src'
+import makeWASocket, { AnyMessageContent, BinaryInfo, CacheStore, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, encodeWAM, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, getHistoryMsg, isJidNewsletter, jidDecode, makeCacheableSignalKeyStore, normalizeMessageContent, PatchedMessageWithRecipientJID, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } from '../src'
+//import MAIN_LOGGER from '../src/Utils/logger'
+import open from 'open'
+import fs from 'fs'
 import P from 'pino'
+import { WAMHandler } from './wam'
 
-const logger = P({ timestamp: () => `,"time":"${new Date().toJSON()}"` }, P.destination('./wa-logs.txt'))
+const logger = P({
+  level: "trace",
+  transport: {
+    targets: [
+      {
+        target: "pino-pretty", // pretty-print for console
+        options: { colorize: true },
+        level: "trace",
+      },
+      {
+        target: "pino/file", // raw file output
+        options: { destination: './wa-logs.txt' },
+        level: "trace",
+      },
+    ],
+  },
+})
 logger.level = 'trace'
 
-
+const doReplies = process.argv.includes('--do-reply')
 const usePairingCode = process.argv.includes('--use-pairing-code')
 
 // external map to store retry counts of messages when decryption/encryption fails
 // keep this out of the socket itself, so as to prevent a message decryption/encryption loop across socket restarts
-const msgRetryCounterCache = new NodeCache()
+const msgRetryCounterCache = new NodeCache() as CacheStore
 
+const onDemandMap = new Map<string, string>()
 
+// Read line interface
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
 const question = (text: string) => new Promise<string>((resolve) => rl.question(text, resolve))
 
@@ -28,7 +50,6 @@ const startSock = async() => {
 	const sock = makeWASocket({
 		version,
 		logger,
-		printQRInTerminal: !usePairingCode,
 		auth: {
 			creds: state.creds,
 			/** caching makes the store faster to send/recv messages */
@@ -40,8 +61,11 @@ const startSock = async() => {
 		// comment the line below out
 		// shouldIgnoreJid: jid => isJidBroadcast(jid),
 		// implement to handle retries & poll updates
-		getMessage,
+		getMessage
 	})
+
+
+	const wam = new WAMHandler(sock, state)
 
 	// Pairing code for Web clients
 	if (usePairingCode && !sock.authState.creds.registered) {
@@ -51,6 +75,17 @@ const startSock = async() => {
 		console.log(`Pairing code: ${code}`)
 	}
 
+	const sendMessageWTyping = async(msg: AnyMessageContent, jid: string) => {
+		await sock.presenceSubscribe(jid)
+		await delay(500)
+
+		await sock.sendPresenceUpdate('composing', jid)
+		await delay(2000)
+
+		await sock.sendPresenceUpdate('paused', jid)
+
+		await sock.sendMessage(jid, msg)
+	}
 
 	// the process function lets you process all events that just occurred
 	// efficiently in a batch
@@ -70,15 +105,21 @@ const startSock = async() => {
 						console.log('Connection closed. You are logged out.')
 					}
 				}
-
-			
-
 				console.log('connection update', update)
 			}
 
 			// credentials updated -- save them
 			if(events['creds.update']) {
 				await saveCreds()
+			}
+
+			if(events['labels.association']) {
+				console.log(events['labels.association'])
+			}
+
+
+			if(events['labels.edit']) {
+				console.log(events['labels.edit'])
 			}
 
 			if(events.call) {
@@ -95,64 +136,78 @@ const startSock = async() => {
 			}
 
 			// received a new message
-			if(events['messages.upsert']) {
-				const upsert = events['messages.upsert']
-				console.log('recv messages ', JSON.stringify(upsert, undefined, 2))
-				console.log('upsert type', upsert.messages)
-				if(upsert.type === 'notify') {
-					for (const msg of upsert.messages) {
-						//TODO: More built-in implementation of this
-						/* if (
-							msg.message?.protocolMessage?.type ===
-							proto.Message.ProtocolMessage.Type.HISTORY_SYNC_NOTIFICATION
-						  ) {
-							const historySyncNotification = getHistoryMsg(msg.message)
-							if (
-							  historySyncNotification?.syncType ==
-							  proto.HistorySync.HistorySyncType.ON_DEMAND
-							) {
-							  const { messages } =
-								await downloadAndProcessHistorySyncNotification(
-								  historySyncNotification,
-								  {}
-								)
+      if (events['messages.upsert']) {
+        const upsert = events['messages.upsert']
+        console.log('recv messages ', JSON.stringify(upsert, undefined, 2))
+
+        if (!!upsert.requestId) {
+          console.log("placeholder message received for request of id=" + upsert.requestId, upsert)
+        }
 
 
-								const chatId = onDemandMap.get(
-									historySyncNotification!.peerDataRequestSessionId!
-								)
 
-								console.log(messages)
+        if (upsert.type === 'notify') {
+          for (const msg of upsert.messages) {
+            if (msg.message?.conversation || msg.message?.extendedTextMessage?.text) {
+              const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text
+              if (text == "requestPlaceholder" && !upsert.requestId) {
+                const messageId = await sock.requestPlaceholderResend(msg.key)
+                console.log('requested placeholder resync, id=', messageId)
+              }
 
-							  onDemandMap.delete(
-								historySyncNotification!.peerDataRequestSessionId!
-							  )
+              // go to an old chat and send this
+              if (text == "onDemandHistSync") {
+                const messageId = await sock.fetchMessageHistory(50, msg.key, msg.messageTimestamp!)
+                console.log('requested on-demand sync, id=', messageId)
+              }
 
-							  /*
-								// 50 messages is the limit imposed by whatsapp
-								//TODO: Add ratelimit of 7200 seconds
-								//TODO: Max retries 10
-								const messageId = await sock.fetchMessageHistory(
-									50,
-									oldestMessageKey,
-									oldestMessageTimestamp
-								)
-								onDemandMap.set(messageId, chatId)
-							}
-						  } */
+              if (!msg.key.fromMe && doReplies && !isJidNewsletter(msg.key?.remoteJid!)) {
 
-						
-
-						// process the message
-					}
-				}
-			}
+                console.log('replying to', msg.key.remoteJid)
+                await sock!.readMessages([msg.key])
+                await sendMessageWTyping({ text: 'Hello there!' }, msg.key.remoteJid!)
+              }
+            }
+          }
+        }
+      }
 
 			// messages updated like status delivered, message deleted etc.
 			if(events['messages.update']) {
 				console.log(
 					JSON.stringify(events['messages.update'], undefined, 2)
 				)
+
+				for(const { key, update } of events['messages.update']) {
+					if(update.pollUpdates) {
+						const pollCreation: proto.IMessage = {} // get the poll creation message somehow
+						if(pollCreation) {
+							console.log(
+								'got poll update, aggregation: ',
+								getAggregateVotesInPollMessage({
+									message: pollCreation,
+									pollUpdates: update.pollUpdates,
+								})
+							)
+						}
+					}
+				}
+			}
+
+			if(events['message-receipt.update']) {
+				console.log(events['message-receipt.update'])
+			}
+
+			if(events['messages.reaction']) {
+				console.log(events['messages.reaction'])
+			}
+
+			if(events['presence.update']) {
+				console.log(events['presence.update'])
+			}
+
+			if(events['chats.update']) {
+				console.log(events['chats.update'])
 			}
 
 			if(events['contacts.update']) {
@@ -181,7 +236,7 @@ const startSock = async() => {
 			// up to you
 
 		// only if store is present
-		return proto.Message.fromObject({})
+		return proto.Message.create({ conversation: 'test' })
 	}
 }
 

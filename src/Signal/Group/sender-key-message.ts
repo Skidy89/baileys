@@ -1,4 +1,3 @@
-/* @ts-ignore */
 import { calculateSignature, verifySignature } from 'libsignal/src/curve'
 import { proto } from '../../../WAProto/index.js'
 import { CiphertextMessage } from './ciphertext-message'
@@ -11,12 +10,10 @@ interface SenderKeyMessageStructure {
 
 export class SenderKeyMessage extends CiphertextMessage {
 	private readonly SIGNATURE_LENGTH = 64
-	// @ts-ignore
 	private readonly messageVersion: number
 	private readonly keyId: number
 	private readonly iteration: number
 	private readonly ciphertext: Uint8Array
-	// @ts-ignore
 	private readonly signature: Uint8Array
 	private readonly serialized: Uint8Array
 
