@@ -170,157 +170,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		return sendPeerDataOperationMessage(pdoMessage)
 	}
 
-	// Handles mex newsletter notifications
-	const handleMexNewsletterNotification = async (node: BinaryNode) => {
-		const mexNode = getBinaryNodeChild(node, 'mex')
-		if (!mexNode?.content) {
-			logger.warn({ node }, 'Invalid mex newsletter notification')
-			return
-		}
-
-		let data: any
-		try {
-			data = JSON.parse(mexNode.content.toString())
-		} catch (error) {
-			logger.error({ err: error, node }, 'Failed to parse mex newsletter notification')
-			return
-		}
-
-		const operation = data?.operation
-		const updates = data?.updates
-
-		if (!updates || !operation) {
-			logger.warn({ data }, 'Invalid mex newsletter notification content')
-			return
-		}
-
-		logger.info({ operation, updates }, 'got mex newsletter notification')
-
-		switch (operation) {
-			case 'NotificationNewsletterUpdate':
-				for (const update of updates) {
-					if (update.jid && update.settings && Object.keys(update.settings).length > 0) {
-						ev.emit('newsletter-settings.update', {
-							id: update.jid,
-							update: update.settings
-						})
-					}
-				}
-
-				break
-
-			case 'NotificationNewsletterAdminPromote':
-				for (const update of updates) {
-					if (update.jid && update.user) {
-						ev.emit('newsletter-participants.update', {
-							id: update.jid,
-							author: node.attrs.from!,
-							user: update.user,
-							new_role: 'ADMIN',
-							action: 'promote'
-						})
-					}
-				}
-
-				break
-
-			default:
-				logger.info({ operation, data }, 'Unhandled mex newsletter notification')
-				break
-		}
-	}
-
-	// Handles newsletter notifications
-	const handleNewsletterNotification = async (node: BinaryNode) => {
-		const from = node.attrs.from!
-		const child = getAllBinaryNodeChildren(node)[0]!
-		const author = node.attrs.participant!
-
-		logger.info({ from, child }, 'got newsletter notification')
-
-		switch (child.tag) {
-			case 'reaction':
-				const reactionUpdate = {
-					id: from,
-					server_id: child.attrs.message_id!,
-					reaction: {
-						code: getBinaryNodeChildString(child, 'reaction'),
-						count: 1
-					}
-				}
-				ev.emit('newsletter.reaction', reactionUpdate)
-				break
-
-			case 'view':
-				const viewUpdate = {
-					id: from,
-					server_id: child.attrs.message_id!,
-					count: parseInt(child.content?.toString() || '0', 10)
-				}
-				ev.emit('newsletter.view', viewUpdate)
-				break
-
-			case 'participant':
-				const participantUpdate = {
-					id: from,
-					author,
-					user: child.attrs.jid!,
-					action: child.attrs.action!,
-					new_role: child.attrs.role!
-				}
-				ev.emit('newsletter-participants.update', participantUpdate)
-				break
-
-			case 'update':
-				const settingsNode = getBinaryNodeChild(child, 'settings')
-				if (settingsNode) {
-					const update: Record<string, any> = {}
-					const nameNode = getBinaryNodeChild(settingsNode, 'name')
-					if (nameNode?.content) update.name = nameNode.content.toString()
-
-					const descriptionNode = getBinaryNodeChild(settingsNode, 'description')
-					if (descriptionNode?.content) update.description = descriptionNode.content.toString()
-
-					ev.emit('newsletter-settings.update', {
-						id: from,
-						update
-					})
-				}
-
-				break
-
-			case 'message':
-				const plaintextNode = getBinaryNodeChild(child, 'plaintext')
-				if (plaintextNode?.content) {
-					try {
-						const contentBuf =
-							typeof plaintextNode.content === 'string'
-								? Buffer.from(plaintextNode.content, 'binary')
-								: Buffer.from(plaintextNode.content as Uint8Array)
-						const messageProto = proto.Message.decode(contentBuf).toJSON()
-						const fullMessage = proto.WebMessageInfo.fromObject({
-							key: {
-								remoteJid: from,
-								id: child.attrs.message_id || child.attrs.server_id,
-								fromMe: false // TODO: is this really true though
-							},
-							message: messageProto,
-							messageTimestamp: +child.attrs.t!
-						}).toJSON() as WAMessage
-						await upsertMessage(fullMessage, 'append')
-						logger.info('Processed plaintext newsletter message')
-					} catch (error) {
-						logger.error({ error }, 'Failed to decode plaintext newsletter message')
-					}
-				}
-
-				break
-
-			default:
-				logger.warn({ node }, 'Unknown newsletter notification')
-				break
-		}
-	}
+	
 
 	const sendMessageAck = async ({ tag, attrs, content }: BinaryNode, errorCode?: number) => {
 		const stanza: BinaryNode = {
@@ -710,12 +560,6 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 					logger.debug({ jid }, 'got privacy token update')
 				}
 
-				break
-			case 'newsletter':
-				await handleNewsletterNotification(node)
-				break
-			case 'mex':
-				await handleMexNewsletterNotification(node)
 				break
 			case 'w:gp2':
 				// TODO: HANDLE PARTICIPANT_PN
@@ -1276,51 +1120,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		}
 	}
 
-	const handleCall = async (node: BinaryNode) => {
-		const { attrs } = node
-		const [infoChild] = getAllBinaryNodeChildren(node)
-		const status = getCallStatusFromNode(infoChild!)
-
-		if (!infoChild) {
-			throw new Boom('Missing call info in call node')
-		}
-
-		const callId = infoChild.attrs['call-id']!
-		const from = infoChild.attrs.from! || infoChild.attrs['call-creator']!
-
-		const call: WACallEvent = {
-			chatId: attrs.from!,
-			from,
-			id: callId,
-			date: new Date(+attrs.t! * 1000),
-			offline: !!attrs.offline,
-			status
-		}
-
-		if (status === 'offer') {
-			call.isVideo = !!getBinaryNodeChild(infoChild, 'video')
-			call.isGroup = infoChild.attrs.type === 'group' || !!infoChild.attrs['group-jid']
-			call.groupJid = infoChild.attrs['group-jid']
-			await callOfferCache.set(call.id, call)
-		}
-
-		const existingCall = await callOfferCache.get<WACallEvent>(call.id)
-
-		// use existing call info to populate this event
-		if (existingCall) {
-			call.isVideo = existingCall.isVideo
-			call.isGroup = existingCall.isGroup
-		}
-
-		// delete data once call has ended
-		if (status === 'reject' || status === 'accept' || status === 'timeout' || status === 'terminate') {
-			await callOfferCache.del(call.id)
-		}
-
-		ev.emit('call', [call])
-
-		await sendMessageAck(node)
-	}
+	
 
 	const handleBadAck = async ({ attrs }: BinaryNode) => {
 		const key: WAMessageKey = { remoteJid: attrs.from, fromMe: true, id: attrs.id }
@@ -1381,7 +1181,6 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 	const makeOfflineNodeProcessor = () => {
 		const nodeProcessorMap: Map<MessageType, (node: BinaryNode) => Promise<void>> = new Map([
 			['message', handleMessage],
-			['call', handleCall],
 			['receipt', handleReceipt],
 			['notification', handleNotification]
 		])
@@ -1442,9 +1241,6 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		processNode('message', node, 'processing message', handleMessage)
 	})
 
-	ws.on('CB:call', async (node: BinaryNode) => {
-		processNode('call', node, 'handling call', handleCall)
-	})
 
 	ws.on('CB:receipt', node => {
 		processNode('receipt', node, 'handling receipt', handleReceipt)
@@ -1457,37 +1253,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		handleBadAck(node).catch(error => onUnexpectedError(error, 'handling bad ack'))
 	})
 
-	ev.on('call', ([call]) => {
-		if (!call) {
-			return
-		}
-
-		// missed call + group call notification message generation
-		if (call.status === 'timeout' || (call.status === 'offer' && call.isGroup)) {
-			const msg: WAMessage = {
-				key: {
-					remoteJid: call.chatId,
-					id: call.id,
-					fromMe: false
-				},
-				messageTimestamp: unixTimestampSeconds(call.date)
-			}
-			if (call.status === 'timeout') {
-				if (call.isGroup) {
-					msg.messageStubType = call.isVideo
-						? WAMessageStubType.CALL_MISSED_GROUP_VIDEO
-						: WAMessageStubType.CALL_MISSED_GROUP_VOICE
-				} else {
-					msg.messageStubType = call.isVideo ? WAMessageStubType.CALL_MISSED_VIDEO : WAMessageStubType.CALL_MISSED_VOICE
-				}
-			} else {
-				msg.message = { call: { callKey: Buffer.from(call.id) } }
-			}
-
-			const protoMsg = proto.WebMessageInfo.fromObject(msg) as WAMessage
-			upsertMessage(protoMsg, call.offline ? 'append' : 'notify')
-		}
-	})
+	
 
 	ev.on('connection.update', ({ isOnline }) => {
 		if (typeof isOnline !== 'undefined') {

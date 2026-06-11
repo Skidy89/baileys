@@ -1,31 +1,16 @@
 import { Boom } from '@hapi/boom'
 import NodeCache from '@cacheable/node-cache'
 import readline from 'readline'
-import makeWASocket, { AnyMessageContent, BinaryInfo, CacheStore, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, encodeWAM, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, getHistoryMsg, isJidNewsletter, jidDecode, makeCacheableSignalKeyStore, normalizeMessageContent, PatchedMessageWithRecipientJID, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } from '../src'
-//import MAIN_LOGGER from '../src/Utils/logger'
-import open from 'open'
-import fs from 'fs'
-import P from 'pino'
-import { WAMHandler } from './wam'
+import makeWASocket, { AnyMessageContent, BinaryInfo, CacheStore, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, encodeWAM, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, getHistoryMsg, GroupMetadata, isJidNewsletter, jidDecode, makeCacheableSignalKeyStore, normalizeMessageContent, PatchedMessageWithRecipientJID, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } from '../src'
 
+import P from 'pino'
+
+import qrcode from 'qrcode-terminal'
 const logger = P({
-  level: "trace",
-  transport: {
-    targets: [
-      {
-        target: "pino-pretty", // pretty-print for console
-        options: { colorize: true },
-        level: "trace",
-      },
-      {
-        target: "pino/file", // raw file output
-        options: { destination: './wa-logs.txt' },
-        level: "trace",
-      },
-    ],
-  },
+  level: "silent",
+  
 })
-logger.level = 'trace'
+
 
 const doReplies = process.argv.includes('--do-reply')
 const usePairingCode = process.argv.includes('--use-pairing-code')
@@ -34,7 +19,7 @@ const usePairingCode = process.argv.includes('--use-pairing-code')
 // keep this out of the socket itself, so as to prevent a message decryption/encryption loop across socket restarts
 const msgRetryCounterCache = new NodeCache() as CacheStore
 
-const onDemandMap = new Map<string, string>()
+const groups = new Map<string, GroupMetadata>()
 
 // Read line interface
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
@@ -61,11 +46,22 @@ const startSock = async() => {
 		// comment the line below out
 		// shouldIgnoreJid: jid => isJidBroadcast(jid),
 		// implement to handle retries & poll updates
-		getMessage
+		getMessage,
+		cachedGroupMetadata: async (jid) => {
+			if (groups.has(jid)) {
+				return groups.get(jid)
+			} else {
+				const metadata = await sock.groupMetadata(jid).catch(() => null)
+				if (metadata) {
+					groups.set(jid, metadata)
+				}
+				return metadata!
+			}
+		}
 	})
 
 
-	const wam = new WAMHandler(sock, state)
+
 
 	// Pairing code for Web clients
 	if (usePairingCode && !sock.authState.creds.registered) {
@@ -96,7 +92,10 @@ const startSock = async() => {
 			// maybe it closed, or we received all offline message or connection opened
 			if(events['connection.update']) {
 				const update = events['connection.update']
-				const { connection, lastDisconnect } = update
+				const { connection, lastDisconnect, qr } = update
+				if (qr) {
+					qrcode.generate(qr, { small: true })
+				}
 				if(connection === 'close') {
 					// reconnect if not logged out
 					if((lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut) {
@@ -160,6 +159,11 @@ const startSock = async() => {
                 const messageId = await sock.fetchMessageHistory(50, msg.key, msg.messageTimestamp!)
                 console.log('requested on-demand sync, id=', messageId)
               }
+			  if (text == "test") {
+				console.time("test")
+				await sock.sendMessage(msg.key.remoteJid!, { text: 'Hello there!' })
+				console.timeEnd("test")
+			  }
 
               if (!msg.key.fromMe && doReplies && !isJidNewsletter(msg.key?.remoteJid!)) {
 

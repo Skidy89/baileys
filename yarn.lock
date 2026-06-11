@@ -1425,6 +1425,11 @@
   resolved "https://registry.npmjs.org/@types/normalize-package-data/-/normalize-package-data-2.4.4.tgz"
   integrity sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==
 
+"@types/qrcode-terminal@^0.12.2":
+  version "0.12.2"
+  resolved "https://registry.npmjs.org/@types/qrcode-terminal/-/qrcode-terminal-0.12.2.tgz"
+  integrity sha512-v+RcIEJ+Uhd6ygSQ0u5YYY7ZM+la7GgPbs0V/7l/kFs2uO4S8BcIUEMoP7za4DNIqNnUD5npf0A/7kBhrCKG5Q==
+
 "@types/stack-utils@^2.0.3":
   version "2.0.3"
   resolved "https://registry.npmjs.org/@types/stack-utils/-/stack-utils-2.0.3.tgz"
@@ -4779,6 +4784,22 @@ levn@~0.3.0:
     prelude-ls "~1.1.2"
     type-check "~0.3.2"
 
+libsignal-plugins-win32-x64-msvc@1.0.18:
+  version "1.0.18"
+  resolved "https://registry.npmjs.org/libsignal-plugins-win32-x64-msvc/-/libsignal-plugins-win32-x64-msvc-1.0.18.tgz"
+  integrity sha512-ig1lMwoE+N76w7cNs3zzg47rPV7sgACWiaqP6BLc6F2e1Huyj9IvPjkdpZknOXQ8T9rkDzaur/wxDlfGgnLHYg==
+
+libsignal-plugins@^1.0.18:
+  version "1.0.18"
+  resolved "https://registry.npmjs.org/libsignal-plugins/-/libsignal-plugins-1.0.18.tgz"
+  integrity sha512-K42f6ma72sHE2gVs/hrZrV5W04Z0bUaKpXi3fa/IQMGK9B6FClCvEMSEOZfkaq+LbGvJUQfgcqUAq/ogff4KEA==
+  optionalDependencies:
+    libsignal-plugins-linux-arm64-gnu "1.0.18"
+    libsignal-plugins-linux-arm64-musl "1.0.18"
+    libsignal-plugins-linux-x64-gnu "1.0.18"
+    libsignal-plugins-linux-x64-musl "1.0.18"
+    libsignal-plugins-win32-x64-msvc "1.0.18"
+
 "libsignal@git+https://github.com/skidy89/libsignal-node":
   version "2.0.1"
   resolved "git+ssh://git@github.com/skidy89/libsignal-node.git"
@@ -5871,6 +5892,11 @@ pure-rand@^7.0.0:
   version "7.0.1"
   resolved "https://registry.npmjs.org/pure-rand/-/pure-rand-7.0.1.tgz"
   integrity sha512-oTUZM/NAZS8p7ANR3SHh30kXB+zK2r2BPcEn/awJIbOvq82WoMN4p62AWWp3Hhw50G0xMsw1mhIBLqHw64EcNQ==
+
+qrcode-terminal@^0.12.0:
+  version "0.12.0"
+  resolved "https://registry.npmjs.org/qrcode-terminal/-/qrcode-terminal-0.12.0.tgz"
+  integrity sha512-EXtzRZmC+YGmGlDFbXKxQiMZNwCLEO6BANKXG4iCtSIM0yqc/pappSx3RIKr4r0uh5JsBckOXeKrB3Iz7mdQpQ==
 
 querystring@0.2.0:
   version "0.2.0"
