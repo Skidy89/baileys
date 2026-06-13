@@ -29,7 +29,7 @@ import type {
 import { WAMessageStatus, WAProto } from '../Types'
 import { isJidGroup, isJidNewsletter, isJidStatusBroadcast, jidNormalizedUser } from '../WABinary'
 import { sha256 } from './crypto'
-import { generateMessageIDV2, getKeyAuthor, unixTimestampSeconds } from './generics'
+import { generateMessageID, getKeyAuthor, unixTimestampSeconds } from './generics'
 import type { ILogger } from './logger'
 import {
 	downloadContentFromMessage,
@@ -693,7 +693,7 @@ export const generateWAMessageFromContent = (
 		key: {
 			remoteJid: jid,
 			fromMe: true,
-			id: options?.messageId || generateMessageIDV2()
+			id: options?.messageId || generateMessageID()
 		},
 		message: message,
 		messageTimestamp: timestamp,

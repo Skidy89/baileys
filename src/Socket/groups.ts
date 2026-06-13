@@ -1,7 +1,7 @@
 import { proto } from '../../WAProto/index.js'
 import type { GroupMetadata, GroupParticipant, ParticipantAction, SocketConfig, WAMessageKey } from '../Types'
 import { WAMessageAddressingMode, WAMessageStubType } from '../Types'
-import { generateMessageIDV2, unixTimestampSeconds } from '../Utils'
+import { generateMessageID, unixTimestampSeconds } from '../Utils'
 import {
 	type BinaryNode,
 	getBinaryNodeChild,
@@ -87,7 +87,7 @@ export const makeGroupsSocket = (config: SocketConfig) => {
 		...sock,
 		groupMetadata,
 		groupCreate: async (subject: string, participants: string[]) => {
-			const key = generateMessageIDV2()
+			const key = generateMessageID()
 			const result = await groupQuery('@g.us', 'set', [
 				{
 					tag: 'create',
@@ -181,7 +181,7 @@ export const makeGroupsSocket = (config: SocketConfig) => {
 				{
 					tag: 'description',
 					attrs: {
-						...(description ? { id: generateMessageIDV2() } : { delete: 'true' }),
+						...(description ? { id: generateMessageID() } : { delete: 'true' }),
 						...(prev ? { prev } : {})
 					},
 					content: description ? [{ tag: 'body', attrs: {}, content: Buffer.from(description, 'utf-8') }] : undefined
@@ -260,7 +260,7 @@ export const makeGroupsSocket = (config: SocketConfig) => {
 					{
 						key: {
 							remoteJid: inviteMessage.groupJid,
-							id: generateMessageIDV2(sock.user?.id),
+							id: generateMessageID(),
 							fromMe: false,
 							participant: key.remoteJid
 						},

@@ -25,7 +25,7 @@ import type {
 } from '../Types'
 import { type BinaryNode, getBinaryNodeChild, getBinaryNodeChildBuffer, jidNormalizedUser } from '../WABinary'
 import { aesDecryptGCM, aesEncryptGCM, hkdf } from './crypto'
-import { generateMessageIDV2 } from './generics'
+import { generateMessageID } from './generics'
 import type { ILogger } from './logger'
 
 const getTmpFilesDirectory = () => tmpdir()
@@ -55,7 +55,7 @@ export const getRawMediaUploadData = async (media: WAMediaUpload, mediaType: Med
 	logger?.debug('got stream for raw upload')
 
 	const hasher = Crypto.createHash('sha256')
-	const filePath = join(tmpdir(), mediaType + generateMessageIDV2())
+	const filePath = join(tmpdir(), mediaType + generateMessageID())
 	const fileWriteStream = createWriteStream(filePath)
 
 	let fileLength = 0
@@ -343,7 +343,7 @@ export async function generateThumbnail(
 			}
 		}
 	} else if (mediaType === 'video') {
-		const imgFilename = join(getTmpFilesDirectory(), generateMessageIDV2() + '.jpg')
+		const imgFilename = join(getTmpFilesDirectory(), generateMessageID() + '.jpg')
 		try {
 			await extractVideoThumb(file, imgFilename, '00:00:00', { width: 32, height: 32 })
 			const buff = await fs.readFile(imgFilename)
@@ -393,14 +393,14 @@ export const encryptedStream = async (
 	const mediaKey = Crypto.randomBytes(32)
 	const { cipherKey, iv, macKey } = await getMediaKeys(mediaKey, mediaType)
 
-	const encFilePath = join(getTmpFilesDirectory(), mediaType + generateMessageIDV2() + '-enc')
+	const encFilePath = join(getTmpFilesDirectory(), mediaType + generateMessageID() + '-enc')
 	const encFileWriteStream = createWriteStream(encFilePath)
 
 	let originalFileStream: WriteStream | undefined
 	let originalFilePath: string | undefined
 
 	if (saveOriginalFileIfRequired) {
-		originalFilePath = join(getTmpFilesDirectory(), mediaType + generateMessageIDV2() + '-original')
+		originalFilePath = join(getTmpFilesDirectory(), mediaType + generateMessageID() + '-original')
 		originalFileStream = createWriteStream(originalFilePath)
 	}
 

@@ -15,7 +15,7 @@ import type {
 	WAMediaUploadFunction
 } from '../Types'
 import { type BinaryNode, getBinaryNodeChild, getBinaryNodeChildren, getBinaryNodeChildString } from '../WABinary'
-import { generateMessageIDV2 } from './generics'
+import { generateMessageID } from './generics'
 import { getStream, getUrlFromDirectPath } from './messages-media'
 
 export const parseCatalogNode = (node: BinaryNode) => {
@@ -245,7 +245,7 @@ export const uploadingNecessaryImages = async (
 			const { stream } = await getStream(img)
 			const hasher = createHash('sha256')
 
-			const filePath = join(tmpdir(), 'img' + generateMessageIDV2())
+			const filePath = join(tmpdir(), 'img' + generateMessageID())
 			const encFileWriteStream = createWriteStream(filePath)
 
 			for await (const block of stream) {
