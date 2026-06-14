@@ -1105,6 +1105,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				const fullMsg = await generateWAMessage(jid, content, {
 					logger,
 					userJid,
+					useCachedGroupMetadata: options.useCachedGroupMetadata,
 					upload: waUploadToServer,
 					options: config.options,
 					messageId: generateMessageID(),

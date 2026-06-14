@@ -1,12 +1,12 @@
-import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from 'crypto'
+import { createCipheriv, createDecipheriv, createHash, createHmac, pbkdf2Sync, randomBytes } from 'crypto'
 import * as curve from 'libsignal/src/curve'
 import { KEY_BUNDLE_TYPE } from '../Defaults'
 import type { KeyPair } from '../Types'
+import HKDF from 'futoin-hkdf'
 
-// insure browser & node compatibility
-const { subtle } = globalThis.crypto
 
-/** prefix version byte to the pub keys, required for some curve crypto functions */
+
+/** with the new libsignal, this would not be necessary, but keep it if something breaks */
 export const generateSignalPubKey = (pubKey: Uint8Array | Buffer) =>
 	pubKey.length === 33 ? pubKey : Buffer.concat([KEY_BUNDLE_TYPE, pubKey])
 
@@ -14,23 +14,18 @@ export const Curve = {
 	generateKeyPair: (): KeyPair => {
 		const { pubKey, privKey } = curve.generateKeyPair()
 		return {
-			private: Buffer.from(privKey),
+			private: privKey,
 			// remove version byte
-			public: Buffer.from(pubKey.slice(1))
+			public: pubKey.subarray(1)
 		}
 	},
 	sharedKey: (privateKey: Uint8Array, publicKey: Uint8Array) => {
 		const shared = curve.calculateAgreement(generateSignalPubKey(publicKey), privateKey)
-		return Buffer.from(shared)
+		return shared
 	},
 	sign: (privateKey: Uint8Array, buf: Uint8Array) => curve.calculateSignature(privateKey, buf),
 	verify: (pubKey: Uint8Array, message: Uint8Array, signature: Uint8Array) => {
-		try {
-			curve.verifySignature(generateSignalPubKey(pubKey), message, signature)
-			return true
-		} catch (error) {
-			return false
-		}
+		return curve.verifySignature(generateSignalPubKey(pubKey), message, signature)
 	}
 }
 
@@ -83,7 +78,7 @@ export function aesDecryptCTR(ciphertext: Uint8Array, key: Uint8Array, iv: Uint8
 
 /** decrypt AES 256 CBC; where the IV is prefixed to the buffer */
 export function aesDecrypt(buffer: Buffer, key: Buffer) {
-	return aesDecryptWithIV(buffer.slice(16, buffer.length), key, buffer.slice(0, 16))
+	return aesDecryptWithIV(buffer.subarray(16, buffer.length), key, buffer.subarray(0, 16))
 }
 
 /** decrypt AES 256 CBC */
@@ -123,62 +118,10 @@ export function md5(buffer: Buffer) {
 }
 
 // HKDF key expansion
-export async function hkdf(
-	buffer: Uint8Array | Buffer,
-	expandedLength: number,
-	info: { salt?: Buffer; info?: string }
-): Promise<Buffer> {
-	// Normalize to a Uint8Array whose underlying buffer is a regular ArrayBuffer (not ArrayBufferLike)
-	// Cloning via new Uint8Array(...) guarantees the generic parameter is ArrayBuffer which satisfies WebCrypto types.
-	const inputKeyMaterial = new Uint8Array(buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer))
-
-	// Set default values if not provided
-	const salt = info.salt ? new Uint8Array(info.salt) : new Uint8Array(0)
-	const infoBytes = info.info ? new TextEncoder().encode(info.info) : new Uint8Array(0)
-
-	// Import the input key material (cast to BufferSource to appease TS DOM typings)
-	const importedKey = await subtle.importKey('raw', inputKeyMaterial as BufferSource, { name: 'HKDF' }, false, [
-		'deriveBits'
-	])
-
-	// Derive bits using HKDF
-	const derivedBits = await subtle.deriveBits(
-		{
-			name: 'HKDF',
-			hash: 'SHA-256',
-			salt: salt,
-			info: infoBytes
-		},
-		importedKey,
-		expandedLength * 8 // Convert bytes to bits
-	)
-
-	return Buffer.from(derivedBits)
+export function hkdf(buffer: Uint8Array | Buffer, expandedLength: number, info: { salt?: Buffer, info?: string }) {
+	return HKDF(!Buffer.isBuffer(buffer) ? Buffer.from(buffer) : buffer, expandedLength, info)
 }
 
-export async function derivePairingCodeKey(pairingCode: string, salt: Buffer): Promise<Buffer> {
-	// Convert inputs to formats Web Crypto API can work with
-	const encoder = new TextEncoder()
-	const pairingCodeBuffer = encoder.encode(pairingCode)
-	const saltBuffer = new Uint8Array(salt instanceof Uint8Array ? salt : new Uint8Array(salt))
-
-	// Import the pairing code as key material
-	const keyMaterial = await subtle.importKey('raw', pairingCodeBuffer as BufferSource, { name: 'PBKDF2' }, false, [
-		'deriveBits'
-	])
-
-	// Derive bits using PBKDF2 with the same parameters
-	// 2 << 16 = 131,072 iterations
-	const derivedBits = await subtle.deriveBits(
-		{
-			name: 'PBKDF2',
-			salt: saltBuffer as BufferSource,
-			iterations: 2 << 16,
-			hash: 'SHA-256'
-		},
-		keyMaterial,
-		32 * 8 // 32 bytes * 8 = 256 bits
-	)
-
-	return Buffer.from(derivedBits)
+export function derivePairingCodeKey(pairingCode: string, salt: Buffer) {
+	return pbkdf2Sync(pairingCode, salt, 2 << 16, 32, 'sha256')
 }
