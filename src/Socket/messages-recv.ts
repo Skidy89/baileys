@@ -10,7 +10,6 @@ import type {
 	MessageRelayOptions,
 	MessageUserReceipt,
 	SocketConfig,
-	WACallEvent,
 	WAMessage,
 	WAMessageKey,
 	WAPatchName
@@ -29,14 +28,12 @@ import {
 	encodeBigEndian,
 	encodeSignedDeviceIdentity,
 	extractAddressingContext,
-	getCallStatusFromNode,
 	getHistoryMsg,
 	getNextPreKeys,
 	getStatusFromReceiptType,
 	hkdf,
 	MISSING_KEYS_ERROR_TEXT,
 	NACK_REASONS,
-	unixTimestampSeconds,
 	xmppPreKey,
 	xmppSignedPreKey
 } from '../Utils'
@@ -49,7 +46,6 @@ import {
 	getBinaryNodeChild,
 	getBinaryNodeChildBuffer,
 	getBinaryNodeChildren,
-	getBinaryNodeChildString,
 	isJidGroup,
 	isJidStatusBroadcast,
 	isLidUser,
@@ -60,7 +56,13 @@ import {
 } from '../WABinary'
 import { extractGroupMetadata } from './groups'
 import { makeMessagesSocket } from './messages-send'
+function toRequiredBuffer(data: Uint8Array | Buffer | undefined) {
+	if (data === undefined) {
+		throw new Boom('Invalid buffer', { statusCode: 400 })
+	}
 
+	return data instanceof Buffer ? data : Buffer.from(data)
+}
 export const makeMessagesRecvSocket = (config: SocketConfig) => {
 	const { logger, retryRequestDelayMs, maxMsgRetryCount, getMessage, shouldIgnoreJid, enableAutoSessionRecreation } =
 		config
@@ -91,12 +93,6 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		config.msgRetryCounterCache ||
 		new NodeCache({
 			stdTTL: DEFAULT_CACHE_TTLS.MSG_RETRY, // 1 hour
-			useClones: false
-		})
-	const callOfferCache =
-		config.callOfferCache ||
-		new NodeCache({
-			stdTTL: DEFAULT_CACHE_TTLS.CALL_OFFER, // 5 mins
 			useClones: false
 		})
 
@@ -724,19 +720,28 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 	async function decipherLinkPublicKey(data: Uint8Array | Buffer) {
 		const buffer = toRequiredBuffer(data)
-		const salt = buffer.slice(0, 32)
+		const salt = buffer.subarray(0, 32)
 		const secretKey = await derivePairingCodeKey(authState.creds.pairingCode!, salt)
-		const iv = buffer.slice(32, 48)
-		const payload = buffer.slice(48, 80)
+		const iv = buffer.subarray(32, 48)
+		const payload = buffer.subarray(48, 80)
 		return aesDecryptCTR(payload, secretKey, iv)
 	}
 
-	function toRequiredBuffer(data: Uint8Array | Buffer | undefined) {
-		if (data === undefined) {
-			throw new Boom('Invalid buffer', { statusCode: 400 })
+	const dispatchReceiptAfterDecryption = (
+		jid: string,
+		participant: string | null | undefined,
+		ids: string[],
+		type: MessageReceiptType,
+		key: WAMessageKey
+	): void => {
+		if (type === 'sender' && !participant) {
+			logger.warn({ key }, 'skipping sender receipt: missing participant')
+			return
 		}
 
-		return data instanceof Buffer ? data : Buffer.from(data)
+		void sendReceipt(jid, participant ?? undefined, ids, type).catch(err =>
+			logger.error({ err, key, receiptType: type }, 'failed to send delivery receipt')
+		)
 	}
 
 	const willSendMessageAgain = async (id: string, participant: string) => {
@@ -938,7 +943,12 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				})
 			])
 		} finally {
-			await sendMessageAck(node)
+			await sendMessageAck(node).catch(err =>{
+				logger.error({ err, node }, 'failed to send ack for receipt')
+				if (err instanceof Error) {
+					void ws.close()
+				}
+			})
 		}
 	}
 
@@ -1100,14 +1110,14 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 					} else if (!sendActiveReceipts) {
 						type = 'inactive'
 					}
+					dispatchReceiptAfterDecryption(msg.key.remoteJid!, participant!, [msg.key.id!], type, msg.key)
 
-					await sendReceipt(msg.key.remoteJid!, participant!, [msg.key.id!], type)
 
 					// send ack for history message
 					const isAnyHistoryMsg = getHistoryMsg(msg.message!)
 					if (isAnyHistoryMsg) {
 						const jid = jidNormalizedUser(msg.key.remoteJid!)
-						await sendReceipt(jid, undefined, [msg.key.id!], 'hist_sync')
+						void dispatchReceiptAfterDecryption(jid, participant, [msg.key.id!], 'hist_sync', msg.key)
 					}
 				}
 

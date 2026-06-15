@@ -325,6 +325,7 @@ export const decryptMessageNode = (
 						}
 
 						logger.error(errorContext, 'failed to decrypt message')
+						logger.error(err, 'decryption error stack')
 
 						fullMessage.messageStubType = proto.WebMessageInfo.StubType.CIPHERTEXT
 						fullMessage.messageStubParameters = [err.message.toString()]

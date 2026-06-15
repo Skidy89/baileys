@@ -1264,6 +1264,22 @@
   dependencies:
     "@sinonjs/commons" "^3.0.1"
 
+"@skidy89/libsignal-plugins-win32-x64-msvc@1.0.33":
+  version "1.0.33"
+  resolved "https://registry.npmjs.org/@skidy89/libsignal-plugins-win32-x64-msvc/-/libsignal-plugins-win32-x64-msvc-1.0.33.tgz"
+  integrity sha512-0GTVInG88fQfAJq8wuGOYLwJFNPtkkJKOmKrZlsjooP47l5F3MC7XQpRikYQwjKxqgkVstT/5dr1hBFSbZGHWQ==
+
+"@skidy89/libsignal-plugins@^1.0.33":
+  version "1.0.33"
+  resolved "https://registry.npmjs.org/@skidy89/libsignal-plugins/-/libsignal-plugins-1.0.33.tgz"
+  integrity sha512-+m1KEgNnaihzlAfbQUCXV9cfHinAaZIvxSUoPQLe/ga7fScxAPw6HXu9IfAxt81MqbFTow9p8ZtiKwwy1fsxzA==
+  optionalDependencies:
+    "@skidy89/libsignal-plugins-linux-arm64-gnu" "1.0.33"
+    "@skidy89/libsignal-plugins-linux-arm64-musl" "1.0.33"
+    "@skidy89/libsignal-plugins-linux-x64-gnu" "1.0.33"
+    "@skidy89/libsignal-plugins-linux-x64-musl" "1.0.33"
+    "@skidy89/libsignal-plugins-win32-x64-msvc" "1.0.33"
+
 "@szmarczak/http-timer@^5.0.1":
   version "5.0.1"
   resolved "https://registry.npmjs.org/@szmarczak/http-timer/-/http-timer-5.0.1.tgz"
@@ -4788,44 +4804,11 @@ levn@~0.3.0:
     prelude-ls "~1.1.2"
     type-check "~0.3.2"
 
-libsignal-plugins-win32-x64-msvc@1.0.16:
-  version "1.0.16"
-  resolved "https://registry.npmjs.org/libsignal-plugins-win32-x64-msvc/-/libsignal-plugins-win32-x64-msvc-1.0.16.tgz"
-  integrity sha512-vH7S0seUE4olK3eUxkkcSTe0j9fStxH0poCbbvfr3zVEvB98HfUN1EfhT0sdr/z2uGGtMlNT1CsNXsTh5hH0Qw==
-
-libsignal-plugins-win32-x64-msvc@1.0.18:
-  version "1.0.18"
-  resolved "https://registry.npmjs.org/libsignal-plugins-win32-x64-msvc/-/libsignal-plugins-win32-x64-msvc-1.0.18.tgz"
-  integrity sha512-ig1lMwoE+N76w7cNs3zzg47rPV7sgACWiaqP6BLc6F2e1Huyj9IvPjkdpZknOXQ8T9rkDzaur/wxDlfGgnLHYg==
-
-libsignal-plugins@^1.0.18:
-  version "1.0.18"
-  resolved "https://registry.npmjs.org/libsignal-plugins/-/libsignal-plugins-1.0.18.tgz"
-  integrity sha512-K42f6ma72sHE2gVs/hrZrV5W04Z0bUaKpXi3fa/IQMGK9B6FClCvEMSEOZfkaq+LbGvJUQfgcqUAq/ogff4KEA==
-  optionalDependencies:
-    libsignal-plugins-linux-arm64-gnu "1.0.18"
-    libsignal-plugins-linux-arm64-musl "1.0.18"
-    libsignal-plugins-linux-x64-gnu "1.0.18"
-    libsignal-plugins-linux-x64-musl "1.0.18"
-    libsignal-plugins-win32-x64-msvc "1.0.18"
-
-libsignal-plugins@1.0.16:
-  version "1.0.16"
-  resolved "https://registry.npmjs.org/libsignal-plugins/-/libsignal-plugins-1.0.16.tgz"
-  integrity sha512-KwIDTACoSh/VqHYfzCOd/P/l/DV6EQYoofyww69wpkqB1i1ahIiMZYXlkqaMRPwsPr7fomufyN0ZKV1xDixEhw==
-  optionalDependencies:
-    libsignal-plugins-linux-arm64-gnu "1.0.16"
-    libsignal-plugins-linux-arm64-musl "1.0.16"
-    libsignal-plugins-linux-x64-gnu "1.0.16"
-    libsignal-plugins-linux-x64-musl "1.0.16"
-    libsignal-plugins-win32-x64-msvc "1.0.16"
-
 "libsignal@git+https://github.com/skidy89/libsignal-node":
   version "2.0.1"
-  resolved "git+ssh://git@github.com/skidy89/libsignal-node.git"
-  integrity sha512-z6v/nQiPwIBu2TByUjy/kblTK6aOET9aIReFeZO1i9clF2J9JV9l9XuMA04WNpbZuaZckeb/udL2VFQMQe1E+A==
+  resolved "git+ssh://git@github.com/skidy89/libsignal-node.git#cf82ad28289ef904339d8edf76375f53d4616a87"
   dependencies:
-    libsignal-plugins "1.0.16"
+    "@skidy89/libsignal-plugins" "^1.0.33"
     protobufjs "6.8.8"
 
 lines-and-columns@^1.1.6:

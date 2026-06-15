@@ -7,7 +7,7 @@ import P from 'pino'
 
 import qrcode from 'qrcode-terminal'
 const logger = P({
-  level: "silent",
+  level: "debug",
   
 })
 
