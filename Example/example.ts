@@ -1,13 +1,13 @@
 import { Boom } from '@hapi/boom'
 import NodeCache from '@cacheable/node-cache'
 import readline from 'readline'
-import makeWASocket, { AnyMessageContent, BinaryInfo, CacheStore, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, encodeWAM, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, getHistoryMsg, GroupMetadata, isJidNewsletter, jidDecode, makeCacheableSignalKeyStore, normalizeMessageContent, PatchedMessageWithRecipientJID, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } from '../src'
+import makeWASocket, { AnyMessageContent, CacheStore, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, encodeWAM, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, getHistoryMsg, GroupMetadata, isJidBot, isJidBroadcast, isJidMetaAI, isJidNewsletter, jidDecode, makeCacheableSignalKeyStore, normalizeMessageContent, PatchedMessageWithRecipientJID, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } from '../src'
 
 import P from 'pino'
 
 import qrcode from 'qrcode-terminal'
 const logger = P({
-  level: "debug",
+  level: "silent",
   
 })
 
@@ -17,7 +17,6 @@ const usePairingCode = process.argv.includes('--use-pairing-code')
 
 // external map to store retry counts of messages when decryption/encryption fails
 // keep this out of the socket itself, so as to prevent a message decryption/encryption loop across socket restarts
-const msgRetryCounterCache = new NodeCache() as CacheStore
 
 const groups = new Map<string, GroupMetadata>()
 
@@ -35,18 +34,11 @@ const startSock = async() => {
 	const sock = makeWASocket({
 		version,
 		logger,
-		auth: {
-			creds: state.creds,
-			/** caching makes the store faster to send/recv messages */
-			keys: makeCacheableSignalKeyStore(state.keys, logger),
-		},
-		msgRetryCounterCache,
-		generateHighQualityLinkPreview: true,
-		// ignore all broadcast messages -- to receive the same
-		// comment the line below out
-		// shouldIgnoreJid: jid => isJidBroadcast(jid),
-		// implement to handle retries & poll updates
-		getMessage,
+		auth: state,
+		enableRecentMessageCache: false,
+        waWebSocketUrl: "wss://web.whatsapp.com/ws/chat?ED=CAgIAg==",
+		shouldSyncHistoryMessage: () => false,
+        shouldIgnoreJid: (jid) => isJidBroadcast(jid) || isJidMetaAI(jid) || isJidNewsletter(jid),
 		cachedGroupMetadata: async (jid) => {
 			if (groups.has(jid)) {
 				return groups.get(jid)
@@ -121,10 +113,6 @@ const startSock = async() => {
 				console.log(events['labels.edit'])
 			}
 
-			if(events.call) {
-				console.log('recv call event', events.call)
-			}
-
 			// history received
 			if(events['messaging-history.set']) {
 				const { chats, contacts, messages, isLatest, progress, syncType } = events['messaging-history.set']
@@ -153,7 +141,7 @@ const startSock = async() => {
                 const messageId = await sock.requestPlaceholderResend(msg.key)
                 console.log('requested placeholder resync, id=', messageId)
               }
-
+			  console.log(msg)
               // go to an old chat and send this
               if (text == "onDemandHistSync") {
                 const messageId = await sock.fetchMessageHistory(50, msg.key, msg.messageTimestamp!)
@@ -161,8 +149,11 @@ const startSock = async() => {
               }
 			  if (text == "test") {
 				console.time("test")
-				await sock.sendMessage(msg.key.remoteJid!, { text: 'Hello there!' })
+				const p = Date.now()
+				const result = await sock.sendMessage(msg.key.remoteJid!, { text: 'Hello there!' })
 				console.timeEnd("test")
+				const end = Date.now()
+				await sock.sendMessage(msg.key.remoteJid!, { text: `Response time: ${end - p}ms` })
 			  }
 
               if (!msg.key.fromMe && doReplies && !isJidNewsletter(msg.key?.remoteJid!)) {

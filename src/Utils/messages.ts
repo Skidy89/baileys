@@ -372,41 +372,7 @@ export const generateWAMessageContent = async (
 ) => {
 	let m: WAMessageContent = {}
 	if ('text' in message) {
-		const extContent = { text: message.text } as WATextMessage
-
-		let urlInfo = message.linkPreview
-		if (typeof urlInfo === 'undefined') {
-			urlInfo = await generateLinkPreviewIfRequired(message.text, options.getUrlInfo, options.logger)
-		}
-
-		if (urlInfo) {
-			extContent.matchedText = urlInfo['matched-text']
-			extContent.jpegThumbnail = urlInfo.jpegThumbnail
-			extContent.description = urlInfo.description
-			extContent.title = urlInfo.title
-			extContent.previewType = 0
-
-			const img = urlInfo.highQualityThumbnail
-			if (img) {
-				extContent.thumbnailDirectPath = img.directPath
-				extContent.mediaKey = img.mediaKey
-				extContent.mediaKeyTimestamp = img.mediaKeyTimestamp
-				extContent.thumbnailWidth = img.width
-				extContent.thumbnailHeight = img.height
-				extContent.thumbnailSha256 = img.fileSha256
-				extContent.thumbnailEncSha256 = img.fileEncSha256
-			}
-		}
-
-		if (options.backgroundColor) {
-			extContent.backgroundArgb = await assertColor(options.backgroundColor)
-		}
-
-		if (options.font) {
-			extContent.font = options.font
-		}
-
-		m.extendedTextMessage = extContent
+		m.extendedTextMessage = { text: message.text }
 	} else if ('contacts' in message) {
 		const contactLen = message.contacts.contacts.length
 		if (!contactLen) {

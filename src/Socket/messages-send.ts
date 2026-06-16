@@ -58,9 +58,6 @@ import { makeGroupsSocket } from './groups.js'
 export const makeMessagesSocket = (config: SocketConfig) => {
 	const {
 		logger,
-		linkPreviewImageThumbnailWidth,
-		generateHighQualityLinkPreview,
-		options: httpRequestOptions,
 		patchMessageBeforeSending,
 		cachedGroupMetadata,
 		enableRecentMessageCache,
@@ -70,9 +67,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 	const {
 		ev,
 		authState,
-		processingMutex,
 		signalRepository,
-		upsertMessage,
 		query,
 		fetchPrivacySettings,
 		sendNode,
@@ -570,7 +565,6 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		const isGroup = server === 'g.us'
 		const isStatus = jid === statusJid
 		const isLid = server === 'lid'
-		const isNewsletter = server === 'newsletter'
 		const finalJid = jid
 
 		msgId = msgId || generateMessageID()
@@ -609,29 +603,6 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 			const mediaType = getMediaType(message)
 			if (mediaType) {
 				extraAttrs['mediatype'] = mediaType
-			}
-
-			if (isNewsletter) {
-				const patched = patchMessageBeforeSending ? await patchMessageBeforeSending(message, []) : message
-				const bytes = encodeNewsletterMessage(patched as proto.IMessage)
-				binaryNodeContent.push({
-					tag: 'plaintext',
-					attrs: {},
-					content: bytes
-				})
-				const stanza: BinaryNode = {
-					tag: 'message',
-					attrs: {
-						to: jid,
-						id: msgId,
-						type: getMessageType(message),
-						...(additionalAttributes || {})
-					},
-					content: binaryNodeContent
-				}
-				logger.debug({ msgId }, `sending newsletter message to ${jid}`)
-				await sendNode(stanza)
-				return
 			}
 
 			if (normalizeMessageContent(message)?.pinInChatMessage) {
@@ -692,12 +663,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					}
 				}
 
-				const patched = await patchMessageBeforeSending(message)
-				if (Array.isArray(patched)) {
-					throw new Boom('Per-jid patching is not supported in groups')
-				}
-
-				const bytes = encodeWAMessage(patched)
+				const bytes = encodeWAMessage(message)
 				const groupAddressingMode = additionalAttributes?.['addressing_mode'] || groupData?.addressingMode || 'lid'
 				const groupSenderIdentity = groupAddressingMode === 'lid' && meLid ? meLid : meId
 
@@ -724,7 +690,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					}
 				}
 
-				if (senderKeyRecipients.length) {
+				if (senderKeyRecipients.length && destinationJid !== "status@broadcast") {
 					logger.debug({ senderKeyJids: senderKeyRecipients }, 'sending new sender key')
 
 					const senderKeyMsg: proto.IMessage = {
@@ -1100,7 +1066,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 							? WA_DEFAULT_EPHEMERAL
 							: 0
 						: disappearingMessagesInChat
-				await groupToggleEphemeral(jid, value)
+				void groupToggleEphemeral(jid, value)
 			} else {
 				const fullMsg = await generateWAMessage(jid, content, {
 					logger,
@@ -1153,12 +1119,6 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					statusJidList: options.statusJidList,
 					additionalNodes
 				})
-				if (config.emitOwnEvents) {
-					process.nextTick(() => {
-						processingMutex.mutex(() => upsertMessage(fullMsg, 'append'))
-					})
-				}
-
 				return fullMsg
 			}
 		}

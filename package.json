@@ -46,6 +46,7 @@
     "futoin-hkdf": "^1.5.3",
     "libsignal": "git+https://github.com/skidy89/libsignal-node",
     "lru-cache": "^11.1.0",
+    "msgpackr": "^2.0.4",
     "music-metadata": "^11.7.0",
     "p-queue": "^9.0.0",
     "pino": "^9.6",

@@ -26,7 +26,6 @@ import type {
 	WAReadReceiptsValue
 } from '../Types'
 import { ALL_WA_PATCH_NAMES } from '../Types'
-import type { QuickReplyAction } from '../Types/Bussines.js'
 import type { LabelActionBody } from '../Types/Label'
 import { SyncState } from '../Types/State'
 import {
@@ -985,29 +984,6 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		)
 	}
 
-	/**
-	 * Add or Edit Quick Reply
-	 */
-	const addOrEditQuickReply = (quickReply: QuickReplyAction) => {
-		return chatModify(
-			{
-				quickReply
-			},
-			''
-		)
-	}
-
-	/**
-	 * Remove Quick Reply
-	 */
-	const removeQuickReply = (timestamp: string) => {
-		return chatModify(
-			{
-				quickReply: { timestamp, deleted: true }
-			},
-			''
-		)
-	}
 
 	/**
 	 * queries need to be fired on connection open
@@ -1214,8 +1190,6 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		removeChatLabel,
 		addMessageLabel,
 		removeMessageLabel,
-		star,
-		addOrEditQuickReply,
-		removeQuickReply
+		star
 	}
 }

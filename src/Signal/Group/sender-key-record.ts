@@ -1,5 +1,5 @@
-import { BufferJSON } from '../../Utils/generics'
 import { SenderKeyState } from './sender-key-state'
+import { packr } from '../..'
 
 export interface SenderKeyStateStructure {
 	senderKeyId: number
@@ -58,12 +58,11 @@ export class SenderKeyRecord {
 		this.senderKeyStates.push(new SenderKeyState(id, iteration, chainKey, keyPair))
 	}
 
-	public serialize(): SenderKeyStateStructure[] {
-		return this.senderKeyStates.map(state => state.getStructure())
+	public serialize(): Uint8Array {
+		return packr.pack(this.senderKeyStates.map(state => state.getStructure()))
 	}
 	static deserialize(data: Uint8Array): SenderKeyRecord {
-		const str = Buffer.from(data).toString('utf-8')
-		const parsed = JSON.parse(str, BufferJSON.reviver)
+		const parsed = packr.unpack(data) as SenderKeyStateStructure[]
 		return new SenderKeyRecord(parsed)
 	}
 }
