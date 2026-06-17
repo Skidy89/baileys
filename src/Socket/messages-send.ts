@@ -690,7 +690,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					}
 				}
 
-				if (senderKeyRecipients.length && destinationJid !== "status@broadcast") {
+				if (senderKeyRecipients.length) {
 					logger.debug({ senderKeyJids: senderKeyRecipients }, 'sending new sender key')
 
 					const senderKeyMsg: proto.IMessage = {
