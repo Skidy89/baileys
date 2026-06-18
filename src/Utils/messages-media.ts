@@ -26,7 +26,7 @@ import type {
 } from '../Types'
 import { type BinaryNode, getBinaryNodeChild, getBinaryNodeChildBuffer, jidNormalizedUser } from '../WABinary'
 import { aesDecryptGCM, aesEncryptGCM, hkdf } from './crypto'
-import { generateMessageIDV2 } from './generics'
+import { generateMessageID } from './generics'
 import type { ILogger } from './logger'
 
 const getTmpFilesDirectory = () => tmpdir()
@@ -56,7 +56,7 @@ export const getRawMediaUploadData = async (media: WAMediaUpload, mediaType: Med
 	logger?.debug('got stream for raw upload')
 
 	const hasher = Crypto.createHash('sha256')
-	const filePath = join(tmpdir(), mediaType + generateMessageIDV2())
+	const filePath = join(tmpdir(), mediaType + generateMessageID())
 	const fileWriteStream = createWriteStream(filePath)
 
 	let fileLength = 0
@@ -108,9 +108,9 @@ export async function getMediaKeys(
 	// expand using HKDF to 112 bytes, also pass in the relevant app info
 	const expandedMediaKey = hkdf(buffer, 112, { info: hkdfInfoKey(mediaType) })
 	return {
-		iv: expandedMediaKey.slice(0, 16),
-		cipherKey: expandedMediaKey.slice(16, 48),
-		macKey: expandedMediaKey.slice(48, 80)
+		iv: expandedMediaKey.subarray(0, 16),
+		cipherKey: expandedMediaKey.subarray(16, 48),
+		macKey: expandedMediaKey.subarray(48, 80)
 	}
 }
 
@@ -344,7 +344,7 @@ export async function generateThumbnail(
 			}
 		}
 	} else if (mediaType === 'video') {
-		const imgFilename = join(getTmpFilesDirectory(), generateMessageIDV2() + '.jpg')
+		const imgFilename = join(getTmpFilesDirectory(), generateMessageID() + '.jpg')
 		try {
 			await extractVideoThumb(file, imgFilename, '00:00:00', { width: 32, height: 32 })
 			const buff = await fs.readFile(imgFilename)
@@ -394,14 +394,14 @@ export const encryptedStream = async (
 	const mediaKey = Crypto.randomBytes(32)
 	const { cipherKey, iv, macKey } = await getMediaKeys(mediaKey, mediaType)
 
-	const encFilePath = join(getTmpFilesDirectory(), mediaType + generateMessageIDV2() + '-enc')
+	const encFilePath = join(getTmpFilesDirectory(), mediaType + generateMessageID() + '-enc')
 	const encFileWriteStream = createWriteStream(encFilePath)
 
 	let originalFileStream: WriteStream | undefined
 	let originalFilePath: string | undefined
 
 	if (saveOriginalFileIfRequired) {
-		originalFilePath = join(getTmpFilesDirectory(), mediaType + generateMessageIDV2() + '-original')
+		originalFilePath = join(getTmpFilesDirectory(), mediaType + generateMessageID() + '-original')
 		originalFileStream = createWriteStream(originalFilePath)
 	}
 
@@ -446,7 +446,7 @@ export const encryptedStream = async (
 
 		await onChunk(aes.final())
 
-		const mac = hmac.digest().slice(0, 10)
+		const mac = hmac.digest().subarray(0, 10)
 		sha256Enc.update(mac)
 
 		const fileSha256 = sha256Plain.digest()

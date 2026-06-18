@@ -24,6 +24,7 @@ import {
 	encodeWAMessage,
 	encryptMediaRetryRequest,
 	extractDeviceJids,
+	generateMessageID,
 	generateMessageIDV2,
 	generateParticipantHashV2,
 	generateWAMessage,
@@ -641,7 +642,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		const isGroupOrStatus = isGroup || isStatus
 		const finalJid = jid
 
-		msgId = msgId || generateMessageIDV2(meId)
+		msgId = msgId || generateMessageID()
 		useUserDevicesCache = useUserDevicesCache !== false
 		useCachedGroupMetadata = useCachedGroupMetadata !== false && !isStatus
 
@@ -1346,23 +1347,10 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				const fullMsg = await generateWAMessage(jid, content, {
 					logger,
 					userJid,
-					getUrlInfo: text =>
-						getUrlInfo(text, {
-							thumbnailWidth: linkPreviewImageThumbnailWidth,
-							fetchOpts: {
-								timeout: 3_000,
-								...(httpRequestOptions || {})
-							},
-							logger,
-							uploadImage: generateHighQualityLinkPreview ? waUploadToServer : undefined
-						}),
-					//TODO: CACHE
-					getProfilePicUrl: sock.profilePictureUrl,
-					getCallLink: sock.createCallLink,
 					upload: waUploadToServer,
 					mediaCache: config.mediaCache,
 					options: config.options,
-					messageId: generateMessageIDV2(sock.user?.id),
+					messageId: generateMessageID(),
 					...options
 				})
 				const isEventMsg = 'event' in content && !!content.event
@@ -1407,11 +1395,6 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					statusJidList: options.statusJidList,
 					additionalNodes
 				})
-				if (config.emitOwnEvents) {
-					process.nextTick(async () => {
-						await messageMutex.mutex(() => upsertMessage(fullMsg, 'append'))
-					})
-				}
 
 				return fullMsg
 			}

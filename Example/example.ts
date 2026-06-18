@@ -2,7 +2,7 @@ import { Boom } from '@hapi/boom'
 import NodeCache from '@cacheable/node-cache'
 import readline from 'readline'
 import makeWASocket, { AnyMessageContent, CacheStore, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, encodeWAM, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, getHistoryMsg, GroupMetadata, isJidBot, isJidBroadcast, isJidMetaAI, isJidNewsletter, jidDecode, makeCacheableSignalKeyStore, normalizeMessageContent, PatchedMessageWithRecipientJID, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } from '../src'
-
+import got from 'got'
 import P from 'pino'
 
 import qrcode from 'qrcode-terminal'
@@ -153,7 +153,18 @@ const startSock = async() => {
 				const result = await sock.sendMessage(msg.key.remoteJid!, { text: 'Hello there!' })
 				console.timeEnd("test")
 				const end = Date.now()
-				await sock.sendMessage(msg.key.remoteJid!, { text: `Response time: ${end - p}ms` })
+				await sock.sendMessage(msg.key.remoteJid!, { text: `Response time: ${end - p}ms`, edit: result?.key })
+				console.time("sendImages")
+				const stream = got.stream('https://i.pinimg.com/736x/4d/28/99/4d2899185ac4cf805cb4a57644bed18c.jpg')
+				const p1 = Date.now()
+				await sock.sendMessage(msg.key.remoteJid!, {
+					image: { stream },
+					caption: 'test'
+				})
+				const end1 = Date.now()
+				await sock.sendMessage(msg.key.remoteJid!, { text: `Image response time: ${end1 - p1}ms` })
+
+				console.timeEnd("sendImages")
 			  }
 
               if (!msg.key.fromMe && doReplies && !isJidNewsletter(msg.key?.remoteJid!)) {
@@ -189,50 +200,10 @@ const startSock = async() => {
 				}
 			}
 
-			if(events['message-receipt.update']) {
-				console.log(events['message-receipt.update'])
-			}
-
-			if(events['messages.reaction']) {
-				console.log(events['messages.reaction'])
-			}
-
-			if(events['presence.update']) {
-				console.log(events['presence.update'])
-			}
-
-			if(events['chats.update']) {
-				console.log(events['chats.update'])
-			}
-
-			if(events['contacts.update']) {
-				for(const contact of events['contacts.update']) {
-					if(typeof contact.imgUrl !== 'undefined') {
-						const newUrl = contact.imgUrl === null
-							? null
-							: await sock!.profilePictureUrl(contact.id!).catch(() => null)
-						console.log(
-							`contact ${contact.id} has a new profile pic: ${newUrl}`,
-						)
-					}
-				}
-			}
-
-			if(events['chats.delete']) {
-				console.log('chats deleted ', events['chats.delete'])
-			}
 		}
 	)
 
 	return sock
-
-	async function getMessage(key: WAMessageKey): Promise<WAMessageContent | undefined> {
-	  // Implement a way to retreive messages that were upserted from messages.upsert
-			// up to you
-
-		// only if store is present
-		return proto.Message.create({ conversation: 'test' })
-	}
 }
 
 startSock()

@@ -105,11 +105,10 @@ export const isJidNewsletter = (jid: string | undefined) => jid?.endsWith('@news
 export const isHostedPnUser = (jid: string | undefined) => jid?.endsWith('@hosted')
 /** is the jid a hosted LID */
 export const isHostedLidUser = (jid: string | undefined) => jid?.endsWith('@hosted.lid')
-
-const botRegexp = /^1313555\d{4}$|^131655500\d{2}$/
-
-export const isJidBot = (jid: string | undefined) => jid && botRegexp.test(jid.split('@')[0]!) && jid.endsWith('@c.us')
-
+export const isJidBot = (jid: string | undefined): boolean => {
+  if (!jid || jid.length !== 16 || !jid.endsWith('@c.us')) return false;
+  return jid.startsWith('1313555') || jid.startsWith('131655500');
+};
 export const jidNormalizedUser = (jid: string | undefined) => {
 	const result = jidDecode(jid)
 	if (!result) {
