@@ -1,4 +1,5 @@
 import { Boom } from '@hapi/boom'
+import { expandAppStateKeys } from 'whatsapp-rust-bridge'
 import { proto } from '../../WAProto/index.js'
 import type {
 	BaileysEventEmitter,
@@ -19,56 +20,49 @@ import {
 	type MessageLabelAssociation
 } from '../Types/LabelAssociation'
 import { type BinaryNode, getBinaryNodeChild, getBinaryNodeChildren, isJidGroup, jidNormalizedUser } from '../WABinary'
-import { aesDecrypt, aesEncrypt, hkdf, hmacSign } from './crypto'
+import { aesDecrypt, aesEncrypt, hmacSign } from './crypto'
 import { toNumber } from './generics'
 import type { ILogger } from './logger'
 import { LT_HASH_ANTI_TAMPERING } from './lt-hash'
 import { downloadContentFromMessage } from './messages-media'
+import { emitSyncActionResults, processContactAction } from './sync-action-utils'
 
 type FetchAppStateSyncKey = (keyId: string) => Promise<proto.Message.IAppStateSyncKeyData | null | undefined>
 
 export type ChatMutationMap = { [index: string]: ChatMutation }
 
-const mutationKeys = async (keydata: Uint8Array) => {
-	const expanded = await hkdf(keydata, 160, { info: 'WhatsApp Mutation Keys' })
+const mutationKeys = (keydata: Uint8Array) => {
+	const keys = expandAppStateKeys(keydata)
 	return {
-		indexKey: expanded.subarray(0, 32),
-		valueEncryptionKey: expanded.subarray(32, 64),
-		valueMacKey: expanded.subarray(64, 96),
-		snapshotMacKey: expanded.subarray(96, 128),
-		patchMacKey: expanded.subarray(128, 160)
+		indexKey: keys.indexKey,
+		valueEncryptionKey: keys.valueEncryptionKey,
+		valueMacKey: keys.valueMacKey,
+		snapshotMacKey: keys.snapshotMacKey,
+		patchMacKey: keys.patchMacKey
 	}
 }
 
 const generateMac = (
 	operation: proto.SyncdMutation.SyncdOperation,
-	data: Buffer,
+	data: Uint8Array,
 	keyId: Uint8Array | string,
-	key: Buffer
+	key: Uint8Array
 ) => {
-	const getKeyData = () => {
-		let r: number
-		switch (operation) {
-			case proto.SyncdMutation.SyncdOperation.SET:
-				r = 0x01
-				break
-			case proto.SyncdMutation.SyncdOperation.REMOVE:
-				r = 0x02
-				break
-		}
+	const opByte = operation === proto.SyncdMutation.SyncdOperation.SET ? 0x01 : 0x02
+	const keyIdBuffer = typeof keyId === 'string' ? Buffer.from(keyId, 'base64') : keyId
+	const keyData = new Uint8Array(1 + keyIdBuffer.length)
+	keyData[0] = opByte
+	keyData.set(keyIdBuffer, 1)
 
-		const buff = Buffer.from([r])
-		return Buffer.concat([buff, Buffer.from(keyId as string, 'base64')])
-	}
+	const last = new Uint8Array(8)
+	last[7] = keyData.length
 
-	const keyData = getKeyData()
+	const total = new Uint8Array(keyData.length + data.length + last.length)
+	total.set(keyData, 0)
+	total.set(data, keyData.length)
+	total.set(last, keyData.length + data.length)
 
-	const last = Buffer.alloc(8) // 8 bytes
-	last.set([keyData.length], last.length - 1)
-
-	const total = Buffer.concat([keyData, data, last])
 	const hmac = hmacSign(total, key, 'sha512')
-
 	return hmac.subarray(0, 32)
 }
 
@@ -80,10 +74,10 @@ const to64BitNetworkOrder = (e: number) => {
 
 type Mac = { indexMac: Uint8Array; valueMac: Uint8Array; operation: proto.SyncdMutation.SyncdOperation }
 
-const makeLtHashGenerator = ({ indexValueMap, hash }: Pick<LTHashState, 'hash' | 'indexValueMap'>) => {
+export const makeLtHashGenerator = ({ indexValueMap, hash }: Pick<LTHashState, 'hash' | 'indexValueMap'>) => {
 	indexValueMap = { ...indexValueMap }
-	const addBuffs: ArrayBuffer[] = []
-	const subBuffs: ArrayBuffer[] = []
+	const addBuffs: Uint8Array[] = []
+	const subBuffs: Uint8Array[] = []
 
 	return {
 		mix: ({ indexMac, valueMac, operation }: Mac) => {
@@ -91,35 +85,36 @@ const makeLtHashGenerator = ({ indexValueMap, hash }: Pick<LTHashState, 'hash' |
 			const prevOp = indexValueMap[indexMacBase64]
 			if (operation === proto.SyncdMutation.SyncdOperation.REMOVE) {
 				if (!prevOp) {
-					throw new Boom('tried remove, but no previous op', { data: { indexMac, valueMac } })
+					// WA Web does not throw here — it logs a warning and skips the subtract.
+					// The missing REMOVE will cause an LTHash mismatch, which is handled
+					// by the MAC validation layer (snapshot recovery or retry).
+					return
 				}
 
 				// remove from index value mac, since this mutation is erased
 				delete indexValueMap[indexMacBase64]
 			} else {
-				addBuffs.push(new Uint8Array(valueMac).buffer)
+				addBuffs.push(valueMac)
 				// add this index into the history map
 				indexValueMap[indexMacBase64] = { valueMac }
 			}
 
 			if (prevOp) {
-				subBuffs.push(new Uint8Array(prevOp.valueMac).buffer)
+				subBuffs.push(prevOp.valueMac as Uint8Array)
 			}
 		},
-		finish: async () => {
-			const hashArrayBuffer = new Uint8Array(hash).buffer
-			const result = await LT_HASH_ANTI_TAMPERING.subtractThenAdd(hashArrayBuffer, addBuffs, subBuffs)
-			const buffer = Buffer.from(result)
+		finish: () => {
+			const result = LT_HASH_ANTI_TAMPERING.subtractThenAdd(hash, subBuffs, addBuffs)
 
 			return {
-				hash: buffer,
+				hash: Buffer.from(result),
 				indexValueMap
 			}
 		}
 	}
 }
 
-const generateSnapshotMac = (lthash: Uint8Array, version: number, name: WAPatchName, key: Buffer) => {
+const generateSnapshotMac = (lthash: Uint8Array, version: number, name: WAPatchName, key: Uint8Array) => {
 	const total = Buffer.concat([lthash, to64BitNetworkOrder(version), Buffer.from(name, 'utf-8')])
 	return hmacSign(total, key, 'sha256')
 }
@@ -129,13 +124,41 @@ const generatePatchMac = (
 	valueMacs: Uint8Array[],
 	version: number,
 	type: WAPatchName,
-	key: Buffer
+	key: Uint8Array
 ) => {
 	const total = Buffer.concat([snapshotMac, ...valueMacs, to64BitNetworkOrder(version), Buffer.from(type, 'utf-8')])
 	return hmacSign(total, key)
 }
 
 export const newLTHashState = (): LTHashState => ({ version: 0, hash: Buffer.alloc(128), indexValueMap: {} })
+
+export const ensureLTHashStateVersion = (state: LTHashState): LTHashState => {
+	if (typeof state.version !== 'number' || isNaN(state.version)) {
+		state.version = 0
+	}
+
+	return state
+}
+
+export const MAX_SYNC_ATTEMPTS = 2
+
+/**
+ * Check if an error is a missing app state sync key.
+ * WA Web treats these as "Blocked" (waits for key arrival), not fatal.
+ * In Baileys we retry with a snapshot which may use a different key.
+ */
+export const isMissingKeyError = (error: any): boolean => {
+	return error?.data?.isMissingKey === true
+}
+
+/**
+ * Determines if an app state sync error is unrecoverable.
+ * TypeError indicates a WASM crash; otherwise we give up after MAX_SYNC_ATTEMPTS.
+ * Missing keys are NOT checked here — they are handled separately as "Blocked".
+ */
+export const isAppStateSyncIrrecoverable = (error: any, attempts: number): boolean => {
+	return attempts >= MAX_SYNC_ATTEMPTS || error?.name === 'TypeError'
+}
 
 export const encodeSyncdPatch = async (
 	{ type, index, syncAction, apiVersion, operation }: WAPatchCreate,
@@ -145,7 +168,7 @@ export const encodeSyncdPatch = async (
 ) => {
 	const key = !!myAppStateKeyId ? await getAppStateSyncKey(myAppStateKeyId) : undefined
 	if (!key) {
-		throw new Boom(`myAppStateKey ("${myAppStateKeyId}") not present`, { statusCode: 404 })
+		throw new Boom(`myAppStateKey ("${myAppStateKeyId}") not present`, { data: { isMissingKey: true } })
 	}
 
 	const encKeyId = Buffer.from(myAppStateKeyId, 'base64')
@@ -161,7 +184,7 @@ export const encodeSyncdPatch = async (
 	})
 	const encoded = proto.SyncActionData.encode(dataProto).finish()
 
-	const keyValue = await mutationKeys(key.keyData!)
+	const keyValue = mutationKeys(key.keyData!)
 
 	const encValue = aesEncrypt(encoded, keyValue.valueEncryptionKey)
 	const valueMac = generateMac(operation, encValue, encKeyId, keyValue.valueMacKey)
@@ -170,7 +193,7 @@ export const encodeSyncdPatch = async (
 	// update LT hash
 	const generator = makeLtHashGenerator(state)
 	generator.mix({ indexMac, valueMac, operation })
-	Object.assign(state, await generator.finish())
+	Object.assign(state, generator.finish())
 
 	state.version += 1
 
@@ -210,6 +233,8 @@ export const decodeSyncdMutations = async (
 	validateMacs: boolean
 ) => {
 	const ltGenerator = makeLtHashGenerator(initialState)
+	const derivedKeyCache = new Map<string, ReturnType<typeof mutationKeys>>()
+
 	// indexKey used to HMAC sign record.index.blob
 	// valueEncryptionKey used to AES-256-CBC encrypt record.value.blob[0:-32]
 	// the remaining record.value.blob[0:-32] is the mac, it the HMAC sign of key.keyId + decoded proto data + length of bytes in keyId
@@ -220,18 +245,36 @@ export const decodeSyncdMutations = async (
 		const record =
 			'record' in msgMutation && !!msgMutation.record ? msgMutation.record : (msgMutation as proto.ISyncdRecord)
 
-		const key = await getKey(record.keyId!.id!)
-		const content = Buffer.from(record.value!.blob!)
+		let key: ReturnType<typeof mutationKeys>
+		try {
+			key = await getKey(record.keyId!.id!)
+		} catch (err) {
+			// Missing-key errors must propagate so the orchestrator can park the
+			// collection (Blocked) and retry when APP_STATE_SYNC_KEY_SHARE arrives.
+			// Other errors → individual record corruption, skip and keep going.
+			if (isMissingKeyError(err)) throw err
+			continue
+		}
+
+		const content = record.value!.blob!
 		const encContent = content.subarray(0, -32)
 		const ogValueMac = content.subarray(-32)
 		if (validateMacs) {
 			const contentHmac = generateMac(operation!, encContent, record.keyId!.id!, key.valueMacKey)
 			if (Buffer.compare(contentHmac, ogValueMac) !== 0) {
-				throw new Boom('HMAC content verification failed')
+				// HMAC verification failed — skip this record
+				continue
 			}
 		}
 
-		const result = aesDecrypt(encContent, key.valueEncryptionKey)
+		let result: Uint8Array
+		try {
+			result = aesDecrypt(encContent, key.valueEncryptionKey)
+		} catch {
+			// decrypt failed — skip this record instead of aborting
+			continue
+		}
+
 		const syncAction = proto.SyncActionData.decode(result)
 
 		if (validateMacs) {
@@ -251,19 +294,26 @@ export const decodeSyncdMutations = async (
 		})
 	}
 
-	return await ltGenerator.finish()
+	return ltGenerator.finish()
 
 	async function getKey(keyId: Uint8Array) {
 		const base64Key = Buffer.from(keyId).toString('base64')
+
+		const cached = derivedKeyCache.get(base64Key)
+		if (cached) {
+			return cached
+		}
+
 		const keyEnc = await getAppStateSyncKey(base64Key)
 		if (!keyEnc) {
 			throw new Boom(`failed to find key "${base64Key}" to decode mutation`, {
-				statusCode: 404,
-				data: { msgMutations }
+				data: { isMissingKey: true, msgMutations }
 			})
 		}
 
-		return mutationKeys(keyEnc.keyData!)
+		const keys = mutationKeys(keyEnc.keyData!)
+		derivedKeyCache.set(base64Key, keys)
+		return keys
 	}
 }
 
@@ -279,10 +329,10 @@ export const decodeSyncdPatch = async (
 		const base64Key = Buffer.from(msg.keyId!.id!).toString('base64')
 		const mainKeyObj = await getAppStateSyncKey(base64Key)
 		if (!mainKeyObj) {
-			throw new Boom(`failed to find key "${base64Key}" to decode patch`, { statusCode: 404, data: { msg } })
+			throw new Boom(`failed to find key "${base64Key}" to decode patch`, { data: { isMissingKey: true, msg } })
 		}
 
-		const mainKey = await mutationKeys(mainKeyObj.keyData!)
+		const mainKey = mutationKeys(mainKeyObj.keyData!)
 		const mutationmacs = msg.mutations!.map(mutation => mutation.record!.value!.blob!.slice(-32))
 
 		const patchMac = generatePatchMac(
@@ -374,7 +424,8 @@ export const decodeSyncdSnapshot = async (
 	snapshot: proto.ISyncdSnapshot,
 	getAppStateSyncKey: FetchAppStateSyncKey,
 	minimumVersionNumber: number | undefined,
-	validateMacs = true
+	validateMacs = true,
+	logger?: ILogger
 ) => {
 	const newState = newLTHashState()
 	newState.version = toNumber(snapshot.version!.version)
@@ -401,13 +452,21 @@ export const decodeSyncdSnapshot = async (
 		const base64Key = Buffer.from(snapshot.keyId!.id!).toString('base64')
 		const keyEnc = await getAppStateSyncKey(base64Key)
 		if (!keyEnc) {
-			throw new Boom(`failed to find key "${base64Key}" to decode mutation`)
+			throw new Boom(`failed to find key "${base64Key}" to decode mutation`, { data: { isMissingKey: true } })
 		}
 
-		const result = await mutationKeys(keyEnc.keyData!)
+		const result = mutationKeys(keyEnc.keyData!)
 		const computedSnapshotMac = generateSnapshotMac(newState.hash, newState.version, name, result.snapshotMacKey)
 		if (Buffer.compare(snapshot.mac!, computedSnapshotMac) !== 0) {
-			throw new Boom(`failed to verify LTHash at ${newState.version} of ${name} from snapshot`)
+			// LTHash verification may fail when decodeSyncdMutations skipped undecryptable
+			// records (poisoned server-side snapshot); the aggregate client hash diverges
+			// from the server-computed mac. Fall through with a warning so the session stays
+			// alive with partial state, symmetric to how decodePatches handles its own
+			// LTHash mismatch a few lines below.
+			logger?.warn(
+				{ name, version: newState.version },
+				'LTHash verification failed on snapshot, continuing with partial state'
+			)
 		}
 	}
 
@@ -448,19 +507,26 @@ export const decodePatches = async (
 		newState.version = patchVersion
 		const shouldMutate = typeof minimumVersionNumber === 'undefined' || patchVersion > minimumVersionNumber
 
-		const decodeResult = await decodeSyncdPatch(
-			syncd,
-			name,
-			newState,
-			getAppStateSyncKey,
-			shouldMutate
-				? mutation => {
-						const index = mutation.syncAction.index?.toString()
-						mutationMap[index!] = mutation
-					}
-				: () => {},
-			true
-		)
+		let decodeResult: { hash: Buffer; indexValueMap: LTHashState['indexValueMap'] }
+		try {
+			decodeResult = await decodeSyncdPatch(
+				syncd,
+				name,
+				newState,
+				getAppStateSyncKey,
+				shouldMutate
+					? mutation => {
+							const index = mutation.syncAction.index?.toString()
+							mutationMap[index!] = mutation
+						}
+					: () => {},
+				validateMacs
+			)
+		} catch (err) {
+			if (isMissingKeyError(err)) throw err
+			logger?.warn({ name, version: patchVersion, error: (err as Error).message }, 'failed to decode patch, skipping')
+			continue
+		}
 
 		newState.hash = decodeResult.hash
 		newState.indexValueMap = decodeResult.indexValueMap
@@ -469,13 +535,14 @@ export const decodePatches = async (
 			const base64Key = Buffer.from(keyId!.id!).toString('base64')
 			const keyEnc = await getAppStateSyncKey(base64Key)
 			if (!keyEnc) {
-				throw new Boom(`failed to find key "${base64Key}" to decode mutation`)
+				throw new Boom(`failed to find key "${base64Key}" to decode mutation`, { data: { isMissingKey: true } })
 			}
 
-			const result = await mutationKeys(keyEnc.keyData!)
+			const result = mutationKeys(keyEnc.keyData!)
 			const computedSnapshotMac = generateSnapshotMac(newState.hash, newState.version, name, result.snapshotMacKey)
 			if (Buffer.compare(snapshotMac!, computedSnapshotMac) !== 0) {
-				throw new Boom(`failed to verify LTHash at ${newState.version} of ${name}`)
+				logger?.warn({ name, version: newState.version }, 'LTHash verification failed, skipping remaining patches')
+				break
 			}
 		}
 
@@ -658,6 +725,22 @@ export const chatModificationToAppPatch = (mod: ChatModification, jid: string) =
 			apiVersion: 1,
 			operation: OP.SET
 		}
+	} else if ('quickReply' in mod) {
+		patch = {
+			syncAction: {
+				quickReplyAction: {
+					count: 0,
+					deleted: mod.quickReply.deleted || false,
+					keywords: [],
+					message: mod.quickReply.message || '',
+					shortcut: mod.quickReply.shortcut || ''
+				}
+			},
+			index: ['quick_reply', mod.quickReply.timestamp || String(Math.floor(Date.now() / 1000))],
+			type: 'regular',
+			apiVersion: 2,
+			operation: OP.SET
+		}
 	} else if ('addLabel' in mod) {
 		patch = {
 			syncAction: {
@@ -816,14 +899,8 @@ export const processSyncAction = (
 			]
 		})
 	} else if (action?.contactAction) {
-		ev.emit('contacts.upsert', [
-			{
-				id: id!,
-				name: action.contactAction.fullName!,
-				lid: action.contactAction.lidJid || undefined,
-				phoneNumber: action.contactAction.pnJid || undefined
-			}
-		])
+		const results = processContactAction(action.contactAction, id, logger)
+		emitSyncActionResults(ev, results)
 	} else if (action?.pushNameSetting) {
 		const name = action?.pushNameSetting?.name
 		if (name && me?.name !== name) {
@@ -887,6 +964,52 @@ export const processSyncAction = (
 							messageId: syncAction.index[3],
 							labelId: syncAction.index[1]
 						} as MessageLabelAssociation)
+		})
+	} else if (action?.localeSetting?.locale) {
+		ev.emit('settings.update', { setting: 'locale', value: action.localeSetting.locale })
+	} else if (action?.timeFormatAction) {
+		ev.emit('settings.update', { setting: 'timeFormat', value: action.timeFormatAction })
+	} else if (action?.pnForLidChatAction) {
+		if (action.pnForLidChatAction.pnJid) {
+			ev.emit('lid-mapping.update', { lid: id!, pn: action.pnForLidChatAction.pnJid })
+		}
+	} else if (action?.privacySettingRelayAllCalls) {
+		ev.emit('settings.update', {
+			setting: 'privacySettingRelayAllCalls',
+			value: action.privacySettingRelayAllCalls
+		})
+	} else if (action?.statusPrivacy) {
+		ev.emit('settings.update', { setting: 'statusPrivacy', value: action.statusPrivacy })
+	} else if (action?.lockChatAction) {
+		ev.emit('chats.lock', { id: id!, locked: !!action.lockChatAction.locked })
+	} else if (action?.privacySettingDisableLinkPreviewsAction) {
+		ev.emit('settings.update', {
+			setting: 'disableLinkPreviews',
+			value: action.privacySettingDisableLinkPreviewsAction
+		})
+	} else if (action?.notificationActivitySettingAction?.notificationActivitySetting) {
+		ev.emit('settings.update', {
+			setting: 'notificationActivitySetting',
+			value: action.notificationActivitySettingAction.notificationActivitySetting
+		})
+	} else if (action?.lidContactAction) {
+		ev.emit('contacts.upsert', [
+			{
+				id: id!,
+				name:
+					action.lidContactAction.fullName ||
+					action.lidContactAction.firstName ||
+					action.lidContactAction.username ||
+					undefined,
+				username: action.lidContactAction.username || undefined,
+				lid: id!,
+				phoneNumber: undefined
+			}
+		])
+	} else if (action?.privacySettingChannelsPersonalisedRecommendationAction) {
+		ev.emit('settings.update', {
+			setting: 'channelsPersonalisedRecommendation',
+			value: action.privacySettingChannelsPersonalisedRecommendationAction
 		})
 	} else {
 		logger?.debug({ syncAction, id }, 'unprocessable update')

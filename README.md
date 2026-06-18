@@ -5,27 +5,21 @@
 
 > [!CAUTION]
 > NOTICE OF BREAKING CHANGE.
-> 
+>
 > As of 7.0.0, multiple breaking changes were introduced into the library.
-> 
+>
 > Please check out https://whiskey.so/migrate-latest for more information.
-
-> [!IMPORTANT]
-> I made a survey for users of the project to ask questions, and provide Baileys valuable insights regarding its users. I will be publishing the results of this form (after filtering) as well so we can study and understand where we need to work.
-> 
-> The survey is anonymous and requires no personal info at all. You are required to sign-in with Google to keep responses to one person. You are able to edit your response after you submit. The deadline for this form is September 30, 2025.
-> 
-> I encourage you to put the effort, all it takes is 5-10 minutes and you get to ask me any questions you have.
-> 
-> \- Rajeh (purpshell)
-> 
-> Fill in the survey via the link: https://whiskey.so/survey 
-
 
 # Important Note
 This is a temporary README.md, the new guide is in development and will this file will be replaced with .github/README.md (already a default on GitHub).
 
 New guide link: https://baileys.wiki
+
+# Get Support
+
+If you'd like business to enterprise-level support from Rajeh, the current maintainer of Baileys, you can book a video chat. Book a 1 hour time slot by contacting him on Discord or pre-ordering [here](https://purpshell.dev/book). The earlier you pre-order the better, as his time slots usually fill up very quickly. He offers immense value per hour and will answer all your questions before the time runs out.
+
+If you are a business, we encourage you to contribute back to the high development costs of the project and to feed the maintainers who dump tens of hours a week on this. You can do so by booking meetings or sponsoring below. All support, even in bona fide / contribution hours, is welcome by businesses of all sizes. This is not condoning or endorsing businesses to use the library. See the Disclaimer below.
 
 # Sponsor
 If you'd like to financially support this project, you can do so by supporting the current maintainer [here](https://purpshell.dev/sponsor).
@@ -39,8 +33,8 @@ Use at your own discretion. Do not spam people with this. We discourage any stal
 
 ##
 
-- Baileys does not require Selenium or any other browser to be interface with WhatsApp Web, it does so directly using a **WebSocket**. 
-- Not running Selenium or Chromium saves you like **half a gig** of ram :/ 
+- Baileys does not require Selenium or any other browser to be interface with WhatsApp Web, it does so directly using a **WebSocket**.
+- Not running Selenium or Chromium saves you like **half a gig** of ram :/
 - Baileys supports interacting with the multi-device & web versions of WhatsApp.
 - Thank you to [@pokearaujo](https://github.com/pokearaujo/multidevice) for writing his observations on the workings of WhatsApp Multi-Device. Also, thank you to [@Sigalor](https://github.com/sigalor/whatsapp-web-reveng) for writing his observations on the workings of WhatsApp Web and thanks to [@Rhymen](https://github.com/Rhymen/go-whatsapp/) for the __go__ implementation.
 
@@ -48,7 +42,7 @@ Use at your own discretion. Do not spam people with this. We discourage any stal
 > The original repository had to be removed by the original author - we now continue development in this repository here.
 This is the only official repository and is maintained by the community.
 > **Join the Discord [here](https://discord.gg/WeJM5FP9GG)**
- 
+
 ## Example
 
 Do check out & run [example.ts](Example/example.ts) to see an example usage of the library.
@@ -71,14 +65,14 @@ yarn add github:WhiskeySockets/Baileys
 ```
 
 Then import your code using:
-```ts 
+```ts
 import makeWASocket from '@whiskeysockets/baileys'
 ```
 
 # Links
 
 - [Discord](https://discord.gg/WeJM5FP9GG)
-- [Docs](https://guide.whiskeysockets.io/)
+- [Docs](https://baileys.wiki/docs/intro/)
 
 # Index
 
@@ -193,12 +187,12 @@ WhatsApp provides a multi-device API that allows Baileys to be authenticated as 
 > **[Here](#example-to-start) is a simple example of event handling**
 
 > [!TIP]
-> **You can see all supported socket configs [here](https://baileys.whiskeysockets.io/types/SocketConfig.html) (Recommended)**
+> **You can see all supported socket configs in the [SocketConfig type alias](https://baileys.wiki/docs/api/type-aliases/SocketConfig/) (Recommended)**
 
 ### Starting socket with **QR-CODE**
 
 > [!TIP]
-> You can customize browser name if you connect with **QR-CODE**, with `Browser` constant, we have some browsers config, **see [here](https://baileys.whiskeysockets.io/types/BrowsersMap.html)**
+> You can customize browser name if you connect with **QR-CODE**, with `Browser` constant, we have some browsers config, **see the [BrowsersMap type alias](https://baileys.wiki/docs/api/type-aliases/BrowsersMap/)**
 
 ```ts
 import makeWASocket from '@whiskeysockets/baileys'
@@ -290,7 +284,7 @@ const sock = makeWASocket({
     ```
 ## Saving & Restoring Sessions
 
-You obviously don't want to keep scanning the QR code every time you want to connect. 
+You obviously don't want to keep scanning the QR code every time you want to connect.
 
 So, you can load the credentials to log back in:
 ```ts
@@ -314,11 +308,11 @@ sock.ev.on('creds.update', saveCreds)
 
 ## Handling Events
 
-- Baileys uses the EventEmitter syntax for events. 
+- Baileys uses the EventEmitter syntax for events.
 They're all nicely typed up, so you shouldn't have any issues with an Intellisense editor like VS Code.
 
 > [!IMPORTANT]
-> **The events are [these](https://baileys.whiskeysockets.io/types/BaileysEventMap.html)**, it's important you see all events
+> **The events are in the [BaileysEventMap type alias](https://baileys.wiki/docs/api/type-aliases/BaileysEventMap/)**, it's important you see all events
 
 You can listen to these events like this:
 ```ts
@@ -451,10 +445,10 @@ The store also provides some simple functions such as `loadMessages` that utiliz
 
 ## Whatsapp IDs Explain
 
-- `id` is the WhatsApp ID, called `jid` too, of the person or group you're sending the message to. 
+- `id` is the WhatsApp ID, called `jid` too, of the person or group you're sending the message to.
     - It must be in the format ```[country code][phone number]@s.whatsapp.net```
-	    - Example for people: ```+19999999999@s.whatsapp.net```. 
-	    - For groups, it must be in the format ``` 123456789-123345@g.us ```. 
+	    - Example for people: ```+19999999999@s.whatsapp.net```.
+	    - For groups, it must be in the format ``` 123456789-123345@g.us ```.
     - For broadcast lists, it's `[timestamp of creation]@broadcast`.
     - For stories, the ID is `status@broadcast`.
 
@@ -468,8 +462,8 @@ The store also provides some simple functions such as `loadMessages` that utiliz
 ## Sending Messages
 
 - Send all types of messages with a single function
-    - **[Here](https://baileys.whiskeysockets.io/types/AnyMessageContent.html) you can see all message contents supported, like text message**
-    - **[Here](https://baileys.whiskeysockets.io/types/MiscMessageGenerationOptions.html) you can see all options supported, like quote message**
+    - **In the [AnyMessageContent type alias](https://baileys.wiki/docs/api/type-aliases/AnyMessageContent/) you can see all message contents supported, like text message**
+    - **In the [MiscMessageGenerationOptions type alias](https://baileys.wiki/docs/api/type-aliases/MiscMessageGenerationOptions/) you can see all options supported, like quote message**
 
     ```ts
     const jid: string
@@ -504,7 +498,7 @@ await sock.sendMessage(
 ```
 
 #### Forward Messages
-- You need to have message object, can be retrieved from [store](#implementing-a-data-store) or use a [message](https://baileys.whiskeysockets.io/types/WAMessage.html) object
+- You need to have message object, can be retrieved from [store](#implementing-a-data-store) or use a [message](https://baileys.wiki/docs/api/type-aliases/WAMessage/) object
 ```ts
 const msg = getMessageFromStore() // implement this on your end
 await sock.sendMessage(jid, { forward: msg }) // WA forward the message!
@@ -513,7 +507,7 @@ await sock.sendMessage(jid, { forward: msg }) // WA forward the message!
 #### Location Message
 ```ts
 await sock.sendMessage(
-    jid, 
+    jid,
     {
         location: {
             degreesLatitude: 24.121231,
@@ -525,7 +519,7 @@ await sock.sendMessage(
 #### Contact Message
 ```ts
 const vcard = 'BEGIN:VCARD\n' // metadata of the contact card
-            + 'VERSION:3.0\n' 
+            + 'VERSION:3.0\n'
             + 'FN:Jeff Singh\n' // full name
             + 'ORG:Ashoka Uni;\n' // the organization of the contact
             + 'TEL;type=CELL;type=VOICE;waid=911234567890:+91 12345 67890\n' // WhatsApp ID + phone number
@@ -533,17 +527,17 @@ const vcard = 'BEGIN:VCARD\n' // metadata of the contact card
 
 await sock.sendMessage(
     id,
-    { 
-        contacts: { 
-            displayName: 'Jeff', 
-            contacts: [{ vcard }] 
+    {
+        contacts: {
+            displayName: 'Jeff',
+            contacts: [{ vcard }]
         }
     }
 )
 ```
 
 #### Reaction Message
-- You need to pass the key of message, you can retrieve from [store](#implementing-a-data-store) or use a [key](https://baileys.whiskeysockets.io/types/WAMessageKey.html) object
+- You need to pass the key of message, you can retrieve from [store](#implementing-a-data-store) or use a [key](https://baileys.wiki/docs/api/type-aliases/WAMessageKey/) object
 ```ts
 await sock.sendMessage(
     jid,
@@ -557,7 +551,7 @@ await sock.sendMessage(
 ```
 
 #### Pin Message
-- You need to pass the key of message, you can retrieve from [store](#implementing-a-data-store) or use a [key](https://baileys.whiskeysockets.io/types/WAMessageKey.html) object
+- You need to pass the key of message, you can retrieve from [store](#implementing-a-data-store) or use a [key](https://baileys.wiki/docs/api/type-aliases/WAMessageKey/) object
 
 - Time can be:
 
@@ -615,7 +609,7 @@ await sock.sendMessage(
 Sending media (video, stickers, images) is easier & more efficient than ever.
 
 > [!NOTE]
-> In media messages, you can pass `{ stream: Stream }` or `{ url: Url }` or `Buffer` directly, you can see more [here](https://baileys.whiskeysockets.io/types/WAMediaUpload.html)
+> In media messages, you can pass `{ stream: Stream }` or `{ url: Url }` or `Buffer` directly, you can see more in the [WAMediaUpload type alias](https://baileys.wiki/docs/api/type-aliases/WAMediaUpload/)
 
 - When specifying a media url, Baileys never loads the entire buffer into memory; it even encrypts the media as a readable stream.
 
@@ -626,8 +620,8 @@ Sending media (video, stickers, images) is easier & more efficient than ever.
 - Whatsapp doesn't support `.gif` files, that's why we send gifs as common `.mp4` video with `gifPlayback` flag
 ```ts
 await sock.sendMessage(
-    jid, 
-    { 
+    jid,
+    {
         video: fs.readFileSync('Media/ma_gif.mp4'),
         caption: 'hello word',
         gifPlayback: true
@@ -638,8 +632,8 @@ await sock.sendMessage(
 #### Video Message
 ```ts
 await sock.sendMessage(
-    id, 
-    { 
+    id,
+    {
         video: {
             url: './Media/ma_gif.mp4'
         },
@@ -663,7 +657,7 @@ await sock.sendMessage(
     ```
 ```ts
 await sock.sendMessage(
-    jid, 
+    jid,
     {
         audio: {
             url: './Media/audio.mp3'
@@ -676,8 +670,8 @@ await sock.sendMessage(
 #### Image Message
 ```ts
 await sock.sendMessage(
-    id, 
-    { 
+    id,
+    {
         image: {
             url: './Media/ma_img.png'
         },
@@ -692,8 +686,8 @@ await sock.sendMessage(
 
 ```ts
 await sock.sendMessage(
-    id, 
-    { 
+    id,
+    {
         image: {
             url: './Media/ma_img.png'
         },
@@ -748,7 +742,7 @@ sock.ev.on('messages.upsert', async ({ [m] }) => {
             m,
             'stream', // can be 'buffer' too
             { },
-            { 
+            {
                 logger,
                 // pass this so that baileys can request a reupload of media
                 // that has been deleted
@@ -764,7 +758,7 @@ sock.ev.on('messages.upsert', async ({ [m] }) => {
 
 ### Re-upload Media Message to Whatsapp
 
-- WhatsApp automatically removes old media from their servers. For the device to access said media -- a re-upload is required by another device that has it. This can be accomplished using: 
+- WhatsApp automatically removes old media from their servers. For the device to access said media -- a re-upload is required by another device that has it. This can be accomplished using:
 ```ts
 await sock.updateMediaMessage(msg)
 ```
@@ -780,7 +774,7 @@ await sock.rejectCall(callId, callFrom)
 ## Send States in Chat
 
 ### Reading Messages
-- A set of message [keys](https://baileys.whiskeysockets.io/types/WAMessageKey.html) must be explicitly marked read now.
+- A set of message [keys](https://baileys.wiki/docs/api/type-aliases/WAMessageKey/) must be explicitly marked read now.
 - You cannot mark an entire 'chat' read as it were with Baileys Web.
 This means you have to keep track of unread messages.
 
@@ -790,17 +784,17 @@ const key: WAMessageKey
 await sock.readMessages([key])
 ```
 
-The message ID is the unique identifier of the message that you are marking as read. 
+The message ID is the unique identifier of the message that you are marking as read.
 On a `WAMessage`, the `messageID` can be accessed using ```messageID = message.key.id```.
 
 ### Update Presence
 
-- ``` presence ``` can be one of [these](https://baileys.whiskeysockets.io/types/WAPresence.html)
+- ``` presence ``` can be one of the values in the [WAPresence type alias](https://baileys.wiki/docs/api/type-aliases/WAPresence/)
 - The presence expires after about 10 seconds.
-- This lets the person/group with `jid` know whether you're online, offline, typing etc. 
+- This lets the person/group with `jid` know whether you're online, offline, typing etc.
 
 ```ts
-await sock.sendPresenceUpdate('available', jid) 
+await sock.sendPresenceUpdate('available', jid)
 ```
 
 > [!NOTE]
@@ -849,12 +843,12 @@ await sock.chatModify(
             messages: [
                 {
                     id: 'ATWYHDNNWU81732J',
-                    fromMe: true, 
+                    fromMe: true,
                     timestamp: '1654823909'
                 }
             ]
         }
-    }, 
+    },
     jid
 )
 
@@ -915,7 +909,7 @@ await sock.chatModify({
 ```ts
 // turn on disappearing messages
 await sock.sendMessage(
-    jid, 
+    jid,
     // this is 1 week in seconds -- how long you want messages to appear for
     { disappearingMessagesInChat: WA_DEFAULT_EPHEMERAL }
 )
@@ -925,7 +919,7 @@ await sock.sendMessage(jid, { text: 'hello' }, { ephemeralExpiration: WA_DEFAULT
 
 // turn off disappearing messages
 await sock.sendMessage(
-    jid, 
+    jid,
     { disappearingMessagesInChat: false }
 )
 ```
@@ -980,7 +974,7 @@ console.log('business description: ' + profile.description + ', category: ' + pr
 sock.ev.on('presence.update', console.log)
 
 // request updates for a chat
-await sock.presenceSubscribe(jid) 
+await sock.presenceSubscribe(jid)
 ```
 
 ## Change Profile
@@ -997,7 +991,7 @@ await sock.updateProfileName('My name')
 - To change your display picture or a group's
 
 > [!NOTE]
-> Like media messages, you can pass `{ stream: Stream }` or `{ url: Url }` or `Buffer` directly, you can see more [here](https://baileys.whiskeysockets.io/types/WAMediaUpload.html)
+> Like media messages, you can pass `{ stream: Stream }` or `{ url: Url }` or `Buffer` directly, you can see more in the [WAMediaUpload type alias](https://baileys.wiki/docs/api/type-aliases/WAMediaUpload/)
 
 ```ts
 await sock.updateProfilePicture(jid, { url: './new-profile-picture.jpeg' })
@@ -1022,7 +1016,7 @@ await sock.sendMessage(group.id, { text: 'hello there' }) // say hello to everyo
 ```ts
 // id & people to add to the group (will throw error if it fails)
 await sock.groupParticipantsUpdate(
-    jid, 
+    jid,
     ['abcd@s.whatsapp.net', 'efgh@s.whatsapp.net'],
     'add' // replace this parameter with 'remove' or 'demote' or 'promote'
 )
@@ -1075,7 +1069,7 @@ console.log('group information: ' + response)
 ```
 ### Query Metadata (participants, name, description...)
 ```ts
-const metadata = await sock.groupMetadata(jid) 
+const metadata = await sock.groupMetadata(jid)
 console.log(metadata.id + ', title: ' + metadata.subject + ', description: ' + metadata.desc)
 ```
 ### Join using `groupInviteMessage`
@@ -1093,7 +1087,7 @@ console.log(response)
 const response = await sock.groupRequestParticipantsUpdate(
     jid, // group id
     ['abcd@s.whatsapp.net', 'efgh@s.whatsapp.net'],
-    'approve' // or 'reject' 
+    'approve' // or 'reject'
 )
 console.log(response)
 ```
@@ -1184,7 +1178,7 @@ await sock.updateGroupsAddPrivacy(value)
 | 90d    | 7.776.000  |
 
 ```ts
-const ephemeral = 86400 
+const ephemeral = 86400
 await sock.updateDefaultDisappearingMode(ephemeral)
 ```
 
@@ -1209,8 +1203,8 @@ await sock.sendMessage(
     }
 )
 ```
-- Message body can be a `extendedTextMessage` or `imageMessage` or `videoMessage` or `voiceMessage`, see [here](https://baileys.whiskeysockets.io/types/AnyRegularMessageContent.html)
-- You can add `backgroundColor` and other options in the message options, see [here](https://baileys.whiskeysockets.io/types/MiscMessageGenerationOptions.html)
+- Message body can be a `extendedTextMessage` or `imageMessage` or `videoMessage` or `voiceMessage`, see the [AnyRegularMessageContent type alias](https://baileys.wiki/docs/api/type-aliases/AnyRegularMessageContent/)
+- You can add `backgroundColor` and other options in the message options, see the [MiscMessageGenerationOptions type alias](https://baileys.wiki/docs/api/type-aliases/MiscMessageGenerationOptions/)
 - `broadcast: true` enables broadcast mode
 - `statusJidList`: a list of people that you can get which you need to provide, which are the people who will get this status message.
 
@@ -1233,14 +1227,14 @@ const sock = makeWASocket({
     logger: P({ level: 'debug' }),
 })
 ```
-This will enable you to see all sorts of messages WhatsApp sends in the console. 
+This will enable you to see all sorts of messages WhatsApp sends in the console.
 
 ### How Whatsapp Communicate With Us
 
 > [!TIP]
 > If you want to learn whatsapp protocol, we recommend to study about Libsignal Protocol and Noise Protocol
 
-- **Example:** Functionality to track the battery percentage of your phone. You enable logging and you'll see a message about your battery pop up in the console: 
+- **Example:** Functionality to track the battery percentage of your phone. You enable logging and you'll see a message about your battery pop up in the console:
     ```
     {
         "level": 10,
@@ -1269,7 +1263,7 @@ This will enable you to see all sorts of messages WhatsApp sends in the console.
         },
         "msg":"communication"
     }
-    ``` 
+    ```
 
 The `'frame'` is what the message received is, it has three components:
 - `tag` -- what this frame is about (eg. message will have 'message')

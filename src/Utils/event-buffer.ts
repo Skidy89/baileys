@@ -1,4 +1,5 @@
 import EventEmitter from 'events'
+import type { proto } from '../../WAProto/index.js'
 import type {
 	BaileysEvent,
 	BaileysEventEmitter,
@@ -61,6 +62,8 @@ type BaileysBufferableEventEmitter = BaileysEventEmitter & {
 	flush(): boolean
 	/** is there an ongoing buffer */
 	isBuffering(): boolean
+	/** destroy the event buffer, clearing all resources */
+	destroy(): void
 }
 
 /**
@@ -74,6 +77,7 @@ export const makeEventBuffer = (logger: ILogger): BaileysBufferableEventEmitter 
 	let data = makeBufferData()
 	let isBuffering = false
 	let bufferTimeout: NodeJS.Timeout | null = null
+	let flushPendingTimeout: NodeJS.Timeout | null = null // Add a specific timer for the debounced flush to prevent leak
 	let bufferCount = 0
 	const MAX_HISTORY_CACHE_SIZE = 10000 // Limit the history cache size to prevent memory bloat
 	const BUFFER_TIMEOUT_MS = 30000 // 30 seconds
@@ -89,9 +93,8 @@ export const makeEventBuffer = (logger: ILogger): BaileysBufferableEventEmitter 
 		if (!isBuffering) {
 			logger.debug('Event buffer activated')
 			isBuffering = true
-			bufferCount++
+			bufferCount = 0
 
-			// Auto-flush after a timeout to prevent infinite buffering
 			if (bufferTimeout) {
 				clearTimeout(bufferTimeout)
 			}
@@ -102,9 +105,10 @@ export const makeEventBuffer = (logger: ILogger): BaileysBufferableEventEmitter 
 					flush()
 				}
 			}, BUFFER_TIMEOUT_MS)
-		} else {
-			bufferCount++
 		}
+
+		// Always increment count when requested
+		bufferCount++
 	}
 
 	function flush() {
@@ -120,6 +124,11 @@ export const makeEventBuffer = (logger: ILogger): BaileysBufferableEventEmitter 
 		if (bufferTimeout) {
 			clearTimeout(bufferTimeout)
 			bufferTimeout = null
+		}
+
+		if (flushPendingTimeout) {
+			clearTimeout(flushPendingTimeout)
+			flushPendingTimeout = null
 		}
 
 		// Clear history cache if it exceeds the max size
@@ -153,8 +162,8 @@ export const makeEventBuffer = (logger: ILogger): BaileysBufferableEventEmitter 
 
 	return {
 		process(handler) {
-			const listener = (map: BaileysEventData) => {
-				handler(map)
+			const listener = async (map: BaileysEventData) => {
+				await handler(map)
 			}
 
 			ev.on('event', listener)
@@ -163,6 +172,28 @@ export const makeEventBuffer = (logger: ILogger): BaileysBufferableEventEmitter 
 			}
 		},
 		emit<T extends BaileysEvent>(event: BaileysEvent, evData: BaileysEventMap[T]) {
+			// Check if this is a messages.upsert with a different type than what's buffered
+			// If so, flush the buffered messages first to avoid type overshadowing
+			if (event === 'messages.upsert') {
+				const { type } = evData as BaileysEventMap['messages.upsert']
+				const existingUpserts = Object.values(data.messageUpserts)
+				if (existingUpserts.length > 0) {
+					const bufferedType = existingUpserts[0]!.type
+					if (bufferedType !== type) {
+						logger.debug({ bufferedType, newType: type }, 'messages.upsert type mismatch, emitting buffered messages')
+						// Emit the buffered messages with their correct type
+						ev.emit('event', {
+							'messages.upsert': {
+								messages: existingUpserts.map(m => m.message),
+								type: bufferedType
+							}
+						})
+						// Clear the message upserts from the buffer
+						data.messageUpserts = {}
+					}
+				}
+			}
+
 			if (isBuffering && BUFFERABLE_EVENT_SET.has(event)) {
 				append(data, historyCache, event as BufferableEvent, evData, logger)
 				return true
@@ -195,15 +226,39 @@ export const makeEventBuffer = (logger: ILogger): BaileysBufferableEventEmitter 
 				} finally {
 					bufferCount = Math.max(0, bufferCount - 1)
 					if (bufferCount === 0) {
-						// Auto-flush when no other buffers are active
-						setTimeout(flush, 100)
+						// Only schedule ONE timeout, not 10,000
+						if (!flushPendingTimeout) {
+							flushPendingTimeout = setTimeout(flush, 100)
+						}
 					}
 				}
 			}
 		},
 		on: (...args) => ev.on(...args),
 		off: (...args) => ev.off(...args),
-		removeAllListeners: (...args) => ev.removeAllListeners(...args)
+		removeAllListeners: (...args) => ev.removeAllListeners(...args),
+		destroy() {
+			// Clear buffer timeout
+			if (bufferTimeout) {
+				clearTimeout(bufferTimeout)
+				bufferTimeout = null
+			}
+
+			if (flushPendingTimeout) {
+				clearTimeout(flushPendingTimeout)
+				flushPendingTimeout = null
+			}
+
+			// Clear history cache
+			historyCache.clear()
+			// Reset buffer data
+			data = makeBufferData()
+			isBuffering = false
+			bufferCount = 0
+			// Remove all listeners
+			ev.removeAllListeners()
+			logger.debug('Event buffer destroyed')
+		}
 	}
 }
 
@@ -280,7 +335,35 @@ function append<E extends BufferableEvent>(
 
 			data.historySets.empty = false
 			data.historySets.syncType = eventData.syncType
+			if (eventData.pastParticipants?.length) {
+				const merged = new Map<string, proto.IPastParticipants>()
+				const sigOf = (p: proto.IPastParticipant) => `${p.userJid || ''}:${p.leaveTs || ''}:${p.leaveReason || ''}`
+				const ingest = (entry: proto.IPastParticipants) => {
+					const key = entry.groupJid ?? JSON.stringify(entry)
+					const existing = merged.get(key)
+					if (!existing) {
+						merged.set(key, { ...entry, pastParticipants: [...(entry.pastParticipants || [])] })
+						return
+					}
+
+					const seen = new Set((existing.pastParticipants || []).map(sigOf))
+					for (const p of entry.pastParticipants || []) {
+						const sig = sigOf(p)
+						if (!seen.has(sig)) {
+							existing.pastParticipants!.push(p)
+							seen.add(sig)
+						}
+					}
+				}
+
+				for (const entry of data.historySets.pastParticipants || []) ingest(entry)
+				for (const entry of eventData.pastParticipants) ingest(entry)
+
+				data.historySets.pastParticipants = [...merged.values()]
+			}
+
 			data.historySets.progress = eventData.progress
+			data.historySets.chunkOrder = eventData.chunkOrder
 			data.historySets.peerDataRequestSessionId = eventData.peerDataRequestSessionId
 			data.historySets.isLatest = eventData.isLatest || data.historySets.isLatest
 
@@ -567,9 +650,11 @@ function consolidateEvents(data: BufferedEventData) {
 			chats: Object.values(data.historySets.chats),
 			messages: Object.values(data.historySets.messages),
 			contacts: Object.values(data.historySets.contacts),
+			pastParticipants: data.historySets.pastParticipants,
 			syncType: data.historySets.syncType,
 			progress: data.historySets.progress,
 			isLatest: data.historySets.isLatest,
+			chunkOrder: data.historySets.chunkOrder,
 			peerDataRequestSessionId: data.historySets.peerDataRequestSessionId
 		}
 	}

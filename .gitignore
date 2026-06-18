@@ -10,6 +10,11 @@ browser-messages.json
 browser-token.json
 decoded-ws.json
 docs
+!docs/
+docs/*
+!docs/index.html
+!docs/404.html
+!docs/.nojekyll
 lib
 messages*.json
 node_modules
@@ -17,6 +22,7 @@ output.csv
 Proxy
 test.ts
 TestData
-wa-logs.txt
+wa-logs*
 coverage
-sticker
+*.txt
+sticker/

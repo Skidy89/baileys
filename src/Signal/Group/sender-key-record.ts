@@ -1,5 +1,5 @@
+import { packr } from '../../Utils'
 import { SenderKeyState } from './sender-key-state'
-import { packr } from '../..'
 
 export interface SenderKeyStateStructure {
 	senderKeyId: number

@@ -1,34 +1,63 @@
+import { pipeline } from 'stream/promises'
 import { promisify } from 'util'
-import { inflate } from 'zlib'
+import { createInflate, inflate } from 'zlib'
 import { proto } from '../../WAProto/index.js'
-import type { Chat, Contact, WAMessage } from '../Types'
+import type { Chat, Contact, LIDMapping, WAMessage } from '../Types'
 import { WAMessageStubType } from '../Types'
+import { isHostedLidUser, isHostedPnUser, isLidUser, isPnUser } from '../WABinary'
 import { toNumber } from './generics'
+import type { ILogger } from './logger.js'
 import { normalizeMessageContent } from './messages'
 import { downloadContentFromMessage } from './messages-media'
 
 const inflatePromise = promisify(inflate)
 
-export const downloadHistory = async (msg: proto.Message.IHistorySyncNotification, options: RequestInit) => {
-	const stream = await downloadContentFromMessage(msg, 'md-msg-hist', { options })
-	const bufferArray: Buffer[] = []
-	for await (const chunk of stream) {
-		bufferArray.push(chunk)
+const extractPnFromMessages = (messages: proto.IHistorySyncMsg[]): string | undefined => {
+	for (const msgItem of messages) {
+		const message = msgItem.message
+		// Only extract from outgoing messages (fromMe: true) in 1:1 chats
+		// because userReceipt.userJid is the recipient's JID
+		if (!message?.key?.fromMe || !message.userReceipt?.length) {
+			continue
+		}
+
+		const userJid = message.userReceipt[0]?.userJid
+		if (userJid && (isPnUser(userJid) || isHostedPnUser(userJid))) {
+			return userJid
+		}
 	}
 
-	let buffer: Buffer = Buffer.concat(bufferArray)
+	return undefined
+}
 
-	// decompress buffer
-	buffer = await inflatePromise(buffer)
+export const downloadHistory = async (msg: proto.Message.IHistorySyncNotification, options: RequestInit) => {
+	const stream = await downloadContentFromMessage(msg, 'md-msg-hist', { options })
+	// Pipe decrypted stream directly through zlib inflate
+	// This avoids allocating an intermediate buffer for the compressed data
+	const inflater = createInflate()
+	const chunks: Buffer[] = []
+	inflater.on('data', (chunk: Buffer) => chunks.push(chunk))
+	await pipeline(stream, inflater)
 
+	const buffer = Buffer.concat(chunks)
 	const syncData = proto.HistorySync.decode(buffer)
 	return syncData
 }
 
-export const processHistoryMessage = (item: proto.IHistorySync) => {
+export const processHistoryMessage = (item: proto.IHistorySync, logger?: ILogger) => {
 	const messages: WAMessage[] = []
 	const contacts: Contact[] = []
 	const chats: Chat[] = []
+	const lidPnMappings: LIDMapping[] = []
+
+	logger?.trace({ progress: item.progress }, 'processing history of type ' + item.syncType?.toString())
+
+	// Extract LID-PN mappings for all sync types
+	for (const m of item.phoneNumberToLidMappings || []) {
+		if (m.lidJid && m.pnJid) {
+			lidPnMappings.push({ lid: m.lidJid, pn: m.pnJid })
+		}
+	}
 
 	switch (item.syncType) {
 		case proto.HistorySync.HistorySyncType.INITIAL_BOOTSTRAP:
@@ -38,10 +67,26 @@ export const processHistoryMessage = (item: proto.IHistorySync) => {
 			for (const chat of item.conversations! as Chat[]) {
 				contacts.push({
 					id: chat.id!,
-					name: chat.name || undefined,
-					lid: chat.lidJid || undefined,
+					name: chat.displayName || chat.name || chat.username || undefined,
+					username: chat.username || undefined,
+					lid: chat.lidJid || chat.accountLid || undefined,
 					phoneNumber: chat.pnJid || undefined
 				})
+
+				const chatId = chat.id!
+				const isLid = isLidUser(chatId) || isHostedLidUser(chatId)
+				const isPn = isPnUser(chatId) || isHostedPnUser(chatId)
+				if (isLid && chat.pnJid) {
+					lidPnMappings.push({ lid: chatId, pn: chat.pnJid })
+				} else if (isPn && chat.lidJid) {
+					lidPnMappings.push({ lid: chat.lidJid, pn: chatId })
+				} else if (isLid && !chat.pnJid) {
+					// Fallback: extract PN from userReceipt in messages when pnJid is missing
+					const pnFromReceipt = extractPnFromMessages(chat.messages || [])
+					if (pnFromReceipt) {
+						lidPnMappings.push({ lid: chatId, pn: pnFromReceipt })
+					}
+				}
 
 				const msgs = chat.messages || []
 				delete chat.messages
@@ -71,7 +116,7 @@ export const processHistoryMessage = (item: proto.IHistorySync) => {
 					}
 				}
 
-				chats.push({ ...chat })
+				chats.push(chat)
 			}
 
 			break
@@ -87,6 +132,8 @@ export const processHistoryMessage = (item: proto.IHistorySync) => {
 		chats,
 		contacts,
 		messages,
+		lidPnMappings,
+		pastParticipants: item.pastParticipants,
 		syncType: item.syncType,
 		progress: item.progress
 	}
@@ -94,10 +141,17 @@ export const processHistoryMessage = (item: proto.IHistorySync) => {
 
 export const downloadAndProcessHistorySyncNotification = async (
 	msg: proto.Message.IHistorySyncNotification,
-	options: RequestInit
+	options: RequestInit,
+	logger?: ILogger
 ) => {
-	const historyMsg = await downloadHistory(msg, options)
-	return processHistoryMessage(historyMsg)
+	let historyMsg: proto.HistorySync
+	if (msg.initialHistBootstrapInlinePayload) {
+		historyMsg = proto.HistorySync.decode(await inflatePromise(msg.initialHistBootstrapInlinePayload))
+	} else {
+		historyMsg = await downloadHistory(msg, options)
+	}
+
+	return processHistoryMessage(historyMsg, logger)
 }
 
 export const getHistoryMsg = (message: proto.IMessage) => {

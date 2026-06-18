@@ -35,5 +35,5 @@
     "checkJs": false,
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "src/__tests__/**"]
+  "exclude": ["node_modules", "src/__tests__/**", "src/__mocks__/**"]
 }

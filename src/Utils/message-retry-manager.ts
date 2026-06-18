@@ -5,6 +5,8 @@ import type { ILogger } from './logger'
 /** Number of sent messages to cache in memory for handling retry receipts */
 const RECENT_MESSAGES_SIZE = 512
 
+const MESSAGE_KEY_SEPARATOR = '\u0000'
+
 /** Timeout for session recreation - 1 hour */
 const RECREATE_SESSION_TIMEOUT = 60 * 60 * 1000 // 1 hour in milliseconds
 const PHONE_REQUEST_DELAY = 3000
@@ -26,9 +28,7 @@ export interface RetryCounter {
 	[messageId: string]: number
 }
 
-export interface PendingPhoneRequest {
-	[messageId: string]: NodeJS.Timeout
-}
+export type PendingPhoneRequest = Record<string, ReturnType<typeof setTimeout>>
 
 export interface RetryStatistics {
 	totalRetries: number
@@ -39,10 +39,43 @@ export interface RetryStatistics {
 	phoneRequests: number
 }
 
+// Retry reason codes matching WhatsApp Web's Signal error codes.
+export enum RetryReason {
+	UnknownError = 0,
+	SignalErrorNoSession = 1,
+	SignalErrorInvalidKey = 2,
+	SignalErrorInvalidKeyId = 3,
+	/** MAC verification failed - most common cause of decryption failures */
+	SignalErrorInvalidMessage = 4,
+	SignalErrorInvalidSignature = 5,
+	SignalErrorFutureMessage = 6,
+	/** Explicit MAC failure - session is definitely out of sync */
+	SignalErrorBadMac = 7,
+	SignalErrorInvalidSession = 8,
+	SignalErrorInvalidMsgKey = 9,
+	BadBroadcastEphemeralSetting = 10,
+	UnknownCompanionNoPrekey = 11,
+	AdvFailure = 12,
+	StatusRevokeDelay = 13
+}
+
+/** Error codes that indicate a MAC failure and require immediate session recreation */
+const MAC_ERROR_CODES = new Set([RetryReason.SignalErrorInvalidMessage, RetryReason.SignalErrorBadMac])
+
 export class MessageRetryManager {
 	private recentMessagesMap = new LRUCache<string, RecentMessage>({
-		max: RECENT_MESSAGES_SIZE
+		max: RECENT_MESSAGES_SIZE,
+		ttl: 5 * 60 * 1000,
+		ttlAutopurge: true,
+		dispose: (_value: RecentMessage, key: string) => {
+			const separatorIndex = key.lastIndexOf(MESSAGE_KEY_SEPARATOR)
+			if (separatorIndex > -1) {
+				const messageId = key.slice(separatorIndex + MESSAGE_KEY_SEPARATOR.length)
+				this.messageKeyIndex.delete(messageId)
+			}
+		}
 	})
+	private messageKeyIndex = new Map<string, string>()
 	private sessionRecreateHistory = new LRUCache<string, number>({
 		ttl: RECREATE_SESSION_TIMEOUT * 2,
 		ttlAutopurge: true
@@ -52,6 +85,11 @@ export class MessageRetryManager {
 		ttlAutopurge: true,
 		updateAgeOnGet: true
 	}) // 15 minutes TTL
+	private baseKeys = new LRUCache<string, Uint8Array>({
+		max: 1024,
+		ttl: 15 * 60 * 1000,
+		ttlAutopurge: true
+	})
 	private pendingPhoneRequests: PendingPhoneRequest = {}
 	private readonly maxMsgRetryCount: number = 5
 	private statistics: RetryStatistics = {
@@ -82,6 +120,7 @@ export class MessageRetryManager {
 			message,
 			timestamp: Date.now()
 		})
+		this.messageKeyIndex.set(id, keyStr)
 
 		this.logger.debug(`Added message to retry cache: ${to}/${id}`)
 	}
@@ -96,9 +135,14 @@ export class MessageRetryManager {
 	}
 
 	/**
-	 * Check if a session should be recreated based on retry count and history
+	 * Check if a session should be recreated based on retry count, history, and error code.
+	 * MAC errors (codes 4 and 7) trigger immediate session recreation regardless of timeout.
 	 */
-	shouldRecreateSession(jid: string, retryCount: number, hasSession: boolean): { reason: string; recreate: boolean } {
+	shouldRecreateSession(
+		jid: string,
+		hasSession: boolean,
+		errorCode?: RetryReason
+	): { reason: string; recreate: boolean } {
 		// If we don't have a session, always recreate
 		if (!hasSession) {
 			this.sessionRecreateHistory.set(jid, Date.now())
@@ -109,9 +153,18 @@ export class MessageRetryManager {
 			}
 		}
 
-		// Only consider recreation if retry count > 1
-		if (retryCount < 2) {
-			return { reason: '', recreate: false }
+		// IMMEDIATE recreation for MAC errors - session is definitely out of sync
+		if (errorCode !== undefined && MAC_ERROR_CODES.has(errorCode)) {
+			this.sessionRecreateHistory.set(jid, Date.now())
+			this.statistics.sessionRecreations++
+			this.logger.warn(
+				{ jid, errorCode: RetryReason[errorCode] },
+				'MAC error detected, forcing immediate session recreation'
+			)
+			return {
+				reason: `MAC error (code ${errorCode}: ${RetryReason[errorCode]}), immediate session recreation`,
+				recreate: true
+			}
 		}
 
 		const now = Date.now()
@@ -128,6 +181,35 @@ export class MessageRetryManager {
 		}
 
 		return { reason: '', recreate: false }
+	}
+
+	/**
+	 * Parse error code from retry receipt's retry node.
+	 * Returns undefined if no error code is present.
+	 */
+	parseRetryErrorCode(errorAttr: string | undefined): RetryReason | undefined {
+		if (errorAttr === undefined || errorAttr === '') {
+			return undefined
+		}
+
+		const code = parseInt(errorAttr, 10)
+		if (Number.isNaN(code)) {
+			return undefined
+		}
+
+		// Validate it's a known RetryReason
+		if (code >= RetryReason.UnknownError && code <= RetryReason.StatusRevokeDelay) {
+			return code as RetryReason
+		}
+
+		return RetryReason.UnknownError
+	}
+
+	/**
+	 * Check if an error code indicates a MAC failure
+	 */
+	isMacError(errorCode: RetryReason | undefined): boolean {
+		return errorCode !== undefined && MAC_ERROR_CODES.has(errorCode)
 	}
 
 	/**
@@ -161,6 +243,7 @@ export class MessageRetryManager {
 		// Clean up retry counter for successful message
 		this.retryCounters.delete(messageId)
 		this.cancelPendingPhoneRequest(messageId)
+		this.removeRecentMessage(messageId)
 	}
 
 	/**
@@ -169,6 +252,8 @@ export class MessageRetryManager {
 	markRetryFailed(messageId: string): void {
 		this.statistics.failedRetries++
 		this.retryCounters.delete(messageId)
+		this.cancelPendingPhoneRequest(messageId)
+		this.removeRecentMessage(messageId)
 	}
 
 	/**
@@ -199,7 +284,58 @@ export class MessageRetryManager {
 		}
 	}
 
+	clear(): void {
+		this.recentMessagesMap.clear()
+		this.messageKeyIndex.clear()
+		this.sessionRecreateHistory.clear()
+		this.retryCounters.clear()
+		this.baseKeys.clear()
+		for (const messageId of Object.keys(this.pendingPhoneRequests)) {
+			this.cancelPendingPhoneRequest(messageId)
+		}
+
+		this.statistics = {
+			totalRetries: 0,
+			successfulRetries: 0,
+			failedRetries: 0,
+			mediaRetries: 0,
+			sessionRecreations: 0,
+			phoneRequests: 0
+		}
+	}
+
+	saveBaseKey(addr: string, msgId: string, baseKey: Uint8Array): void {
+		this.baseKeys.set(`${addr}:${msgId}`, baseKey)
+	}
+
+	hasSameBaseKey(addr: string, msgId: string, baseKey: Uint8Array): boolean {
+		const stored = this.baseKeys.get(`${addr}:${msgId}`)
+		if (!stored || stored.length !== baseKey.length) {
+			return false
+		}
+
+		for (let i = 0; i < stored.length; i++) {
+			if (stored[i] !== baseKey[i]) return false
+		}
+
+		return true
+	}
+
+	deleteBaseKey(addr: string, msgId: string): void {
+		this.baseKeys.delete(`${addr}:${msgId}`)
+	}
+
 	private keyToString(key: RecentMessageKey): string {
-		return `${key.to}:${key.id}`
+		return `${key.to}${MESSAGE_KEY_SEPARATOR}${key.id}`
+	}
+
+	private removeRecentMessage(messageId: string): void {
+		const keyStr = this.messageKeyIndex.get(messageId)
+		if (!keyStr) {
+			return
+		}
+
+		this.recentMessagesMap.delete(keyStr)
+		this.messageKeyIndex.delete(messageId)
 	}
 }
