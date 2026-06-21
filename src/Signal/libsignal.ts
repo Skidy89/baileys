@@ -49,7 +49,7 @@ function extractIdentityFromPkmsg(ciphertext: Uint8Array): Uint8Array | undefine
 
 export function makeLibSignalRepository(
 	auth: SignalAuthState,
-	logger: ILogger,
+	logger: ILogger | undefined,
 	pnToLIDFunc?: (jids: string[]) => Promise<LIDMapping[] | undefined>
 ): SignalRepositoryWithLIDStore {
 	const lidMapping = new LIDMappingStore(auth.keys as SignalKeyStoreWithTransaction, logger, pnToLIDFunc)
@@ -125,6 +125,7 @@ export function makeLibSignalRepository(
 					const addrStr = addr.toString()
 					const identityChanged = await storage.saveIdentity(addrStr, identityKey)
 					if (identityChanged) {
+						if (logger)
 						logger.info({ jid, addr: addrStr }, 'identity key changed or new contact, session will be re-established')
 					}
 				}
@@ -204,6 +205,7 @@ export function makeLibSignalRepository(
 		},
 
 		async injectE2ESession({ jid, session }) {
+			if (logger)
 			logger.trace({ jid }, 'injecting E2EE session')
 			const cipher = new libsignal.SessionBuilder(storage, jidToSignalProtocolAddress(jid))
 			return parsedKeys.transaction(async () => {
@@ -272,7 +274,7 @@ export function makeLibSignalRepository(
 			}
 
 			const { user } = jidDecode(fromJid)!
-
+			if (logger)
 			logger.debug({ fromJid }, 'bulk device migration - loading all user devices')
 
 			// Get user's device list from storage
@@ -313,7 +315,7 @@ export function makeLibSignalRepository(
 					deviceJids.push(jid)
 				}
 			}
-
+			if (logger)
 			logger.debug(
 				{
 					fromJid,
@@ -385,6 +387,7 @@ export function makeLibSignalRepository(
 					// Single bulk session update for all migrations
 					if (Object.keys(sessionUpdates).length > 0) {
 						await parsedKeys.set({ session: sessionUpdates })
+						if (logger)
 						logger.debug({ migratedSessions: migratedCount }, 'bulk session migration complete')
 
 						// Cache device-level migrations

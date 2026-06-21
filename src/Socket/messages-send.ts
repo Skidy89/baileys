@@ -149,6 +149,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					ttl: +mediaConnNode.attrs.ttl!,
 					fetchDate: new Date()
 				}
+				if (logger)
 				logger.debug('fetched media conn')
 				if (node.hosts[0]) {
 					mediaHost = node.hosts[0].hostname
@@ -213,7 +214,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				}
 			]
 		}
-
+		if (logger)
 		logger.debug({ attrs: node.attrs, messageIds }, 'sending receipt for messages')
 		await sendNode(node)
 	}
@@ -248,6 +249,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		const deviceResults: DeviceWithJid[] = []
 
 		if (!useCache) {
+			if (logger)
 			logger.debug('not using cache for devices')
 		}
 
@@ -292,7 +294,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 						jid: jidEncode(d.user, d.server, d.device)
 					}))
 					deviceResults.push(...devicesWithJid)
-
+					if (logger)
 					logger.trace({ user }, 'using cache for devices')
 				} else {
 					toFetch.push(jid)
@@ -326,6 +328,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 			// TODO: LID MAP this stuff (lid protocol will now return lid with devices)
 			const lidResults = result.list.filter(a => !!a.lid)
 			if (lidResults.length > 0) {
+				if (logger)
 				logger.trace('Storing LID maps from device call')
 				await signalRepository.lidMapping.storeLIDPNMappings(lidResults.map(a => ({ lid: a.lid as string, pn: a.id })))
 
@@ -336,6 +339,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 						await assertSessions(lids, true)
 					}
 				} catch (e) {
+					if (logger)
 					logger.warn({ e, count: lidResults.length }, 'failed to assert sessions for newly mapped LIDs')
 				}
 			}
@@ -367,7 +371,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 						...item,
 						jid: finalJid
 					})
-
+					if (logger)
 					logger.debug(
 						{
 							user: item.user,
@@ -401,11 +405,13 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 			if (Object.keys(userDeviceUpdates).length > 0) {
 				try {
 					await authState.keys.set({ 'device-list': userDeviceUpdates })
+					if (logger)
 					logger.debug(
 						{ userCount: Object.keys(userDeviceUpdates).length },
 						'stored user device lists for bulk migration'
 					)
 				} catch (error) {
+					if (logger)
 					logger.warn({ error }, 'failed to store user device lists')
 				}
 			}
@@ -448,7 +454,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 		let didFetchNewSession = false
 		const uniqueJids = [...new Set(jids)]
 		const jidsRequiringFetch: string[] = []
-
+		if (logger)
 		logger.debug({ jids }, 'assertSessions call with jids')
 
 		for (const jid of uniqueJids) {
@@ -472,7 +478,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					)) || []
 				).map(a => a.lid)
 			]
-
+			if (logger)
 			logger.debug({ jidsRequiringFetch, wireJids }, 'fetching sessions')
 			const result = await query({
 				tag: 'iq',
@@ -571,6 +577,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 
 						if (isOwnUser && !isExactSenderDevice) {
 							msgToEncrypt = dsmMessage
+							if (logger)
 							logger.debug({ jid, targetUser }, 'Using DSM for own device')
 						}
 					}
@@ -600,6 +607,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 
 					return node
 				} catch (err) {
+					if (logger)
 					logger.error({ jid, err }, 'Failed to encrypt for recipient')
 					return null
 				}
@@ -699,7 +707,9 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					},
 					content: binaryNodeContent
 				}
-				logger.debug({ msgId }, `sending newsletter message to ${jid}`)
+				if (logger) {
+					logger.debug({ msgId }, `sending newsletter message to ${jid}`)
+				}
 				await sendNode(stanza)
 				return
 			}
@@ -713,6 +723,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					(async () => {
 						let groupData = useCachedGroupMetadata && cachedGroupMetadata ? await cachedGroupMetadata(jid) : undefined // todo: should we rely on the cache specially if the cache is outdated and the metadata has new fields?
 						if (groupData && Array.isArray(groupData?.participants)) {
+							if (logger)
 							logger.trace({ jid, participants: groupData.participants.length }, 'using cached group metadata')
 						} else if (!isStatus) {
 							groupData = await groupMetadata(jid) // TODO: start storing group participant list + addr mode in Signal & stop relying on this
@@ -789,6 +800,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				}
 
 				if (senderKeyRecipients.length) {
+					if (logger)
 					logger.debug({ senderKeyJids: senderKeyRecipients }, 'sending new sender key')
 
 					const senderKeyMsg: proto.IMessage = {
@@ -820,8 +832,10 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				let ownId = meId
 				if (isLid && meLid) {
 					ownId = meLid
+					if (logger)
 					logger.debug({ to: jid, ownId }, 'Using LID identity for @lid conversation')
 				} else {
+					if (logger)
 					logger.debug({ to: jid, ownId }, 'Using PN identity for @s.whatsapp.net conversation')
 				}
 
@@ -865,7 +879,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 						// Enumerate devices for sender and target with consistent addressing
 						const sessionDevices = await getUSyncDevices([senderIdentity, jid], true, false)
 						devices.push(...sessionDevices)
-
+						if (logger)
 						logger.debug(
 							{
 								deviceCount: devices.length,
@@ -885,6 +899,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				for (const { user, jid } of devices) {
 					const isExactSenderDevice = jid === meId || (meLid && jid === meLid)
 					if (isExactSenderDevice) {
+						if (logger)
 						logger.debug({ jid, meId, meLid }, 'Skipping exact sender device (whatsmeow pattern)')
 						continue
 					}
@@ -948,6 +963,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 								}
 							}
 						} catch (err) {
+							if (logger)
 							logger.warn({ err, jid: destinationJid }, 'failed to build SKDM for retry, sending without it')
 						}
 					}
@@ -1028,7 +1044,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					attrs: {},
 					content: encodeSignedDeviceIdentity(authState.creds.account!, true)
 				})
-
+				if (logger)
 				logger.debug({ jid }, 'adding device identity')
 			}
 
@@ -1049,9 +1065,11 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 					const reportingNode = await getMessageReportingToken(encoded, reportingMessage, reportingKey)
 					if (reportingNode) {
 						;(stanza.content as BinaryNode[]).push(reportingNode)
+						if (logger)
 						logger.trace({ jid }, 'added reporting token to message')
 					}
 				} catch (error: any) {
+					if (logger)
 					logger.warn({ jid, trace: error?.stack }, 'failed to attach reporting token')
 				}
 			}
@@ -1068,6 +1086,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 
 			// Treat expired tokens the same as missing — clear from cache
 			if (tcTokenBuffer?.length && isTcTokenExpired(existingTokenEntry?.timestamp)) {
+				if (logger)
 				logger.debug({ jid: destinationJid, timestamp: existingTokenEntry?.timestamp }, 'tctoken expired, clearing')
 				tcTokenBuffer = undefined
 				// Preserve senderTimestamp so the fire-and-forget issuance dedupe survives cleanup.
@@ -1078,6 +1097,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				try {
 					await authState.keys.set({ tctoken: { [tcTokenJid]: cleared } })
 				} catch (err: any) {
+					if (logger)
 					logger.debug({ jid: destinationJid, err: err?.message }, 'failed to persist tctoken expiry cleanup')
 				}
 			}
@@ -1093,7 +1113,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 			if (additionalNodes && additionalNodes.length > 0) {
 				;(stanza.content as BinaryNode[]).push(...additionalNodes)
 			}
-
+			if (logger)
 			logger.debug({ msgId }, `sending message to ${participants.length} devices`)
 
 			await sendNode(stanza)
@@ -1137,6 +1157,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 						})
 					})
 					.catch(err => {
+						if (logger)
 						logger.debug({ jid: destinationJid, err: err?.message }, 'fire-and-forget tctoken issuance failed')
 					})
 					.finally(() => {
@@ -1307,7 +1328,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 
 								content.directPath = media.directPath
 								content.url = getUrlFromDirectPath(content.directPath!, mediaHost)
-
+								if (logger)
 								logger.debug({ directPath: media.directPath, key: result.key }, 'media update successful')
 							} catch (err: any) {
 								error = err

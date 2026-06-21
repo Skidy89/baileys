@@ -850,6 +850,7 @@ export const getWAUploadToServer = (
 		}
 
 		for (const { hostname } of hosts) {
+			if (logger)
 			logger.debug(`uploading to "${hostname}"`)
 
 			const auth = encodeURIComponent(uploadInfo.auth)
@@ -883,6 +884,7 @@ export const getWAUploadToServer = (
 				}
 			} catch (error: any) {
 				const isLast = hostname === hosts[uploadInfo.hosts.length - 1]?.hostname
+				if (logger)
 				logger.warn(
 					{ trace: error?.stack, uploadResult: result },
 					`Error in uploading to ${hostname} ${isLast ? '' : ', retrying...'}`

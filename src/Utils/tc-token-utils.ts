@@ -10,6 +10,7 @@ import {
 	isPnUser,
 	jidNormalizedUser
 } from '../WABinary'
+import { packr } from './generics'
 
 // Same phone-number pattern as WABinary's isJidBot, applied against the user
 // part so the check is invariant to @c.us ↔ @s.whatsapp.net normalization.
@@ -42,7 +43,7 @@ export async function readTcTokenIndex(keys: SignalKeyStoreWithTransaction): Pro
 	const entry = data[TC_TOKEN_INDEX_KEY]
 	if (!entry?.token?.length) return []
 	try {
-		const parsed = JSON.parse(Buffer.from(entry.token).toString())
+		const parsed = packr.unpack(entry.token)
 		if (!Array.isArray(parsed)) return []
 		return parsed.filter((j): j is string => typeof j === 'string' && j.length > 0 && j !== TC_TOKEN_INDEX_KEY)
 	} catch {
@@ -62,7 +63,7 @@ export async function buildMergedTcTokenIndexWrite(
 	}
 
 	return {
-		[TC_TOKEN_INDEX_KEY]: { token: Buffer.from(JSON.stringify([...merged])) }
+		[TC_TOKEN_INDEX_KEY]: { token: packr.pack([...merged]) }
 	}
 }
 
@@ -146,7 +147,7 @@ export async function buildTcTokenFromJid({
 				// there's nothing worth keeping.
 				const cleared =
 					entry?.senderTimestamp !== undefined
-						? { token: Buffer.alloc(0), senderTimestamp: entry.senderTimestamp }
+						? { token: Buffer.allocUnsafe(0), senderTimestamp: entry.senderTimestamp }
 						: null
 				await authState.keys.set({ tctoken: { [storageJid]: cleared } })
 			}

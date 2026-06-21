@@ -10,7 +10,7 @@ export class PreKeyManager {
 
 	constructor(
 		private readonly store: SignalKeyStore,
-		private readonly logger: ILogger
+		private readonly logger: ILogger | undefined
 	) {}
 
 	/**
@@ -84,6 +84,7 @@ export class PreKeyManager {
 					transactionCache[keyType][keyId] = null
 					mutations[keyType]![keyId] = null
 				} else {
+					if (this.logger)
 					this.logger.warn(`Skipping deletion of non-existent ${keyType} in transaction: ${keyId}`)
 				}
 			}
@@ -95,6 +96,7 @@ export class PreKeyManager {
 					transactionCache[keyType]![keyId] = null
 					mutations[keyType]![keyId] = null
 				} else {
+					if (this.logger)
 					this.logger.warn(`Skipping deletion of non-existent ${keyType}: ${keyId}`)
 				}
 			}
@@ -117,7 +119,9 @@ export class PreKeyManager {
 			const existingKeys = await this.store.get(keyType, deletionIds)
 			for (const keyId of deletionIds) {
 				if (!existingKeys[keyId]) {
-					this.logger.warn(`Skipping deletion of non-existent ${keyType}: ${keyId}`)
+					if (this.logger) {
+						this.logger.warn(`Skipping deletion of non-existent ${keyType}: ${keyId}`)
+					}
 					delete data[keyType]![keyId]
 				}
 			}

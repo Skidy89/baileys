@@ -1,7 +1,6 @@
 import { Boom } from '@hapi/boom'
-import NodeCache from '@cacheable/node-cache'
 import readline from 'readline'
-import makeWASocket, { AnyMessageContent, CacheStore, delay, DisconnectReason, downloadAndProcessHistorySyncNotification, encodeWAM, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, getHistoryMsg, GroupMetadata, isJidBot, isJidBroadcast, isJidMetaAI, isJidNewsletter, jidDecode, makeCacheableSignalKeyStore, normalizeMessageContent, PatchedMessageWithRecipientJID, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } from '../src'
+import makeWASocket, { AnyMessageContent, delay, DisconnectReason, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, getHistoryMsg, GroupMetadata, isJidBot, isJidBroadcast, isJidMetaAI, isJidNewsletter, jidDecode, makeCacheableSignalKeyStore, normalizeMessageContent, PatchedMessageWithRecipientJID, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } from '../src'
 import got from 'got'
 import P from 'pino'
 
@@ -33,7 +32,7 @@ const startSock = async() => {
 
 	const sock = makeWASocket({
 		version,
-		logger,
+		logger: undefined,
 		auth: state,
 		enableRecentMessageCache: false,
         waWebSocketUrl: "wss://web.whatsapp.com/ws/chat?ED=CAgIAg==",

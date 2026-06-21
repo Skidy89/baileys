@@ -33,7 +33,7 @@ const storeMappingFromEnvelope = async (
 	sender: string,
 	repository: SignalRepositoryWithLIDStore,
 	decryptionJid: string,
-	logger: ILogger
+	logger: ILogger | undefined
 ): Promise<void> => {
 	// TODO: Handle hosted IDs
 	const { senderAlt } = extractAddressingContext(stanza)
@@ -42,8 +42,10 @@ const storeMappingFromEnvelope = async (
 		try {
 			await repository.lidMapping.storeLIDPNMappings([{ lid: senderAlt, pn: sender }])
 			await repository.migrateSession(sender, senderAlt)
+			if (logger)
 			logger.debug({ sender, senderAlt }, 'Stored LID mapping from envelope')
 		} catch (error) {
+			if (logger)
 			logger.warn({ sender, senderAlt, error }, 'Failed to store LID mapping')
 		}
 	}
@@ -266,7 +268,7 @@ export const decryptMessageNode = (
 	meId: string,
 	meLid: string,
 	repository: SignalRepositoryWithLIDStore,
-	logger: ILogger
+	logger: ILogger | undefined
 ) => {
 	const { fullMessage, author, sender } = decodeMessageNode(stanza, meId, meLid)
 	return {
@@ -348,7 +350,7 @@ export const decryptMessageNode = (
 									item: msg.senderKeyDistributionMessage
 								})
 							} catch (err) {
-								logger.error({ key: fullMessage.key, err }, 'failed to process sender key distribution message')
+								if (logger) logger.error({ key: fullMessage.key, err }, 'failed to process sender key distribution message')
 							}
 						}
 
@@ -367,7 +369,7 @@ export const decryptMessageNode = (
 							isSessionRecordError: isSessionRecordError(err)
 						}
 
-						logger.error(errorContext, 'failed to decrypt message')
+						if (logger) logger.error(errorContext, 'failed to decrypt message')
 
 						fullMessage.messageStubType = proto.WebMessageInfo.StubType.CIPHERTEXT
 						fullMessage.messageStubParameters = [err.message.toString()]

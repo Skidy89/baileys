@@ -115,7 +115,7 @@ export function makeCacheableSignalKeyStore(
  */
 export const addTransactionCapability = (
 	state: SignalKeyStore,
-	logger: ILogger,
+	logger: ILogger | undefined,
 	{ maxCommitRetries, delayBetweenTriesMs }: TransactionCapabilityOptions
 ): SignalKeyStoreWithTransaction => {
 	const txStorage = new AsyncLocalStorage<TransactionContext>()
@@ -190,19 +190,22 @@ export const addTransactionCapability = (
 	 */
 	async function commitWithRetry(mutations: SignalDataSet): Promise<void> {
 		if (Object.keys(mutations).length === 0) {
+			if (logger)
 			logger.trace('no mutations in transaction')
 			return
 		}
-
+		if (logger)
 		logger.trace('committing transaction')
 
 		for (let attempt = 0; attempt < maxCommitRetries; attempt++) {
 			try {
 				await state.set(mutations)
+				if (logger)
 				logger.trace({ mutationCount: Object.keys(mutations).length }, 'committed transaction')
 				return
 			} catch (error) {
 				const retriesLeft = maxCommitRetries - attempt - 1
+				if (logger)
 				logger.warn(`failed to commit mutations, retries left=${retriesLeft}`)
 
 				if (retriesLeft === 0) {
@@ -229,6 +232,7 @@ export const addTransactionCapability = (
 
 			if (missing.length > 0) {
 				ctx.dbQueries++
+				if (logger)
 				logger.trace({ type, count: missing.length }, 'fetching missing keys in transaction')
 
 				const fetched = await getTxMutex(type).runExclusive(() => state.get(type, missing))
@@ -278,6 +282,7 @@ export const addTransactionCapability = (
 			}
 
 			// In transaction - update cache and mutations
+			if (logger)
 			logger.trace({ types: Object.keys(data) }, 'caching in transaction')
 
 			for (const key_ in data) {
@@ -305,6 +310,7 @@ export const addTransactionCapability = (
 
 			// Nested transaction - reuse existing context
 			if (existing) {
+				if (logger)
 				logger.trace('reusing existing transaction context')
 				return work()
 			}
@@ -320,7 +326,7 @@ export const addTransactionCapability = (
 						mutations: {},
 						dbQueries: 0
 					}
-
+					if (logger)
 					logger.trace('entering transaction')
 
 					try {
@@ -328,11 +334,12 @@ export const addTransactionCapability = (
 
 						// Commit mutations
 						await commitWithRetry(ctx.mutations)
-
+						if (logger)
 						logger.trace({ dbQueries: ctx.dbQueries }, 'transaction completed')
 
 						return result
 					} catch (error) {
+						if (logger)
 						logger.error({ error }, 'transaction failed, rolling back')
 						throw error
 					}

@@ -46,7 +46,7 @@ export type SocketConfig = {
 	/** proxy agent */
 	agent?: Agent
 	/** logger */
-	logger: ILogger
+	logger: ILogger | undefined
 	/** version to connect with */
 	version: WAVersion
 	/** override browser config */
@@ -147,7 +147,7 @@ export type SocketConfig = {
 
 	makeSignalRepository: (
 		auth: SignalAuthState,
-		logger: ILogger,
+		logger: ILogger | undefined,
 		pnToLIDFunc?: (jids: string[]) => Promise<LIDMapping[] | undefined>
 	) => SignalRepositoryWithLIDStore
 }

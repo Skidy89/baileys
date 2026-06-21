@@ -92,6 +92,7 @@ export const makeSocket = (config: SocketConfig) => {
 	const generateMessageTag = () => `${uqTagId}${epoch++}`
 
 	if (printQRInTerminal) {
+		if (logger)
 		logger.warn(
 			{},
 			'⚠️ The printQRInTerminal option has been deprecated. You will no longer receive QR codes in the terminal automatically. Please listen to the connection.update event yourself and handle the QR your way. You can remove this message by removing this opttion. This message will be removed in a future version.'
@@ -102,6 +103,7 @@ export const makeSocket = (config: SocketConfig) => {
 		PROCESSABLE_HISTORY_TYPES.map(syncType => config.shouldSyncHistoryMessage({ syncType })).filter(x => x === false)
 			.length === PROCESSABLE_HISTORY_TYPES.length
 	if (syncDisabled) {
+		if (logger)
 		logger.warn(
 			'⚠️ DANGER: DISABLING ALL SYNC BY shouldSyncHistoryMsg PREVENTS BAILEYS FROM ACCESSING INITIAL LID MAPPINGS, LEADING TO INSTABILIY AND SESSION ERRORS'
 		)
@@ -205,7 +207,8 @@ export const makeSocket = (config: SocketConfig) => {
 
 	/** send a binary node */
 	const sendNode = (frame: BinaryNode) => {
-		if (logger.level === 'trace') {
+
+		if (logger && logger.level === 'trace') {
 			logger.trace({ xml: binaryNodeToString(frame), msg: 'xml send' })
 		}
 
@@ -444,6 +447,7 @@ export const makeSocket = (config: SocketConfig) => {
 
 	/** log & process any unexpected errors */
 	const onUnexpectedError = (err: Error | Boom, msg: string) => {
+		if (logger)
 		logger.error({ err }, `unexpected error in '${msg}'`)
 	}
 
@@ -483,14 +487,14 @@ export const makeSocket = (config: SocketConfig) => {
 			clientHello: { ephemeral: ephemeralKeyPair.public }
 		}
 		helloMsg = proto.HandshakeMessage.fromObject(helloMsg)
-
+		if (logger)
 		logger.info({ browser, helloMsg }, 'connected to WA')
 
 		const init = proto.HandshakeMessage.encode(helloMsg).finish()
 
 		const result = await awaitNextMessage<Uint8Array>(init)
 		const handshake = proto.HandshakeMessage.decode(result)
-
+		if (logger)
 		logger.trace({ handshake }, 'handshake recv from WA')
 
 		const keyEnc = await noise.processHandshake(handshake, creds.noiseKey)
@@ -498,9 +502,11 @@ export const makeSocket = (config: SocketConfig) => {
 		let node: proto.IClientPayload
 		if (!creds.me) {
 			node = generateRegistrationNode(creds, config)
+			if (logger)
 			logger.info({ node }, 'not logged in, attempting registration...')
 		} else {
 			node = generateLoginNode(creds.me.id, config)
+			if (logger)
 			logger.info({ node }, 'logging in...')
 		}
 
@@ -538,16 +544,19 @@ export const makeSocket = (config: SocketConfig) => {
 	/** generates and uploads a set of pre-keys to the server */
 	const uploadPreKeys = async (count = MIN_PREKEY_COUNT) => {
 		if (uploadPreKeysPromise) {
+			if (logger)
 			logger.debug('Pre-key upload already in progress, waiting for completion')
 			await uploadPreKeysPromise
 			return
 		}
 
 		const uploadLogic = async (retryCount: number): Promise<void> => {
+			if (logger)
 			logger.info({ count, retryCount }, 'uploading pre-keys')
 
 			// Generate and save pre-keys atomically (prevents ID collisions on retry)
 			const node = await keys.transaction(async () => {
+				if (logger)
 				logger.debug({ requestedCount: count }, 'generating pre-keys with requested count')
 				const { update, node } = await getNextPreKeysNode({ creds, keys }, count)
 				// Update credentials immediately to prevent duplicate IDs on retry
@@ -558,13 +567,16 @@ export const makeSocket = (config: SocketConfig) => {
 			// Upload to server (outside transaction, can fail without affecting local keys)
 			try {
 				await query(node)
+				if (logger)
 				logger.info({ count }, 'uploaded pre-keys successfully')
 			} catch (uploadError) {
+				if (logger)
 				logger.error({ uploadError: (uploadError as Error).toString(), count }, 'Failed to upload pre-keys to server')
 
 				// Recurse into uploadLogic; calling uploadPreKeys would await its own in-flight promise.
 				if (retryCount < 3) {
 					const backoffDelay = Math.min(1000 * Math.pow(2, retryCount), 10000)
+					if (logger)
 					logger.info(`Retrying pre-key upload in ${backoffDelay}ms`)
 					await new Promise(resolve => setTimeout(resolve, backoffDelay))
 					return uploadLogic(retryCount + 1)
@@ -608,10 +620,10 @@ export const makeSocket = (config: SocketConfig) => {
 			if (preKeyCount === 0) count = INITIAL_PREKEY_COUNT
 			else count = MIN_PREKEY_COUNT
 			const { exists: currentPreKeyExists, currentPreKeyId } = await verifyCurrentPreKeyExists()
-
-			logger.info(`${preKeyCount} pre-keys found on server`)
-			logger.info(`Current prekey ID: ${currentPreKeyId}, exists in storage: ${currentPreKeyExists}`)
-
+			if (logger) {
+				logger.info(`${preKeyCount} pre-keys found on server`)
+				logger.info(`Current prekey ID: ${currentPreKeyId}, exists in storage: ${currentPreKeyExists}`)
+			}
 			const lowServerCount = preKeyCount <= count
 			const missingCurrentPreKey = !currentPreKeyExists && currentPreKeyId > 0
 
@@ -621,13 +633,15 @@ export const makeSocket = (config: SocketConfig) => {
 				const reasons = []
 				if (lowServerCount) reasons.push(`server count low (${preKeyCount})`)
 				if (missingCurrentPreKey) reasons.push(`current prekey ${currentPreKeyId} missing from storage`)
-
+				if (logger)
 				logger.info(`Uploading PreKeys due to: ${reasons.join(', ')}`)
 				await uploadPreKeys(count)
 			} else {
+				if (logger)
 				logger.info(`PreKey validation passed - Server: ${preKeyCount}, Current prekey ${currentPreKeyId} exists`)
 			}
 		} catch (error) {
+			if (logger)
 			logger.error({ error }, 'Failed to check/upload pre-keys during initialization')
 			// Don't throw - allow connection to continue even if pre-key check fails
 		}
@@ -645,7 +659,7 @@ export const makeSocket = (config: SocketConfig) => {
 			if (!(frame instanceof Uint8Array)) {
 				const msgId = frame.attrs.id
 
-				if (logger.level === 'trace') {
+				if (logger && logger.level === 'trace') {
 					logger.trace({ xml: binaryNodeToString(frame), msg: 'recv xml' })
 				}
 
@@ -665,7 +679,7 @@ export const makeSocket = (config: SocketConfig) => {
 				anyTriggered = ws.emit(`${DEF_CALLBACK_PREFIX}${l0},,${l2}`, frame) || anyTriggered
 				anyTriggered = ws.emit(`${DEF_CALLBACK_PREFIX}${l0}`, frame) || anyTriggered
 
-				if (!anyTriggered && logger.level === 'debug') {
+				if (!anyTriggered && logger && logger.level === 'debug') {
 					logger.debug({ unhandled: true, msgId, fromMe: false, frame }, 'communication recv')
 				}
 			}
@@ -674,11 +688,13 @@ export const makeSocket = (config: SocketConfig) => {
 
 	const end = async (error: Error | undefined) => {
 		if (closed) {
+			if (logger)
 			logger.trace({ trace: error?.stack }, 'connection already closed')
 			return
 		}
 
 		closed = true
+		if (logger)
 		logger.info({ trace: error?.stack }, error ? 'connection errored' : 'connection closed')
 
 		clearInterval(keepAliveReq)
@@ -700,6 +716,7 @@ export const makeSocket = (config: SocketConfig) => {
 			try {
 				await handler(error)
 			} catch (err) {
+				if (logger)
 				logger.error({ err }, 'error in socket end handler')
 			}
 		}
@@ -764,9 +781,11 @@ export const makeSocket = (config: SocketConfig) => {
 					},
 					content: [{ tag: 'ping', attrs: {} }]
 				}).catch(err => {
+					if (logger)
 					logger.error({ trace: err.stack }, 'error in sending keep alive')
 				})
 			} else {
+				if (logger)
 				logger.warn('keep alive called when WS not open')
 			}
 		}, keepAliveIntervalMs))
@@ -905,6 +924,7 @@ export const makeSocket = (config: SocketConfig) => {
 		try {
 			await validateConnection()
 		} catch (err: any) {
+			if (logger)
 			logger.error({ err }, 'error in validating connection')
 			void end(err)
 		}
@@ -960,11 +980,12 @@ export const makeSocket = (config: SocketConfig) => {
 	// device paired for the first time
 	// if device pairs successfully, the server asks to restart the connection
 	ws.on('CB:iq,,pair-success', async (stanza: BinaryNode) => {
+		if (logger)
 		logger.debug('pair success recv')
 		try {
 			updateServerTimeOffset(stanza)
 			const { reply, creds: updatedCreds } = configureSuccessfulPairing(stanza, creds)
-
+			if (logger)
 			logger.info(
 				{ me: updatedCreds.me, platform: updatedCreds.platform },
 				'pairing configured successfully, expect to restart the connection...'
@@ -976,6 +997,7 @@ export const makeSocket = (config: SocketConfig) => {
 			await sendNode(reply)
 			void sendUnifiedSession()
 		} catch (error: any) {
+			if (logger)
 			logger.info({ trace: error.stack }, 'error in pairing')
 			void end(error)
 		}
@@ -991,12 +1013,14 @@ export const makeSocket = (config: SocketConfig) => {
 			try {
 				await digestKeyBundle()
 			} catch (e) {
+				if (logger)
 				logger.warn({ e }, 'failed to run digest after login')
 			}
 		} catch (err) {
+			if (logger)
 			logger.warn({ err }, 'failed to send initial passive iq')
 		}
-
+		if (logger)
 		logger.info('opened connection to WA')
 		clearTimeout(qrTimer) // will never happen in all likelyhood -- but just in case WA sends success on first try
 
@@ -1024,9 +1048,10 @@ export const makeSocket = (config: SocketConfig) => {
 
 					// migrate our own session
 					await signalRepository.migrateSession(myPN, myLID)
-
+					if (logger)
 					logger.info({ myPN, myLID }, 'Own LID session created successfully')
 				} catch (error) {
+					if (logger)
 					logger.error({ error, lid: myLID }, 'Failed to create own LID session')
 				}
 			})
@@ -1035,6 +1060,7 @@ export const makeSocket = (config: SocketConfig) => {
 
 	ws.on('CB:stream:error', (node: BinaryNode) => {
 		const [reasonNode] = getAllBinaryNodeChildren(node)
+		if (logger)
 		logger.error({ reasonNode, fullErrorNode: node }, 'stream errored out')
 
 		const { reason, statusCode } = getErrorCodeFromStreamError(node)
@@ -1047,11 +1073,8 @@ export const makeSocket = (config: SocketConfig) => {
 		void end(new Boom('Connection Failure', { statusCode: reason, data: node.attrs }))
 	})
 
-	ws.on('CB:ib,,downgrade_webclient', () => {
-		void end(new Boom('Multi-device beta not joined', { statusCode: DisconnectReason.multideviceMismatch }))
-	})
-
 	ws.on('CB:ib,,offline_preview', async (node: BinaryNode) => {
+		if (logger)
 		logger.info('offline preview received', JSON.stringify(node))
 		await sendNode({
 			tag: 'ib',
@@ -1085,10 +1108,11 @@ export const makeSocket = (config: SocketConfig) => {
 	ws.on('CB:ib,,offline', (node: BinaryNode) => {
 		const child = getBinaryNodeChild(node, 'offline')
 		const offlineNotifs = +(child?.attrs.count || 0)
-
+		if (logger)
 		logger.info(`handled ${offlineNotifs} offline messages/notifications`)
 		if (didStartBuffer) {
 			ev.flush()
+			if (logger)
 			logger.trace('flushed events for initial buffer')
 		}
 
@@ -1100,11 +1124,13 @@ export const makeSocket = (config: SocketConfig) => {
 		const name = update.me?.name
 		// if name has just been received
 		if (creds.me?.name !== name) {
+			if (logger)
 			logger.debug({ name }, 'updated pushName')
 			sendNode({
 				tag: 'presence',
 				attrs: { name: name! }
 			}).catch(err => {
+				if (logger)
 				logger.warn({ trace: err.stack }, 'error in sending presence update on name change')
 			})
 		}
@@ -1125,6 +1151,7 @@ export const makeSocket = (config: SocketConfig) => {
 
 		const localMs = Date.now()
 		serverTimeOffsetMs = parsed * 1000 - localMs
+		if (logger)
 		logger.debug({ offset: serverTimeOffsetMs }, 'calculated server time offset')
 	}
 
@@ -1156,6 +1183,7 @@ export const makeSocket = (config: SocketConfig) => {
 		try {
 			await sendNode(node)
 		} catch (error) {
+			if (logger)
 			logger.debug({ error }, 'failed to send unified_session telemetry')
 		}
 	}
@@ -1164,27 +1192,6 @@ export const makeSocket = (config: SocketConfig) => {
 		socketEndHandlers.push(handler)
 	}
 
-	/**
-	 * Fetches your account's standing when it comes to restrictions.
-	 * @returns Returns the state of the restrictions.
-	 */
-	const fetchAccountReachoutTimelock = async () => {
-		const queryResult = await executeWMexQuery<{
-			is_active?: boolean
-			time_enforcement_ends?: string
-			enforcement_type: ReachoutTimelockEnforcementType
-		}>({}, QueryIds.REACHOUT_TIMELOCK, XWAPaths.xwa2_fetch_account_reachout_timelock, query, generateMessageTag)
-		const result: ReachoutTimelockState = {
-			isActive: !!queryResult?.is_active,
-			timeEnforcementEnds:
-				queryResult?.time_enforcement_ends && queryResult?.time_enforcement_ends !== '0'
-					? new Date(parseInt(queryResult.time_enforcement_ends, 10) * 1000)
-					: undefined,
-			enforcementType: queryResult?.enforcement_type ?? ReachoutTimelockEnforcementType.DEFAULT
-		}
-		ev.emit('connection.update', { reachoutTimeLock: result })
-		return result
-	}
 
 	/**
 	 * Fetches your account's new chat limits.
@@ -1232,7 +1239,6 @@ export const makeSocket = (config: SocketConfig) => {
 		sendWAMBuffer,
 		executeUSyncQuery,
 		onWhatsApp,
-		fetchAccountReachoutTimelock,
 		fetchNewChatMessageCap
 	}
 }

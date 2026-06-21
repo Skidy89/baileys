@@ -512,6 +512,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 	}
 
 	const cleanDirtyBits = async (type: 'account_sync' | 'groups', fromTimestamp?: number | string) => {
+		if (logger)
 		logger.info({ fromTimestamp }, 'clean dirty bits ' + type)
 		await sendNode({
 			tag: 'iq',
@@ -601,7 +602,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 						if (shouldForceSnapshot) {
 							forceSnapshotCollections.delete(name)
 						}
-
+						if (logger)
 						logger.info(`resyncing ${name} from v${state.version}${shouldForceSnapshot ? ' (forcing snapshot)' : ''}`)
 
 						nodes.push({
@@ -648,7 +649,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 								)
 								states[name] = newState
 								Object.assign(globalMutationMap, mutationMap)
-
+								if (logger)
 								logger.info(`restored state of ${name} from snapshot to v${newState.version} with mutations`)
 
 								await authState.keys.set({ 'app-state-sync-version': { [name]: newState } })
@@ -668,7 +669,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 								)
 
 								await authState.keys.set({ 'app-state-sync-version': { [name]: newState } })
-
+								if (logger)
 								logger.info(`synced ${name} to v${newState.version}`)
 								initialVersionMap[name] = newState.version
 
@@ -676,6 +677,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 							}
 
 							if (hasMorePatches) {
+								if (logger)
 								logger.info(`${name} has more patches...`)
 							} else {
 								// collection is done with sync
@@ -696,6 +698,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 							if (isMissingKeyError(error) && attemptsMap[name] >= MAX_SYNC_ATTEMPTS) {
 								// WA Web treats missing keys as "Blocked" — park the collection
 								// until the key arrives via APP_STATE_SYNC_KEY_SHARE.
+								if (logger)
 								logger.warn(
 									logData,
 									`${name} blocked on missing key from v${states[name].version}, parking after ${attemptsMap[name]} attempts`
@@ -704,15 +707,18 @@ export const makeChatsSocket = (config: SocketConfig) => {
 								collectionsToHandle.delete(name)
 							} else if (isMissingKeyError(error)) {
 								// Retry with a snapshot which may use a different key.
+								if (logger)
 								logger.info(
 									logData,
 									`${name} blocked on missing key from v${states[name].version}, retrying with snapshot`
 								)
 								forceSnapshotCollections.add(name)
 							} else if (isAppStateSyncIrrecoverable(error, attemptsMap[name])) {
+								if (logger)
 								logger.warn(logData, `failed to sync ${name} from v${states[name].version}, giving up`)
 								collectionsToHandle.delete(name)
 							} else {
+								if (logger)
 								logger.info(logData, `failed to sync ${name} from v${states[name].version}, forcing snapshot retry`)
 								// force a full snapshot on retry to recover from
 								// corrupted local state (e.g. LTHash MAC mismatch)
@@ -802,6 +808,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		const isAvailableType = type === 'available'
 		if (isAvailableType || type === 'unavailable') {
 			if (!me.name) {
+				if (logger)
 				logger.warn('no name present, ignoring presence update request...')
 				return
 			}
@@ -890,6 +897,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 
 			presence = { lastKnownPresence: type }
 		} else {
+			if (logger)
 			logger.error({ tag, attrs, content }, 'recv invalid presence node')
 		}
 
@@ -910,6 +918,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 
 		await appStatePatchMutex.mutex(async () => {
 			await authState.keys.transaction(async () => {
+				if (logger)
 				logger.debug({ patch: patchCreate }, 'applying app patch')
 
 				await resyncAppState([name], false)
@@ -1022,7 +1031,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		if (lidIssueProp !== undefined) {
 			serverProps.lidTrustedTokenIssueToLid = lidIssueProp === 'true' || lidIssueProp === '1'
 		}
-
+		if (logger)
 		logger.debug({ serverProps }, 'fetched props')
 
 		return props
@@ -1275,10 +1284,12 @@ export const makeChatsSocket = (config: SocketConfig) => {
 
 			if (shouldProcessHistoryMsg) {
 				syncState = SyncState.Syncing
+				if (logger)
 				logger.info('Transitioned to Syncing state')
 				// Let doAppStateSync handle the final flush after it's done
 			} else {
 				syncState = SyncState.Online
+				if (logger)
 				logger.info('History sync skipped, transitioning to Online state and flushing buffer')
 				ev.flush()
 			}
@@ -1288,11 +1299,13 @@ export const makeChatsSocket = (config: SocketConfig) => {
 			if (syncState === SyncState.Syncing) {
 				// All collections will be synced, so clear any blocked ones
 				blockedCollections.clear()
+				if (logger)
 				logger.info('Doing app state sync')
 				await resyncAppState(ALL_WA_PATCH_NAMES, true)
 
 				// Sync is complete, go online and flush everything
 				syncState = SyncState.Online
+				if (logger)
 				logger.info('App state sync complete, transitioning to Online state and flushing buffer')
 				ev.flush()
 
@@ -1322,6 +1335,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 
 		// If the app state key arrives and we are waiting to sync, trigger the sync now.
 		if (msg.message?.protocolMessage?.appStateSyncKeyShare && syncState === SyncState.Syncing) {
+			if (logger)
 			logger.info('App state sync key arrived, triggering app state sync')
 			await doAppStateSync()
 		}
@@ -1350,6 +1364,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 				// handled in groups.ts
 				break
 			default:
+				if (logger)
 				logger.info({ node }, 'received unknown sync')
 				break
 		}
@@ -1382,6 +1397,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		historySyncPausedTimeout = undefined
 
 		syncState = SyncState.AwaitingInitialSync
+		if (logger)
 		logger.info('Connection is now AwaitingInitialSync, buffering events')
 		ev.buffer()
 
@@ -1392,6 +1408,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		)
 
 		if (!willSyncHistory) {
+			if (logger)
 			logger.info('History sync is disabled by config, not waiting for notification. Transitioning to Online.')
 			syncState = SyncState.Online
 			setTimeout(() => ev.flush(), 0)
@@ -1402,12 +1419,13 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		// history sync notifications — the device already has its data.
 		// Skip the 20s wait and go online immediately.
 		if (authState.creds.accountSyncCounter > 0) {
+			if (logger)
 			logger.info('Reconnection with existing sync data, skipping history sync wait. Transitioning to Online.')
 			syncState = SyncState.Online
 			setTimeout(() => ev.flush(), 0)
 			return
 		}
-
+		if (logger)
 		logger.info('First connection, awaiting history sync notification with a 20s timeout.')
 
 		if (awaitingSyncTimeout) {
@@ -1416,6 +1434,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 
 		awaitingSyncTimeout = setTimeout(() => {
 			if (syncState === SyncState.AwaitingInitialSync) {
+				if (logger)
 				logger.warn('Timeout in AwaitingInitialSync, forcing state to Online and flushing buffer')
 				syncState = SyncState.Online
 				ev.flush()
@@ -1445,7 +1464,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 
 		const collections = [...blockedCollections] as WAPatchName[]
 		blockedCollections.clear()
-
+		if (logger)
 		logger.info({ collections }, 'app state sync key arrived, re-syncing blocked collections')
 		resyncAppState(collections, false).catch(error => onUnexpectedError(error, 'blocked collections resync'))
 	})
@@ -1454,6 +1473,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		try {
 			await signalRepository.lidMapping.storeLIDPNMappings([{ lid, pn }])
 		} catch (error) {
+			if (logger)
 			logger.warn({ lid, pn, error }, 'Failed to store LID-PN mapping')
 		}
 	})

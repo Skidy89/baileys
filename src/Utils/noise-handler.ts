@@ -22,10 +22,9 @@ export const makeNoiseHandler = ({
 }: {
 	keyPair: KeyPair
 	NOISE_HEADER: Uint8Array
-	logger: ILogger
+	logger: ILogger | undefined
 	routingInfo?: Buffer | undefined
 }) => {
-	logger = logger.child({ class: 'ns' })
 
 	const authenticate = (data: Uint8Array) => {
 		if (!isFinished) {
@@ -170,7 +169,9 @@ export const makeNoiseHandler = ({
 
 			inBytes = Buffer.concat([inBytes, newData])
 
-			logger.trace(`recv ${newData.length} bytes, total recv ${inBytes.length} bytes`)
+			if (logger) {
+				logger.trace(`recv ${newData.length} bytes, total recv ${inBytes.length} bytes`)
+			}
 
 			let size = getBytesSize()
 			while (size && inBytes.length >= size + 3) {
@@ -181,7 +182,7 @@ export const makeNoiseHandler = ({
 					const result = decrypt(frame)
 					frame = await decodeBinaryNode(result)
 				}
-
+				if (logger)
 				logger.trace({ msg: (frame as BinaryNode)?.attrs?.id }, 'recv frame')
 
 				onFrame(frame)

@@ -20,7 +20,7 @@ export type IdentityChangeContext = {
 	validateSession: (jid: string) => Promise<{ exists: boolean; reason?: string }>
 	assertSessions: (jids: string[], force?: boolean) => Promise<boolean>
 	debounceCache: NodeCache<boolean>
-	logger: ILogger
+	logger: ILogger | undefined
 	/**
 	 * Invoked right before `assertSessions` is called for an existing-session identity change.
 	 * Used to kick off fire-and-forget side effects (e.g. tctoken re-issuance) in the same
@@ -43,23 +43,26 @@ export async function handleIdentityChange(
 	if (!identityNode) {
 		return { action: 'no_identity_node' }
 	}
-
+	if (ctx.logger)
 	ctx.logger.info({ jid: from }, 'identity changed')
 
 	const decoded = jidDecode(from)
 	if (decoded?.device && decoded.device !== 0) {
-		ctx.logger.debug({ jid: from, device: decoded.device }, 'ignoring identity change from companion device')
+		if (ctx.logger)
+			ctx.logger.debug({ jid: from, device: decoded.device }, 'ignoring identity change from companion device')
 		return { action: 'skipped_companion_device', device: decoded.device }
 	}
 
 	const isSelfPrimary = ctx.meId && (areJidsSameUser(from, ctx.meId) || (ctx.meLid && areJidsSameUser(from, ctx.meLid)))
 	if (isSelfPrimary) {
-		ctx.logger.info({ jid: from }, 'self primary identity changed')
+		if (ctx.logger)
+			ctx.logger.info({ jid: from }, 'self primary identity changed')
 		return { action: 'skipped_self_primary' }
 	}
 
 	if (ctx.debounceCache.get(from)) {
-		ctx.logger.debug({ jid: from }, 'skipping identity assert (debounced)')
+		if (ctx.logger)
+			ctx.logger.debug({ jid: from }, 'skipping identity assert (debounced)')
 		return { action: 'debounced' }
 	}
 
@@ -69,14 +72,17 @@ export async function handleIdentityChange(
 	const hasExistingSession = await ctx.validateSession(from)
 
 	if (!hasExistingSession.exists) {
-		ctx.logger.debug({ jid: from }, 'no old session, skipping session refresh')
+		if (ctx.logger)
+			ctx.logger.debug({ jid: from }, 'no old session, skipping session refresh')
 		return { action: 'skipped_no_session' }
 	}
 
-	ctx.logger.debug({ jid: from }, 'old session exists, will refresh session')
+	if (ctx.logger)
+		ctx.logger.debug({ jid: from }, 'old session exists, will refresh session')
 
 	if (isOfflineNotification) {
-		ctx.logger.debug({ jid: from }, 'skipping session refresh during offline processing')
+		if (ctx.logger)
+			ctx.logger.debug({ jid: from }, 'skipping session refresh during offline processing')
 		return { action: 'skipped_offline' }
 	}
 
@@ -86,7 +92,8 @@ export async function handleIdentityChange(
 		await ctx.assertSessions([from], true)
 		return { action: 'session_refreshed' }
 	} catch (error) {
-		ctx.logger.warn({ error, jid: from }, 'failed to assert sessions after identity change')
+		if (ctx.logger)
+			ctx.logger.warn({ error, jid: from }, 'failed to assert sessions after identity change')
 		return { action: 'session_refresh_failed', error }
 	}
 }
