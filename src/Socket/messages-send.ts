@@ -1368,6 +1368,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				const fullMsg = await generateWAMessage(jid, content, {
 					logger,
 					userJid,
+					getProfilePicUrl: sock.profilePictureUrl,
 					upload: waUploadToServer,
 					mediaCache: config.mediaCache,
 					options: config.options,
