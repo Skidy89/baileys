@@ -126,7 +126,7 @@ export function makeLibSignalRepository(
 					const identityChanged = await storage.saveIdentity(addrStr, identityKey)
 					if (identityChanged) {
 						if (logger)
-						logger.info({ jid, addr: addrStr }, 'identity key changed or new contact, session will be re-established')
+							logger.info({ jid, addr: addrStr }, 'identity key changed or new contact, session will be re-established')
 					}
 				}
 			}
@@ -205,8 +205,7 @@ export function makeLibSignalRepository(
 		},
 
 		async injectE2ESession({ jid, session }) {
-			if (logger)
-			logger.trace({ jid }, 'injecting E2EE session')
+			if (logger) logger.trace({ jid }, 'injecting E2EE session')
 			const cipher = new libsignal.SessionBuilder(storage, jidToSignalProtocolAddress(jid))
 			return parsedKeys.transaction(async () => {
 				// libsignal runtime accepts an absent prekey (initOutgoing checks `device.preKey && ...`)
@@ -274,8 +273,7 @@ export function makeLibSignalRepository(
 			}
 
 			const { user } = jidDecode(fromJid)!
-			if (logger)
-			logger.debug({ fromJid }, 'bulk device migration - loading all user devices')
+			if (logger) logger.debug({ fromJid }, 'bulk device migration - loading all user devices')
 
 			// Get user's device list from storage
 			const { [user]: userDevices } = await parsedKeys.get('device-list', [user])
@@ -316,15 +314,15 @@ export function makeLibSignalRepository(
 				}
 			}
 			if (logger)
-			logger.debug(
-				{
-					fromJid,
-					totalDevices: userDevices.length,
-					devicesWithSessions: deviceJids.length,
-					devices: deviceJids
-				},
-				'bulk device migration complete - all user devices processed'
-			)
+				logger.debug(
+					{
+						fromJid,
+						totalDevices: userDevices.length,
+						devicesWithSessions: deviceJids.length,
+						devices: deviceJids
+					},
+					'bulk device migration complete - all user devices processed'
+				)
 
 			// Single transaction for all migrations
 			return parsedKeys.transaction(
@@ -387,8 +385,7 @@ export function makeLibSignalRepository(
 					// Single bulk session update for all migrations
 					if (Object.keys(sessionUpdates).length > 0) {
 						await parsedKeys.set({ session: sessionUpdates })
-						if (logger)
-						logger.debug({ migratedSessions: migratedCount }, 'bulk session migration complete')
+						if (logger) logger.debug({ migratedSessions: migratedCount }, 'bulk session migration complete')
 
 						// Cache device-level migrations
 						for (const op of migrationOps) {

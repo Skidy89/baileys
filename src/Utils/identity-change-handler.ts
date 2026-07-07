@@ -43,8 +43,7 @@ export async function handleIdentityChange(
 	if (!identityNode) {
 		return { action: 'no_identity_node' }
 	}
-	if (ctx.logger)
-	ctx.logger.info({ jid: from }, 'identity changed')
+	if (ctx.logger) ctx.logger.info({ jid: from }, 'identity changed')
 
 	const decoded = jidDecode(from)
 	if (decoded?.device && decoded.device !== 0) {
@@ -55,14 +54,12 @@ export async function handleIdentityChange(
 
 	const isSelfPrimary = ctx.meId && (areJidsSameUser(from, ctx.meId) || (ctx.meLid && areJidsSameUser(from, ctx.meLid)))
 	if (isSelfPrimary) {
-		if (ctx.logger)
-			ctx.logger.info({ jid: from }, 'self primary identity changed')
+		if (ctx.logger) ctx.logger.info({ jid: from }, 'self primary identity changed')
 		return { action: 'skipped_self_primary' }
 	}
 
 	if (ctx.debounceCache.get(from)) {
-		if (ctx.logger)
-			ctx.logger.debug({ jid: from }, 'skipping identity assert (debounced)')
+		if (ctx.logger) ctx.logger.debug({ jid: from }, 'skipping identity assert (debounced)')
 		return { action: 'debounced' }
 	}
 
@@ -72,17 +69,14 @@ export async function handleIdentityChange(
 	const hasExistingSession = await ctx.validateSession(from)
 
 	if (!hasExistingSession.exists) {
-		if (ctx.logger)
-			ctx.logger.debug({ jid: from }, 'no old session, skipping session refresh')
+		if (ctx.logger) ctx.logger.debug({ jid: from }, 'no old session, skipping session refresh')
 		return { action: 'skipped_no_session' }
 	}
 
-	if (ctx.logger)
-		ctx.logger.debug({ jid: from }, 'old session exists, will refresh session')
+	if (ctx.logger) ctx.logger.debug({ jid: from }, 'old session exists, will refresh session')
 
 	if (isOfflineNotification) {
-		if (ctx.logger)
-			ctx.logger.debug({ jid: from }, 'skipping session refresh during offline processing')
+		if (ctx.logger) ctx.logger.debug({ jid: from }, 'skipping session refresh during offline processing')
 		return { action: 'skipped_offline' }
 	}
 
@@ -92,8 +86,7 @@ export async function handleIdentityChange(
 		await ctx.assertSessions([from], true)
 		return { action: 'session_refreshed' }
 	} catch (error) {
-		if (ctx.logger)
-			ctx.logger.warn({ error, jid: from }, 'failed to assert sessions after identity change')
+		if (ctx.logger) ctx.logger.warn({ error, jid: from }, 'failed to assert sessions after identity change')
 		return { action: 'session_refresh_failed', error }
 	}
 }

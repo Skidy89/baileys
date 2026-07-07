@@ -4,8 +4,6 @@ import { KEY_BUNDLE_TYPE } from '../Defaults'
 import type { KeyPair } from '../Types'
 import HKDF from 'futoin-hkdf'
 
-
-
 /** with the new libsignal, this would not be necessary, but keep it if something breaks */
 export const generateSignalPubKey = (pubKey: Uint8Array | Buffer) =>
 	pubKey.length === 33 ? pubKey : Buffer.concat([KEY_BUNDLE_TYPE, pubKey])
@@ -118,7 +116,7 @@ export function md5(buffer: Buffer) {
 }
 
 // HKDF key expansion
-export function hkdf(buffer: Uint8Array | Buffer, expandedLength: number, info: { salt?: Buffer, info?: string }) {
+export function hkdf(buffer: Uint8Array | Buffer, expandedLength: number, info: { salt?: Buffer; info?: string }) {
 	return HKDF(!Buffer.isBuffer(buffer) ? Buffer.from(buffer) : buffer, expandedLength, info)
 }
 

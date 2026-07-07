@@ -42,11 +42,9 @@ const storeMappingFromEnvelope = async (
 		try {
 			await repository.lidMapping.storeLIDPNMappings([{ lid: senderAlt, pn: sender }])
 			await repository.migrateSession(sender, senderAlt)
-			if (logger)
-			logger.debug({ sender, senderAlt }, 'Stored LID mapping from envelope')
+			if (logger) logger.debug({ sender, senderAlt }, 'Stored LID mapping from envelope')
 		} catch (error) {
-			if (logger)
-			logger.warn({ sender, senderAlt, error }, 'Failed to store LID mapping')
+			if (logger) logger.warn({ sender, senderAlt, error }, 'Failed to store LID mapping')
 		}
 	}
 }
@@ -350,7 +348,8 @@ export const decryptMessageNode = (
 									item: msg.senderKeyDistributionMessage
 								})
 							} catch (err) {
-								if (logger) logger.error({ key: fullMessage.key, err }, 'failed to process sender key distribution message')
+								if (logger)
+									logger.error({ key: fullMessage.key, err }, 'failed to process sender key distribution message')
 							}
 						}
 

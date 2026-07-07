@@ -106,9 +106,9 @@ export const isHostedPnUser = (jid: string | undefined) => jid?.endsWith('@hoste
 /** is the jid a hosted LID */
 export const isHostedLidUser = (jid: string | undefined) => jid?.endsWith('@hosted.lid')
 export const isJidBot = (jid: string | undefined): boolean => {
-  if (!jid || jid.length !== 16 || !jid.endsWith('@c.us')) return false;
-  return jid.startsWith('1313555') || jid.startsWith('131655500');
-};
+	if (!jid || jid.length !== 16 || !jid.endsWith('@c.us')) return false
+	return jid.startsWith('1313555') || jid.startsWith('131655500')
+}
 export const jidNormalizedUser = (jid: string | undefined) => {
 	const result = jidDecode(jid)
 	if (!result) {

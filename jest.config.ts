@@ -8,7 +8,7 @@ const config: Config = {
 	testMatch: ['<rootDir>/src/**/*.test.ts'],
 	extensionsToTreatAsEsm: ['.ts'],
 	moduleNameMapper: {
-		'^(\\.{1,2}/.*)\\.js$': '$1',
+		'^(\\.{1,2}/.*)\\.js$': '$1'
 	},
 	transform: {
 		'^.+\\.tsx?$': [
@@ -19,9 +19,9 @@ const config: Config = {
 					module: 'esnext',
 					allowJs: true,
 					verbatimModuleSyntax: false,
-					allowImportingTsExtensions: false,
-				},
-			},
+					allowImportingTsExtensions: false
+				}
+			}
 		],
 		'^.+\\.js$': [
 			'ts-jest',
@@ -30,14 +30,12 @@ const config: Config = {
 				tsconfig: {
 					module: 'esnext',
 					allowJs: true,
-					verbatimModuleSyntax: false,
-				},
-			},
-		],
+					verbatimModuleSyntax: false
+				}
+			}
+		]
 	},
-	transformIgnorePatterns: [
-		'node_modules/(?!(protobufjs|long|@protobufjs|@types/long|whatsapp-rust-bridge)/)',
-	],
+	transformIgnorePatterns: ['node_modules/(?!(protobufjs|long|@protobufjs|@types/long|whatsapp-rust-bridge)/)']
 }
 
 export default config

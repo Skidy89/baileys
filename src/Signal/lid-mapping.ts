@@ -5,7 +5,7 @@ import { isHostedPnUser, isLidUser, isPnUser, jidDecode, jidNormalizedUser, WAJI
 
 export class LIDMappingStore {
 	private readonly mappingCache = new LRUCache<string, string>({
-		ttl: 3 * 24 * 60 * 60 * 1000, // 7 days
+		ttl: 1 * 24 * 60 * 60 * 1000, // 1 day
 		ttlAutopurge: true,
 		updateAgeOnGet: true,
 		max: 500
@@ -34,8 +34,7 @@ export class LIDMappingStore {
 		const validatedPairs: Array<{ pnUser: string; lidUser: string }> = []
 		for (const { lid, pn } of pairs) {
 			if (!((isLidUser(lid) && isPnUser(pn)) || (isPnUser(lid) && isLidUser(pn)))) {
-				if (this.logger)
-				this.logger.warn(`Invalid LID-PN mapping: ${lid}, ${pn}`)
+				if (this.logger) this.logger.warn(`Invalid LID-PN mapping: ${lid}, ${pn}`)
 				continue
 			}
 
@@ -62,8 +61,7 @@ export class LIDMappingStore {
 
 		if (cacheMissSet.size > 0) {
 			const cacheMisses = [...cacheMissSet]
-			if (this.logger)
-			this.logger.trace(`Batch fetching ${cacheMisses.length} LID mappings from database`)
+			if (this.logger) this.logger.trace(`Batch fetching ${cacheMisses.length} LID mappings from database`)
 			const stored = await this.keys.get('lid-mapping', cacheMisses)
 
 			for (const pnUser of cacheMisses) {
@@ -80,8 +78,7 @@ export class LIDMappingStore {
 		for (const { pnUser, lidUser } of validatedPairs) {
 			const existingLidUser = existingMappings.get(pnUser)
 			if (existingLidUser === lidUser) {
-				if (this.logger)
-				this.logger.debug({ pnUser, lidUser }, 'LID mapping already exists, skipping')
+				if (this.logger) this.logger.debug({ pnUser, lidUser }, 'LID mapping already exists, skipping')
 				continue
 			}
 
@@ -89,8 +86,7 @@ export class LIDMappingStore {
 		}
 
 		if (Object.keys(pairMap).length === 0) return
-		if (this.logger)
-		this.logger.trace({ pairMap }, `Storing ${Object.keys(pairMap).length} pn mappings`)
+		if (this.logger) this.logger.trace({ pairMap }, `Storing ${Object.keys(pairMap).length} pn mappings`)
 
 		const batchData: { [key: string]: string } = {}
 		for (const [pnUser, lidUser] of Object.entries(pairMap)) {
@@ -121,8 +117,7 @@ export class LIDMappingStore {
 
 		const inflight = this.inflightLIDLookups.get(cacheKey)
 		if (inflight) {
-			if (this.logger)
-			this.logger.trace(`Coalescing getLIDsForPNs request for ${sortedPns.length} PNs`)
+			if (this.logger) this.logger.trace(`Coalescing getLIDsForPNs request for ${sortedPns.length} PNs`)
 			return inflight
 		}
 
@@ -144,8 +139,7 @@ export class LIDMappingStore {
 		const addResolvedPair = (pn: string, decoded: ReturnType<typeof jidDecode>, lidUser: string) => {
 			const normalizedLidUser = lidUser.toString()
 			if (!normalizedLidUser) {
-				if (this.logger)
-				this.logger.warn(`Invalid or empty LID user for PN ${pn}: lidUser = "${lidUser}"`)
+				if (this.logger) this.logger.warn(`Invalid or empty LID user for PN ${pn}: lidUser = "${lidUser}"`)
 				return false
 			}
 
@@ -155,7 +149,7 @@ export class LIDMappingStore {
 				decoded!.server === 'hosted' ? 'hosted.lid' : 'lid'
 			}`
 			if (this.logger)
-			this.logger.trace(`getLIDForPN: ${pn} → ${deviceSpecificLid} (user mapping with device ${pnDevice})`)
+				this.logger.trace(`getLIDForPN: ${pn} → ${deviceSpecificLid} (user mapping with device ${pnDevice})`)
 			successfulPairs[pn] = { lid: deviceSpecificLid, pn }
 			return true
 		}
@@ -170,8 +164,7 @@ export class LIDMappingStore {
 			const cached = this.mappingCache.get(`pn:${pnUser}`)
 			if (cached && typeof cached === 'string') {
 				if (!addResolvedPair(pn, decoded, cached)) {
-					if (this.logger)
-					this.logger.warn(`Invalid entry for ${pn} (pair not resolved)`)
+					if (this.logger) this.logger.warn(`Invalid entry for ${pn} (pair not resolved)`)
 					continue
 				}
 
@@ -196,13 +189,11 @@ export class LIDMappingStore {
 				const cached = this.mappingCache.get(`pn:${pnUser}`)
 				if (cached && typeof cached === 'string') {
 					if (!addResolvedPair(pn, decoded, cached)) {
-						if (this.logger)
-						this.logger.warn(`Invalid entry for ${pn} (pair not resolved)`)
+						if (this.logger) this.logger.warn(`Invalid entry for ${pn} (pair not resolved)`)
 						continue
 					}
 				} else {
-					if (this.logger)
-					this.logger.trace(`No LID mapping found for PN user ${pnUser}; batch getting from USync`)
+					if (this.logger) this.logger.trace(`No LID mapping found for PN user ${pnUser}; batch getting from USync`)
 					const device = decoded!.device || 0
 					let normalizedPn = jidNormalizedUser(pn)
 					if (isHostedPnUser(normalizedPn)) {
@@ -232,9 +223,9 @@ export class LIDMappingStore {
 					for (const device of usyncFetch[pair.pn]!) {
 						const deviceSpecificLid = `${lidUser}${!!device ? `:${device}` : ``}@${device === 99 ? 'hosted.lid' : 'lid'}`
 						if (this.logger)
-						this.logger.trace(
-							`getLIDForPN: USYNC success for ${pair.pn} → ${deviceSpecificLid} (user mapping with device ${device})`
-						)
+							this.logger.trace(
+								`getLIDForPN: USYNC success for ${pair.pn} → ${deviceSpecificLid} (user mapping with device ${device})`
+							)
 
 						const deviceSpecificPn = `${pnUser}${!!device ? `:${device}` : ``}@${device === 99 ? 'hosted' : 's.whatsapp.net'}`
 
@@ -242,8 +233,7 @@ export class LIDMappingStore {
 					}
 				}
 			} else {
-				if (this.logger)
-				this.logger.warn('USync fetch yielded no results for pending PNs')
+				if (this.logger) this.logger.warn('USync fetch yielded no results for pending PNs')
 			}
 		}
 
@@ -262,8 +252,7 @@ export class LIDMappingStore {
 
 		const inflight = this.inflightPNLookups.get(cacheKey)
 		if (inflight) {
-			if (this.logger)
-			this.logger.trace(`Coalescing getPNsForLIDs request for ${sortedLids.length} LIDs`)
+			if (this.logger) this.logger.trace(`Coalescing getPNsForLIDs request for ${sortedLids.length} LIDs`)
 			return inflight
 		}
 
@@ -290,8 +279,7 @@ export class LIDMappingStore {
 			const pnJid = `${pnUser}:${lidDevice}@${
 				decoded!.domainType === WAJIDDomains.HOSTED_LID ? 'hosted' : 's.whatsapp.net'
 			}`
-			if (this.logger)
-			this.logger.trace(`Found reverse mapping: ${lid} → ${pnJid}`)
+			if (this.logger) this.logger.trace(`Found reverse mapping: ${lid} → ${pnJid}`)
 			successfulPairs[lid] = { lid, pn: pnJid }
 			return true
 		}
@@ -329,8 +317,7 @@ export class LIDMappingStore {
 				if (pnUser && typeof pnUser === 'string') {
 					addResolvedPair(lid, decoded, pnUser)
 				} else {
-					if (this.logger)
-					this.logger.trace(`No reverse mapping found for LID user: ${lidUser}`)
+					if (this.logger) this.logger.trace(`No reverse mapping found for LID user: ${lidUser}`)
 				}
 			}
 		}

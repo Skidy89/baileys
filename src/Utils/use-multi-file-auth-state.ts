@@ -6,7 +6,6 @@ import { initAuthCreds } from './auth-utils'
 import { makeKeyedMutex } from './make-mutex'
 import { packr } from './index.js'
 
-
 // We need to lock files due to the fact that we are using async functions to read and write files
 // https://github.com/WhiskeySockets/Baileys/issues/794
 // https://github.com/nodejs/node/issues/26338
@@ -36,7 +35,6 @@ export const useMultiFileAuthState = async (
 					encoding: 'utf-8',
 					signal: AbortSignal.timeout(15000)
 				})
-				
 			} catch (error) {
 				await removeData(file)
 				throw error
@@ -45,10 +43,8 @@ export const useMultiFileAuthState = async (
 	}
 
 	const readData = async (file: string) => {
-
 		const filePath = join(folder, fixFileName(file)!)
 		return await fileMutex.mutex(filePath, async () => {
-				
 			const data = await readFile(filePath, {
 				signal: AbortSignal.timeout(15000)
 			}).catch(() => null)
@@ -58,12 +54,12 @@ export const useMultiFileAuthState = async (
 	}
 
 	const removeData = async (file: string) => {
-			const filePath = join(folder, fixFileName(file)!)
-			return fileMutex.mutex(filePath, async () => {
-				try {
-					await unlink(filePath)
-				} catch {}
-			})
+		const filePath = join(folder, fixFileName(file)!)
+		return fileMutex.mutex(filePath, async () => {
+			try {
+				await unlink(filePath)
+			} catch {}
+		})
 	}
 
 	const folderInfo = await stat(folder).catch(() => {})
@@ -76,7 +72,6 @@ export const useMultiFileAuthState = async (
 	} else {
 		await mkdir(folder, { recursive: true })
 	}
-
 
 	const creds: AuthenticationCreds = (await readData('creds.bin')) || initAuthCreds()
 

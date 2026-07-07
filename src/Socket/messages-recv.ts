@@ -89,7 +89,6 @@ import {
 import { extractGroupMetadata } from './groups'
 import { makeMessagesSocket } from './messages-send'
 
-
 type MexGqlData = Record<string, unknown>
 
 type MexGqlResponse = {
@@ -194,8 +193,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		}
 
 		if (await placeholderResendCache.get(messageKey?.id!)) {
-			if (logger)
-			if (logger) logger.debug({ messageKey }, 'already requested resend')
+			if (logger) if (logger) logger.debug({ messageKey }, 'already requested resend')
 			return
 		} else {
 			// Store original message data so PDO response handler can preserve
@@ -206,8 +204,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		await delay(2000)
 
 		if (!(await placeholderResendCache.get(messageKey?.id!))) {
-			if (logger)
-			if (logger) logger.debug({ messageKey }, 'message received while resend requested')
+			if (logger) if (logger) logger.debug({ messageKey }, 'message received while resend requested')
 			return 'RESOLVED'
 		}
 
@@ -237,7 +234,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			const opName = updateNode.attrs?.op_name
 			if (!opName) {
 				if (logger)
-				logger.warn({ node: binaryNodeToString(node) }, 'mex notification missing op_name, fallback to legacy')
+					logger.warn({ node: binaryNodeToString(node) }, 'mex notification missing op_name, fallback to legacy')
 				await handleLegacyMexNewsletterNotification(node)
 				return
 			}
@@ -257,8 +254,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 			const data = mexResponse.data
 			if (!data) {
-				if (logger)
-				logger.warn({ opName }, 'mex notification has null data')
+				if (logger) logger.warn({ opName }, 'mex notification has null data')
 				return
 			}
 
@@ -376,7 +372,8 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				typeof payloadContent === 'string' ? Buffer.from(payloadContent, 'binary') : Buffer.from(payloadContent)
 			data = JSON.parse(contentBuf.toString())
 		} catch (error) {
-			if (logger) logger.error({ err: error, node: binaryNodeToString(node) }, 'failed to parse mex newsletter notification')
+			if (logger)
+				logger.error({ err: error, node: binaryNodeToString(node) }, 'failed to parse mex newsletter notification')
 			return
 		}
 
@@ -646,9 +643,10 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				messageRetryManager.schedulePhoneRequest(msgId, async () => {
 					try {
 						const requestId = await requestPlaceholderResend(msgKey)
-						if (logger) logger.debug(
-							`sendRetryRequest: requested placeholder resend (${requestId}) for message ${msgId} (scheduled)`
-						)
+						if (logger)
+							logger.debug(
+								`sendRetryRequest: requested placeholder resend (${requestId}) for message ${msgId} (scheduled)`
+							)
 					} catch (error) {
 						if (logger) logger.warn({ error, msgId }, 'failed to send scheduled phone request')
 					}
@@ -744,7 +742,8 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				return
 			}
 
-			if (logger) logger.debug({ jid: normalizedJid, senderTimestamp: senderTs }, 'identity changed, re-issuing tctoken')
+			if (logger)
+				logger.debug({ jid: normalizedJid, senderTimestamp: senderTs }, 'identity changed, re-issuing tctoken')
 			const getPNForLID = signalRepository.lidMapping.getPNForLID.bind(signalRepository.lidMapping)
 			const issueJid = await resolveIssuanceJid(
 				normalizedJid,
@@ -1250,7 +1249,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		tcTokenIndexTimer = setTimeout(() => {
 			tcTokenIndexTimer = undefined
 			flushTcTokenIndex().catch(err => {
-				if (logger)logger.warn({ err: err?.message }, 'failed to save tctoken index')
+				if (logger) logger.warn({ err: err?.message }, 'failed to save tctoken index')
 			})
 		}, 5000)
 	}
@@ -1384,10 +1383,11 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			if (typeof receivedRegId === 'number' && Number.isInteger(receivedRegId)) {
 				const info = await signalRepository.getSessionInfo(participant)
 				if (info && info.registrationId !== 0 && info.registrationId !== receivedRegId) {
-					if (logger) logger.info(
-						{ participant, stored: info.registrationId, received: receivedRegId },
-						'reg id mismatch on retry without bundle, deleting session'
-					)
+					if (logger)
+						logger.info(
+							{ participant, stored: info.registrationId, received: receivedRegId },
+							'reg id mismatch on retry without bundle, deleting session'
+						)
 					await authState.keys.set({ session: { [sessionId]: null } })
 				}
 			}
@@ -1401,7 +1401,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 					messageRetryManager.saveBaseKey(sessionId, msgId, info.baseKey)
 				} else if (retryCount > BASE_KEY_CHECK_RETRY) {
 					if (messageRetryManager.hasSameBaseKey(sessionId, msgId, info.baseKey)) {
-						if (logger)logger.warn({ participant, retryCount }, 'base key collision on retry, forcing fresh session')
+						if (logger) logger.warn({ participant, retryCount }, 'base key collision on retry, forcing fresh session')
 						await authState.keys.set({ session: { [sessionId]: null } })
 					}
 
@@ -1421,7 +1421,8 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				recreateReason = result.reason
 
 				if (shouldRecreateSession) {
-					if (logger) logger.debug({ participant, retryCount, reason: recreateReason }, 'recreating session for outgoing retry')
+					if (logger)
+						logger.debug({ participant, retryCount, reason: recreateReason }, 'recreating session for outgoing retry')
 					await authState.keys.set({ session: { [sessionId]: null } })
 				}
 			} catch (error) {
@@ -1437,10 +1438,11 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			await authState.keys.set({ 'sender-key-memory': { [remoteJid]: null } })
 		}
 
-		if (logger) logger.debug(
-			{ participant, sendToAll, shouldRecreateSession, recreateReason, injectedFromBundle },
-			'prepared session for retry resend'
-		)
+		if (logger)
+			logger.debug(
+				{ participant, sendToAll, shouldRecreateSession, recreateReason, injectedFromBundle },
+				'prepared session for retry resend'
+			)
 
 		for (const [i, msg] of msgs.entries()) {
 			if (!ids[i]) continue
@@ -1535,10 +1537,11 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 									if (logger) logger.debug({ attrs, key }, 'recv retry request')
 									await sendMessagesAgain(key, ids, retryNode!, node)
 								} catch (error: unknown) {
-									if (logger) logger.error(
-										{ key, ids, trace: error instanceof Error ? error.stack : 'Unknown error' },
-										'error in sending message again'
-									)
+									if (logger)
+										logger.error(
+											{ key, ids, trace: error instanceof Error ? error.stack : 'Unknown error' },
+											'error in sending message again'
+										)
 								}
 							} else {
 								if (logger) logger.info({ attrs, key }, 'recv retry for not fromMe message')
@@ -1551,8 +1554,8 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			])
 		} finally {
 			await sendMessageAck(node).catch(ackErr => {
-				if (logger)logger.error({ ackErr }, 'failed to ack receipt')
-				})
+				if (logger) logger.error({ ackErr }, 'failed to ack receipt')
+			})
 		}
 	}
 
@@ -1653,10 +1656,11 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 							unavailableType === 'hosted_unavailable_fanout' ||
 							unavailableType === 'view_once_unavailable_fanout'
 						) {
-							if (logger) logger.debug(
-								{ msgId: msg.key.id, unavailableType },
-								'skipping placeholder resend for excluded unavailable type'
-							)
+							if (logger)
+								logger.debug(
+									{ msgId: msg.key.id, unavailableType },
+									'skipping placeholder resend for excluded unavailable type'
+								)
 							acked = true
 							return sendMessageAck(node)
 						}
@@ -1690,7 +1694,11 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 						requestPlaceholderResend(cleanKey, msgData)
 							.then(requestId => {
 								if (requestId && requestId !== 'RESOLVED') {
-									if (logger) logger.debug({ msgId: msg.key.id, requestId }, 'requested placeholder resend for unavailable message')
+									if (logger)
+										logger.debug(
+											{ msgId: msg.key.id, requestId },
+											'requested placeholder resend for unavailable message'
+										)
 									ev.emit('messages.update', [
 										{
 											key: msg.key,
@@ -1700,7 +1708,11 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 								}
 							})
 							.catch(err => {
-								if (logger) logger.warn({ err, msgId: msg.key.id }, 'failed to request placeholder resend for unavailable message')
+								if (logger)
+									logger.warn(
+										{ err, msgId: msg.key.id },
+										'failed to request placeholder resend for unavailable message'
+									)
 							})
 						acked = true
 						await sendMessageAck(node)
@@ -1710,10 +1722,11 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 						if (isJidStatusBroadcast(msg.key.remoteJid!)) {
 							const messageAge = unixTimestampSeconds() - toNumber(msg.messageTimestamp)
 							if (messageAge > STATUS_EXPIRY_SECONDS) {
-								if (logger) logger.debug(
-									{ msgId: msg.key.id, messageAge, remoteJid: msg.key.remoteJid },
-									'skipping retry for expired status message'
-								)
+								if (logger)
+									logger.debug(
+										{ msgId: msg.key.id, messageAge, remoteJid: msg.key.remoteJid },
+										'skipping retry for expired status message'
+									)
 								acked = true
 								return sendMessageAck(node)
 							}
@@ -1796,7 +1809,6 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		}
 	}
 
-
 	const handleBadAck = async ({ attrs }: BinaryNode) => {
 		const key: WAMessageKey = { remoteJid: attrs.from, fromMe: true, id: attrs.id }
 
@@ -1825,10 +1837,11 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				// existing ones, since established chats already carry a tctoken.
 				// WA Web prevents this client-side (disables the compose bar).
 				// No retry — retrying counts as another "reach out" and worsens the restriction.
-				if (logger) logger.warn(
-					{ msgId: attrs.id, from: attrs.from },
-					'error 463: account restricted or missing tctoken for contact'
-				)
+				if (logger)
+					logger.warn(
+						{ msgId: attrs.id, from: attrs.from },
+						'error 463: account restricted or missing tctoken for contact'
+					)
 
 				const ackFrom = attrs.from
 				if (ackFrom && !inFlight463Recoveries.has(ackFrom)) {
@@ -1860,10 +1873,11 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 					})()
 				}
 			} else if (attrs.error === SERVER_ERROR_CODES.SmaxInvalid) {
-				if (logger) logger.warn(
-					{ msgId: attrs.id, from: attrs.from },
-					'smax-invalid (479): stanza rejected by server — likely stale device session or malformed addressing'
-				)
+				if (logger)
+					logger.warn(
+						{ msgId: attrs.id, from: attrs.from },
+						'smax-invalid (479): stanza rejected by server — likely stale device session or malformed addressing'
+					)
 			} else if (isReachoutTimelocked) {
 				if (logger) logger.warn({ attrs }, 'received error in ack, sender reachout timelocked')
 			} else {
@@ -2061,7 +2075,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				tctoken: {
 					...writes,
 					[TC_TOKEN_INDEX_KEY]: {
-						token: packr.pack([...survivors]),
+						token: packr.pack([...survivors])
 					}
 				}
 			})

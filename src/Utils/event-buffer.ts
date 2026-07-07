@@ -91,8 +91,7 @@ export const makeEventBuffer = (logger: ILogger | undefined): BaileysBufferableE
 
 	function buffer() {
 		if (!isBuffering) {
-			if (logger)
-			logger.debug('Event buffer activated')
+			if (logger) logger.debug('Event buffer activated')
 			isBuffering = true
 			bufferCount = 0
 
@@ -102,8 +101,7 @@ export const makeEventBuffer = (logger: ILogger | undefined): BaileysBufferableE
 
 			bufferTimeout = setTimeout(() => {
 				if (isBuffering) {
-					if (logger)
-					logger.warn('Buffer timeout reached, auto-flushing')
+					if (logger) logger.warn('Buffer timeout reached, auto-flushing')
 					flush()
 				}
 			}, BUFFER_TIMEOUT_MS)
@@ -117,8 +115,7 @@ export const makeEventBuffer = (logger: ILogger | undefined): BaileysBufferableE
 		if (!isBuffering) {
 			return false
 		}
-		if (logger)
-		logger.debug({ bufferCount }, 'Flushing event buffer')
+		if (logger) logger.debug({ bufferCount }, 'Flushing event buffer')
 		isBuffering = false
 		bufferCount = 0
 
@@ -135,8 +132,7 @@ export const makeEventBuffer = (logger: ILogger | undefined): BaileysBufferableE
 
 		// Clear history cache if it exceeds the max size
 		if (historyCache.size > MAX_HISTORY_CACHE_SIZE) {
-			if (logger)
-			logger.debug({ cacheSize: historyCache.size }, 'Clearing history cache')
+			if (logger) logger.debug({ cacheSize: historyCache.size }, 'Clearing history cache')
 			historyCache.clear()
 		}
 
@@ -186,7 +182,7 @@ export const makeEventBuffer = (logger: ILogger | undefined): BaileysBufferableE
 					const bufferedType = existingUpserts[0]!.type
 					if (bufferedType !== type) {
 						if (logger)
-						logger.debug({ bufferedType, newType: type }, 'messages.upsert type mismatch, emitting buffered messages')
+							logger.debug({ bufferedType, newType: type }, 'messages.upsert type mismatch, emitting buffered messages')
 						// Emit the buffered messages with their correct type
 						ev.emit('event', {
 							'messages.upsert': {
@@ -263,8 +259,7 @@ export const makeEventBuffer = (logger: ILogger | undefined): BaileysBufferableE
 			bufferCount = 0
 			// Remove all listeners
 			ev.removeAllListeners()
-			if (logger)
-			logger.debug('Event buffer destroyed')
+			if (logger) logger.debug('Event buffer destroyed')
 		}
 	}
 }
@@ -382,8 +377,7 @@ function append<E extends BufferableEvent>(
 				if (id && !upsert) {
 					upsert = data.historySets.chats[id]
 					if (upsert) {
-						if (logger)
-						logger.debug({ chatId: id }, 'absorbed chat upsert in chat set')
+						if (logger) logger.debug({ chatId: id }, 'absorbed chat upsert in chat set')
 					}
 				}
 
@@ -459,8 +453,7 @@ function append<E extends BufferableEvent>(
 				if (!upsert) {
 					upsert = data.historySets.contacts[contact.id]
 					if (upsert) {
-						if (logger)
-						logger.debug({ contactId: contact.id }, 'absorbed contact upsert in contact set')
+						if (logger) logger.debug({ contactId: contact.id }, 'absorbed contact upsert in contact set')
 					}
 				}
 
@@ -502,8 +495,7 @@ function append<E extends BufferableEvent>(
 				if (!existing) {
 					existing = data.historySets.messages[key]
 					if (existing) {
-						if (logger)
-						logger.debug({ messageId: key }, 'absorbed message upsert in message set')
+						if (logger) logger.debug({ messageId: key }, 'absorbed message upsert in message set')
 					}
 				}
 
@@ -512,8 +504,7 @@ function append<E extends BufferableEvent>(
 				}
 
 				if (data.messageUpdates[key]) {
-					if (logger)
-					logger.debug('absorbed prior message update in message upsert')
+					if (logger) logger.debug('absorbed prior message update in message upsert')
 					Object.assign(message, data.messageUpdates[key].update)
 					delete data.messageUpdates[key]
 				}
@@ -623,13 +614,11 @@ function append<E extends BufferableEvent>(
 			const conditionMatches = update.conditional ? update.conditional(data) : true
 			if (conditionMatches) {
 				delete update.conditional
-				if (logger)
-				logger.debug({ chatId }, 'absorbed chat update in existing chat')
+				if (logger) logger.debug({ chatId }, 'absorbed chat update in existing chat')
 				Object.assign(existing, concatChats(update as Chat, existing))
 				delete data.chatUpdates[chatId]
 			} else if (conditionMatches === false) {
-				if (logger)
-				logger.debug({ chatId }, 'chat update condition fail, removing')
+				if (logger) logger.debug({ chatId }, 'chat update condition fail, removing')
 				delete data.chatUpdates[chatId]
 			}
 		}
@@ -646,8 +635,7 @@ function append<E extends BufferableEvent>(
 			typeof chat?.unreadCount === 'number' &&
 			chat.unreadCount > 0
 		) {
-			if (logger)
-			logger.debug({ chatId: chat.id }, 'decrementing chat counter')
+			if (logger) logger.debug({ chatId: chat.id }, 'decrementing chat counter')
 			chat.unreadCount -= 1
 			if (chat.unreadCount === 0) {
 				delete chat.unreadCount

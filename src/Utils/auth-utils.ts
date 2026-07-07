@@ -46,6 +46,75 @@ export function makeCacheableSignalKeyStore(
 			useClones: false,
 			deleteOnExpire: true
 		})
+	return {
+		async get(type, ids) {
+			const data = {} as Record<string, SignalDataTypeMap[typeof type]>
+			const missing: string[] = []
+
+			const prefix = type + '.'
+
+			for (const id of ids) {
+				const item = cache.get<SignalDataTypeMap[typeof type]>(prefix + id)
+				if (item !== undefined) {
+					// @ts-ignore
+					data[id] = item
+				} else {
+					missing.push(id)
+				}
+			}
+
+			if (missing.length) {
+				const fetched = await store.get(type, missing)
+
+				for (const id of missing) {
+					const item = fetched[id]
+
+					if (item !== undefined) {
+						data[id] = item
+						// @ts-ignore
+						cache.set(prefix + id, item)
+					}
+				}
+			}
+			return data
+		},
+		async set(data) {
+			await store.set(data)
+
+			let keys = 0
+
+			for (const type in data) {
+				const entries = data[type as keyof SignalDataTypeMap]
+				if (!entries) continue
+
+				const prefix = type + '.'
+
+				for (const id in entries) {
+					cache.set(prefix + id, entries[id]!)
+					keys++
+				}
+			}
+
+			logger?.trace({ keys }, 'updated cache')
+		},
+		async clear() {
+			await cache.flushAll()
+			await store.clear?.()
+		}
+	}
+}
+export function makeCacheableSignalKeyStoreOld(
+	store: SignalKeyStore,
+	logger?: ILogger,
+	_cache?: CacheStore
+): SignalKeyStore {
+	const cache =
+		_cache ||
+		new NodeCache<SignalDataTypeMap[keyof SignalDataTypeMap]>({
+			stdTTL: DEFAULT_CACHE_TTLS.SIGNAL_STORE, // 5 minutes
+			useClones: false,
+			deleteOnExpire: true
+		})
 
 	// Mutex for protecting cache operations
 	const cacheMutex = new Mutex()
@@ -81,7 +150,6 @@ export function makeCacheableSignalKeyStore(
 						}
 					}
 				}
-
 				return data
 			})
 		},
@@ -105,6 +173,7 @@ export function makeCacheableSignalKeyStore(
 		}
 	}
 }
+const txStorage = new AsyncLocalStorage<TransactionContext>()
 
 /**
  * Adds DB-like transaction capability to the SignalKeyStore
@@ -118,8 +187,6 @@ export const addTransactionCapability = (
 	logger: ILogger | undefined,
 	{ maxCommitRetries, delayBetweenTriesMs }: TransactionCapabilityOptions
 ): SignalKeyStoreWithTransaction => {
-	const txStorage = new AsyncLocalStorage<TransactionContext>()
-
 	// Queues for concurrency control (keyed by signal data type - bounded set)
 	const keyQueues = new Map<string, PQueue>()
 
@@ -190,23 +257,19 @@ export const addTransactionCapability = (
 	 */
 	async function commitWithRetry(mutations: SignalDataSet): Promise<void> {
 		if (Object.keys(mutations).length === 0) {
-			if (logger)
-			logger.trace('no mutations in transaction')
+			if (logger) logger.trace('no mutations in transaction')
 			return
 		}
-		if (logger)
-		logger.trace('committing transaction')
+		if (logger) logger.trace('committing transaction')
 
 		for (let attempt = 0; attempt < maxCommitRetries; attempt++) {
 			try {
 				await state.set(mutations)
-				if (logger)
-				logger.trace({ mutationCount: Object.keys(mutations).length }, 'committed transaction')
+				if (logger) logger.trace({ mutationCount: Object.keys(mutations).length }, 'committed transaction')
 				return
 			} catch (error) {
 				const retriesLeft = maxCommitRetries - attempt - 1
-				if (logger)
-				logger.warn(`failed to commit mutations, retries left=${retriesLeft}`)
+				if (logger) logger.warn(`failed to commit mutations, retries left=${retriesLeft}`)
 
 				if (retriesLeft === 0) {
 					throw error
@@ -232,8 +295,7 @@ export const addTransactionCapability = (
 
 			if (missing.length > 0) {
 				ctx.dbQueries++
-				if (logger)
-				logger.trace({ type, count: missing.length }, 'fetching missing keys in transaction')
+				if (logger) logger.trace({ type, count: missing.length }, 'fetching missing keys in transaction')
 
 				const fetched = await getTxMutex(type).runExclusive(() => state.get(type, missing))
 
@@ -282,8 +344,7 @@ export const addTransactionCapability = (
 			}
 
 			// In transaction - update cache and mutations
-			if (logger)
-			logger.trace({ types: Object.keys(data) }, 'caching in transaction')
+			if (logger) logger.trace({ types: Object.keys(data) }, 'caching in transaction')
 
 			for (const key_ in data) {
 				const key = key_ as keyof SignalDataTypeMap
@@ -310,8 +371,7 @@ export const addTransactionCapability = (
 
 			// Nested transaction - reuse existing context
 			if (existing) {
-				if (logger)
-				logger.trace('reusing existing transaction context')
+				if (logger) logger.trace('reusing existing transaction context')
 				return work()
 			}
 
@@ -326,21 +386,18 @@ export const addTransactionCapability = (
 						mutations: {},
 						dbQueries: 0
 					}
-					if (logger)
-					logger.trace('entering transaction')
+					if (logger) logger.trace('entering transaction')
 
 					try {
 						const result = await txStorage.run(ctx, work)
 
 						// Commit mutations
 						await commitWithRetry(ctx.mutations)
-						if (logger)
-						logger.trace({ dbQueries: ctx.dbQueries }, 'transaction completed')
+						if (logger) logger.trace({ dbQueries: ctx.dbQueries }, 'transaction completed')
 
 						return result
 					} catch (error) {
-						if (logger)
-						logger.error({ error }, 'transaction failed, rolling back')
+						if (logger) logger.error({ error }, 'transaction failed, rolling back')
 						throw error
 					}
 				})

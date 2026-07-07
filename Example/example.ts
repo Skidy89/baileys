@@ -1,6 +1,6 @@
 import { Boom } from '@hapi/boom'
 import readline from 'readline'
-import makeWASocket, { AnyMessageContent, delay, DisconnectReason, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, getHistoryMsg, GroupMetadata, isJidBot, isJidBroadcast, isJidMetaAI, isJidNewsletter, jidDecode, makeCacheableSignalKeyStore, normalizeMessageContent, PatchedMessageWithRecipientJID, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } from '../src'
+import makeWASocket, { AnyMessageContent, delay, DisconnectReason, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, getHistoryMsg, GroupMetadata, isJidBot, isJidBroadcast, isJidMetaAI, isJidNewsletter, jidDecode, makeCacheableSignalKeyStore, makeCacheableSignalKeyStoreOld, normalizeMessageContent, PatchedMessageWithRecipientJID, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } from '../src'
 import got from 'got'
 import P from 'pino'
 
@@ -33,7 +33,7 @@ const startSock = async() => {
 	const sock = makeWASocket({
 		version,
 		logger: undefined,
-		auth: state,
+		auth: {creds: state.creds, keys: state.keys},
 		enableRecentMessageCache: false,
         waWebSocketUrl: "wss://web.whatsapp.com/ws/chat?ED=CAgIAg==",
 		shouldSyncHistoryMessage: () => false,
@@ -153,17 +153,6 @@ const startSock = async() => {
 				console.timeEnd("test")
 				const end = Date.now()
 				await sock.sendMessage(msg.key.remoteJid!, { text: `Response time: ${end - p}ms`, edit: result?.key })
-				console.time("sendImages")
-				const stream = got.stream('https://i.pinimg.com/736x/4d/28/99/4d2899185ac4cf805cb4a57644bed18c.jpg')
-				const p1 = Date.now()
-				await sock.sendMessage(msg.key.remoteJid!, {
-					image: { stream },
-					caption: 'test'
-				})
-				const end1 = Date.now()
-				await sock.sendMessage(msg.key.remoteJid!, { text: `Image response time: ${end1 - p1}ms` })
-
-				console.timeEnd("sendImages")
 			  }
 
               if (!msg.key.fromMe && doReplies && !isJidNewsletter(msg.key?.remoteJid!)) {

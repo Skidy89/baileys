@@ -84,8 +84,7 @@ export class PreKeyManager {
 					transactionCache[keyType][keyId] = null
 					mutations[keyType]![keyId] = null
 				} else {
-					if (this.logger)
-					this.logger.warn(`Skipping deletion of non-existent ${keyType} in transaction: ${keyId}`)
+					if (this.logger) this.logger.warn(`Skipping deletion of non-existent ${keyType} in transaction: ${keyId}`)
 				}
 			}
 		} else {
@@ -96,8 +95,7 @@ export class PreKeyManager {
 					transactionCache[keyType]![keyId] = null
 					mutations[keyType]![keyId] = null
 				} else {
-					if (this.logger)
-					this.logger.warn(`Skipping deletion of non-existent ${keyType}: ${keyId}`)
+					if (this.logger) this.logger.warn(`Skipping deletion of non-existent ${keyType}: ${keyId}`)
 				}
 			}
 		}

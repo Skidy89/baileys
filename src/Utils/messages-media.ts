@@ -850,8 +850,7 @@ export const getWAUploadToServer = (
 		}
 
 		for (const { hostname } of hosts) {
-			if (logger)
-			logger.debug(`uploading to "${hostname}"`)
+			if (logger) logger.debug(`uploading to "${hostname}"`)
 
 			const auth = encodeURIComponent(uploadInfo.auth)
 			const url = `https://${hostname}${MEDIA_PATH_MAP[mediaType]}/${fileEncSha256B64}?auth=${auth}&token=${fileEncSha256B64}`
@@ -885,10 +884,10 @@ export const getWAUploadToServer = (
 			} catch (error: any) {
 				const isLast = hostname === hosts[uploadInfo.hosts.length - 1]?.hostname
 				if (logger)
-				logger.warn(
-					{ trace: error?.stack, uploadResult: result },
-					`Error in uploading to ${hostname} ${isLast ? '' : ', retrying...'}`
-				)
+					logger.warn(
+						{ trace: error?.stack, uploadResult: result },
+						`Error in uploading to ${hostname} ${isLast ? '' : ', retrying...'}`
+					)
 			}
 		}
 

@@ -121,8 +121,7 @@ export class MessageRetryManager {
 			timestamp: Date.now()
 		})
 		this.messageKeyIndex.set(id, keyStr)
-		if (this.logger)
-		this.logger.debug(`Added message to retry cache: ${to}/${id}`)
+		if (this.logger) this.logger.debug(`Added message to retry cache: ${to}/${id}`)
 	}
 
 	/**
@@ -158,10 +157,10 @@ export class MessageRetryManager {
 			this.sessionRecreateHistory.set(jid, Date.now())
 			this.statistics.sessionRecreations++
 			if (this.logger)
-			this.logger.warn(
-				{ jid, errorCode: RetryReason[errorCode] },
-				'MAC error detected, forcing immediate session recreation'
-			)
+				this.logger.warn(
+					{ jid, errorCode: RetryReason[errorCode] },
+					'MAC error detected, forcing immediate session recreation'
+				)
 			return {
 				reason: `MAC error (code ${errorCode}: ${RetryReason[errorCode]}), immediate session recreation`,
 				recreate: true
@@ -269,8 +268,7 @@ export class MessageRetryManager {
 			this.statistics.phoneRequests++
 			callback()
 		}, delay)
-		if (this.logger)
-		this.logger.debug(`Scheduled phone request for message ${messageId} with ${delay}ms delay`)
+		if (this.logger) this.logger.debug(`Scheduled phone request for message ${messageId} with ${delay}ms delay`)
 	}
 
 	/**
@@ -281,8 +279,7 @@ export class MessageRetryManager {
 		if (timeout) {
 			clearTimeout(timeout)
 			delete this.pendingPhoneRequests[messageId]
-			if (this.logger)
-			this.logger.debug(`Cancelled pending phone request for message ${messageId}`)
+			if (this.logger) this.logger.debug(`Cancelled pending phone request for message ${messageId}`)
 		}
 	}
 
