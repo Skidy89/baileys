@@ -173,7 +173,7 @@ export function makeCacheableSignalKeyStoreOld(
 		}
 	}
 }
-const txStorage = new AsyncLocalStorage<TransactionContext>()
+
 
 /**
  * Adds DB-like transaction capability to the SignalKeyStore
@@ -187,6 +187,7 @@ export const addTransactionCapability = (
 	logger: ILogger | undefined,
 	{ maxCommitRetries, delayBetweenTriesMs }: TransactionCapabilityOptions
 ): SignalKeyStoreWithTransaction => {
+	const txStorage = new AsyncLocalStorage<TransactionContext>()
 	// Queues for concurrency control (keyed by signal data type - bounded set)
 	const keyQueues = new Map<string, PQueue>()
 
