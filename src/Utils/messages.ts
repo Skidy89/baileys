@@ -204,7 +204,7 @@ export const prepareWAMessageMedia = async (
 		}
 		if (cacheableKey) {
 			logger?.debug({ cacheableKey }, 'set cache')
-			options.mediaCache!.set(cacheableKey, WAProto.Message.encode(obj).finish())
+			await options.mediaCache!.set(cacheableKey, WAProto.Message.encode(obj).finish())
 		}
 		return obj
 	}
@@ -311,7 +311,7 @@ export const prepareWAMessageMedia = async (
 
 	if (cacheableKey) {
 		logger?.debug({ cacheableKey }, 'set cache')
-		options.mediaCache!.set(cacheableKey, WAProto.Message.encode(obj).finish())
+		await options.mediaCache!.set(cacheableKey, WAProto.Message.encode(obj).finish())
 	}
 
 	const cleanup = async () => {
@@ -324,7 +324,7 @@ export const prepareWAMessageMedia = async (
 			logger?.warn('failed to remove tmp file')
 		}
 	}
-	cleanup().catch(logger?.warn)
+	await cleanup().catch(logger?.warn)
 
 	return obj
 }

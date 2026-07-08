@@ -54,7 +54,6 @@ export default defineConfig([
 					ignoreRestArgs: true
 				}
 			],
-
 			'@typescript-eslint/no-inferrable-types': ['warn'],
 			'@typescript-eslint/no-redundant-type-constituents': ['warn'],
 			'@typescript-eslint/no-unnecessary-type-assertion': ['warn'],

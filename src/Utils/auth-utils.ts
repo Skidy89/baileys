@@ -72,7 +72,7 @@ export function makeCacheableSignalKeyStore(
 					if (item !== undefined) {
 						data[id] = item
 						// @ts-ignore
-						cache.set(prefix + id, item)
+						await cache.set(prefix + id, item)
 					}
 				}
 			}
@@ -90,7 +90,7 @@ export function makeCacheableSignalKeyStore(
 				const prefix = type + '.'
 
 				for (const id in entries) {
-					cache.set(prefix + id, entries[id]!)
+					await cache.set(prefix + id, entries[id]!)
 					keys++
 				}
 			}
@@ -173,7 +173,6 @@ export function makeCacheableSignalKeyStoreOld(
 		}
 	}
 }
-
 
 /**
  * Adds DB-like transaction capability to the SignalKeyStore

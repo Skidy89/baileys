@@ -26,7 +26,6 @@ import type {
 	WAReadReceiptsValue
 } from '../Types'
 import { ALL_WA_PATCH_NAMES } from '../Types'
-import type { QuickReplyAction } from '../Types/Bussines.js'
 import type { LabelActionBody } from '../Types/Label'
 import { SyncState } from '../Types/State'
 import {
@@ -184,37 +183,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		})
 	}
 
-	const updateMessagesPrivacy = async (value: WAPrivacyMessagesValue) => {
-		await privacyQuery('messages', value)
-	}
-
-	const updateCallPrivacy = async (value: WAPrivacyCallValue) => {
-		await privacyQuery('calladd', value)
-	}
-
-	const updateLastSeenPrivacy = async (value: WAPrivacyValue) => {
-		await privacyQuery('last', value)
-	}
-
-	const updateOnlinePrivacy = async (value: WAPrivacyOnlineValue) => {
-		await privacyQuery('online', value)
-	}
-
-	const updateProfilePicturePrivacy = async (value: WAPrivacyValue) => {
-		await privacyQuery('profile', value)
-	}
-
-	const updateStatusPrivacy = async (value: WAPrivacyValue) => {
-		await privacyQuery('status', value)
-	}
-
-	const updateReadReceiptsPrivacy = async (value: WAReadReceiptsValue) => {
-		await privacyQuery('readreceipts', value)
-	}
-
-	const updateGroupsAddPrivacy = async (value: WAPrivacyGroupAddValue) => {
-		await privacyQuery('groupadd', value)
-	}
+	
 
 	const updateDefaultDisappearingMode = async (duration: number) => {
 		await query({
@@ -461,55 +430,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		})
 	}
 
-	const getBusinessProfile = async (jid: string): Promise<WABusinessProfile | void> => {
-		const results = await query({
-			tag: 'iq',
-			attrs: {
-				to: 's.whatsapp.net',
-				xmlns: 'w:biz',
-				type: 'get'
-			},
-			content: [
-				{
-					tag: 'business_profile',
-					attrs: { v: '244' },
-					content: [
-						{
-							tag: 'profile',
-							attrs: { jid }
-						}
-					]
-				}
-			]
-		})
 
-		const profileNode = getBinaryNodeChild(results, 'business_profile')
-		const profiles = getBinaryNodeChild(profileNode, 'profile')
-		if (profiles) {
-			const address = getBinaryNodeChild(profiles, 'address')
-			const description = getBinaryNodeChild(profiles, 'description')
-			const website = getBinaryNodeChild(profiles, 'website')
-			const email = getBinaryNodeChild(profiles, 'email')
-			const category = getBinaryNodeChild(getBinaryNodeChild(profiles, 'categories'), 'category')
-			const businessHours = getBinaryNodeChild(profiles, 'business_hours')
-			const businessHoursConfig = businessHours
-				? getBinaryNodeChildren(businessHours, 'business_hours_config')
-				: undefined
-			const websiteStr = website?.content?.toString()
-			return {
-				wid: profiles.attrs?.jid,
-				address: address?.content?.toString(),
-				description: description?.content?.toString() || '',
-				website: websiteStr ? [websiteStr] : [],
-				email: email?.content?.toString(),
-				category: category?.content?.toString(),
-				business_hours: {
-					timezone: businessHours?.attrs?.timezone,
-					business_config: businessHoursConfig?.map(({ attrs }) => attrs as unknown as WABusinessHoursConfig)
-				}
-			}
-		}
-	}
 
 	const cleanDirtyBits = async (type: 'account_sync' | 'groups', fromTimestamp?: number | string) => {
 		if (logger) logger.info({ fromTimestamp }, 'clean dirty bits ' + type)
@@ -1039,153 +960,8 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		return appPatch(patch)
 	}
 
-	/**
-	 * Enable/Disable link preview privacy, not related to baileys link preview generation
-	 */
-	const updateDisableLinkPreviewsPrivacy = (isPreviewsDisabled: boolean) => {
-		return chatModify(
-			{
-				disableLinkPreviews: { isPreviewsDisabled }
-			},
-			''
-		)
-	}
-
-	/**
-	 * Star or Unstar a message
-	 */
-	const star = (jid: string, messages: { id: string; fromMe?: boolean }[], star: boolean) => {
-		return chatModify(
-			{
-				star: {
-					messages,
-					star
-				}
-			},
-			jid
-		)
-	}
-
-	/**
-	 * Add or Edit Contact
-	 */
-	const addOrEditContact = (jid: string, contact: proto.SyncActionValue.IContactAction) => {
-		return chatModify(
-			{
-				contact
-			},
-			jid
-		)
-	}
-
-	/**
-	 * Remove Contact
-	 */
-	const removeContact = (jid: string) => {
-		return chatModify(
-			{
-				contact: null
-			},
-			jid
-		)
-	}
-
-	/**
-	 * Adds label
-	 */
-	const addLabel = (jid: string, labels: LabelActionBody) => {
-		return chatModify(
-			{
-				addLabel: {
-					...labels
-				}
-			},
-			jid
-		)
-	}
-
-	/**
-	 * Adds label for the chats
-	 */
-	const addChatLabel = (jid: string, labelId: string) => {
-		return chatModify(
-			{
-				addChatLabel: {
-					labelId
-				}
-			},
-			jid
-		)
-	}
-
-	/**
-	 * Removes label for the chat
-	 */
-	const removeChatLabel = (jid: string, labelId: string) => {
-		return chatModify(
-			{
-				removeChatLabel: {
-					labelId
-				}
-			},
-			jid
-		)
-	}
-
-	/**
-	 * Adds label for the message
-	 */
-	const addMessageLabel = (jid: string, messageId: string, labelId: string) => {
-		return chatModify(
-			{
-				addMessageLabel: {
-					messageId,
-					labelId
-				}
-			},
-			jid
-		)
-	}
-
-	/**
-	 * Removes label for the message
-	 */
-	const removeMessageLabel = (jid: string, messageId: string, labelId: string) => {
-		return chatModify(
-			{
-				removeMessageLabel: {
-					messageId,
-					labelId
-				}
-			},
-			jid
-		)
-	}
-
-	/**
-	 * Add or Edit Quick Reply
-	 */
-	const addOrEditQuickReply = (quickReply: QuickReplyAction) => {
-		return chatModify(
-			{
-				quickReply
-			},
-			''
-		)
-	}
-
-	/**
-	 * Remove Quick Reply
-	 */
-	const removeQuickReply = (timestamp: string) => {
-		return chatModify(
-			{
-				quickReply: { timestamp, deleted: true }
-			},
-			''
-		)
-	}
-
+	
+	
 	/**
 	 * queries need to be fired on connection open
 	 * help ensure parity with WA Web
@@ -1496,30 +1272,10 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		updateProfileStatus,
 		updateProfileName,
 		updateBlockStatus,
-		updateDisableLinkPreviewsPrivacy,
-		updateCallPrivacy,
-		updateMessagesPrivacy,
-		updateLastSeenPrivacy,
-		updateOnlinePrivacy,
-		updateProfilePicturePrivacy,
-		updateStatusPrivacy,
-		updateReadReceiptsPrivacy,
-		updateGroupsAddPrivacy,
 		updateDefaultDisappearingMode,
-		getBusinessProfile,
 		resyncAppState,
 		chatModify,
 		cleanDirtyBits,
-		addOrEditContact,
-		removeContact,
 		placeholderResendCache,
-		addLabel,
-		addChatLabel,
-		removeChatLabel,
-		addMessageLabel,
-		removeMessageLabel,
-		star,
-		addOrEditQuickReply,
-		removeQuickReply
 	}
 }
