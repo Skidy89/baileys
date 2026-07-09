@@ -43,6 +43,7 @@ export async function handleIdentityChange(
 	if (!identityNode) {
 		return { action: 'no_identity_node' }
 	}
+
 	if (ctx.logger) ctx.logger.info({ jid: from }, 'identity changed')
 
 	const decoded = jidDecode(from)

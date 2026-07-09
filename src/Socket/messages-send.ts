@@ -25,7 +25,6 @@ import {
 	encryptMediaRetryRequest,
 	extractDeviceJids,
 	generateMessageID,
-	generateMessageIDV2,
 	generateParticipantHashV2,
 	generateWAMessage,
 	getStatusCodeForMediaRetry,
@@ -36,7 +35,7 @@ import {
 	parseAndInjectE2ESessions,
 	unixTimestampSeconds
 } from '../Utils'
-import { getUrlInfo } from '../Utils/link-preview'
+
 import { makeKeyedMutex, makeMutex } from '../Utils/make-mutex'
 import { getMessageReportingToken, shouldIncludeReportingToken } from '../Utils/reporting-utils'
 import {
@@ -72,23 +71,12 @@ import { USyncQuery, USyncUser } from '../WAUSync'
 import { makeGroupsSocket } from './groups.js'
 
 export const makeMessagesSocket = (config: SocketConfig) => {
-	const {
-		logger,
-		linkPreviewImageThumbnailWidth,
-		generateHighQualityLinkPreview,
-		options: httpRequestOptions,
-		patchMessageBeforeSending,
-		cachedGroupMetadata,
-		enableRecentMessageCache,
-		maxMsgRetryCount
-	} = config
+	const { logger, patchMessageBeforeSending, cachedGroupMetadata, enableRecentMessageCache, maxMsgRetryCount } = config
 	const sock = makeGroupsSocket(config)
 	const {
 		ev,
 		authState,
-		messageMutex,
 		signalRepository,
-		upsertMessage,
 		query,
 		fetchPrivacySettings,
 		sendNode,
@@ -212,6 +200,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				}
 			]
 		}
+
 		if (logger) logger.debug({ attrs: node.attrs, messageIds }, 'sending receipt for messages')
 		await sendNode(node)
 	}
@@ -698,6 +687,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 				if (logger) {
 					logger.debug({ msgId }, `sending newsletter message to ${jid}`)
 				}
+
 				await sendNode(stanza)
 				return
 			}
@@ -1094,6 +1084,7 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 			if (additionalNodes && additionalNodes.length > 0) {
 				;(stanza.content as BinaryNode[]).push(...additionalNodes)
 			}
+
 			if (logger) logger.debug({ msgId }, `sending message to ${participants.length} devices`)
 
 			await sendNode(stanza)
@@ -1379,14 +1370,14 @@ export const makeMessagesSocket = (config: SocketConfig) => {
 						attrs: {
 							polltype: 'creation'
 						}
-					} as BinaryNode)
+					})
 				} else if (isEventMsg) {
 					additionalNodes.push({
 						tag: 'meta',
 						attrs: {
 							event_type: 'creation'
 						}
-					} as BinaryNode)
+					})
 				}
 
 				await relayMessage(jid, fullMsg.message!, {

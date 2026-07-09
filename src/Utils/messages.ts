@@ -133,6 +133,7 @@ export const prepareWAMessageMedia = async (
 			break
 		}
 	}
+
 	if (!mediaType) {
 		throw new Boom('Invalid media type', { statusCode: 400 })
 	}
@@ -153,6 +154,7 @@ export const prepareWAMessageMedia = async (
 	if (mediaType === 'document' && !uploadData.fileName) {
 		uploadData.fileName = 'file'
 	}
+
 	if (!uploadData.mimetype) {
 		uploadData.mimetype = MIMETYPE_MAP[mediaType]
 	}
@@ -199,13 +201,16 @@ export const prepareWAMessageMedia = async (
 			obj.ptvMessage = obj.videoMessage
 			delete obj.videoMessage
 		}
+
 		if (obj.stickerMessage) {
 			obj.stickerMessage.stickerSentTs = Date.now()
 		}
+
 		if (cacheableKey) {
 			logger?.debug({ cacheableKey }, 'set cache')
 			await options.mediaCache!.set(cacheableKey, WAProto.Message.encode(obj).finish())
 		}
+
 		return obj
 	}
 
@@ -254,6 +259,7 @@ export const prepareWAMessageMedia = async (
 						uploadData.height = originalImageDimensions.height
 						logger?.debug('set dimensions')
 					}
+
 					logger?.debug('generated thumbnail')
 				} catch (error) {
 					logger?.warn({ trace: (error as any).stack }, 'thumbnail generation failed')
@@ -301,7 +307,7 @@ export const prepareWAMessageMedia = async (
 			mediaKeyTimestamp: unixTimestampSeconds(),
 			...uploadData,
 			media: undefined
-		} as any)
+		})
 	})
 
 	if (uploadData.ptv) {
@@ -324,6 +330,7 @@ export const prepareWAMessageMedia = async (
 			logger?.warn('failed to remove tmp file')
 		}
 	}
+
 	await cleanup().catch(logger?.warn)
 
 	return obj

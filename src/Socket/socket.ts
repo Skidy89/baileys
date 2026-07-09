@@ -13,14 +13,7 @@ import {
 	TimeMs,
 	UPLOAD_TIMEOUT
 } from '../Defaults'
-import {
-	type LIDMapping,
-	type NewChatMessageCapInfo,
-	QueryIds,
-	ReachoutTimelockEnforcementType,
-	type ReachoutTimelockState,
-	type SocketConfig
-} from '../Types'
+import { type LIDMapping, type NewChatMessageCapInfo, QueryIds, type SocketConfig } from '../Types'
 import { DisconnectReason, XWAPaths } from '../Types'
 import {
 	addTransactionCapability,
@@ -149,6 +142,7 @@ export const makeSocket = (config: SocketConfig) => {
 			}
 		})
 	}
+
 	const wMexQuery = (
 		variables: Record<string, unknown>,
 		queryId: string,
@@ -206,7 +200,7 @@ export const makeSocket = (config: SocketConfig) => {
 
 	/** send a binary node */
 	const sendNode = (frame: BinaryNode) => {
-		if (logger && logger.level === 'trace') {
+		if (logger?.level === 'trace') {
 			logger.trace({ xml: binaryNodeToString(frame), msg: 'xml send' })
 		}
 
@@ -612,6 +606,7 @@ export const makeSocket = (config: SocketConfig) => {
 				logger.info(`${preKeyCount} pre-keys found on server`)
 				logger.info(`Current prekey ID: ${currentPreKeyId}, exists in storage: ${currentPreKeyExists}`)
 			}
+
 			const lowServerCount = preKeyCount <= count
 			const missingCurrentPreKey = !currentPreKeyExists && currentPreKeyId > 0
 
@@ -645,7 +640,7 @@ export const makeSocket = (config: SocketConfig) => {
 			if (!(frame instanceof Uint8Array)) {
 				const msgId = frame.attrs.id
 
-				if (logger && logger.level === 'trace') {
+				if (logger?.level === 'trace') {
 					logger.trace({ xml: binaryNodeToString(frame), msg: 'recv xml' })
 				}
 
@@ -665,7 +660,7 @@ export const makeSocket = (config: SocketConfig) => {
 				anyTriggered = ws.emit(`${DEF_CALLBACK_PREFIX}${l0},,${l2}`, frame) || anyTriggered
 				anyTriggered = ws.emit(`${DEF_CALLBACK_PREFIX}${l0}`, frame) || anyTriggered
 
-				if (!anyTriggered && logger && logger.level === 'debug') {
+				if (!anyTriggered && logger?.level === 'debug') {
 					logger.debug({ unhandled: true, msgId, fromMe: false, frame }, 'communication recv')
 				}
 			}
@@ -996,6 +991,7 @@ export const makeSocket = (config: SocketConfig) => {
 		} catch (err) {
 			if (logger) logger.warn({ err }, 'failed to send initial passive iq')
 		}
+
 		if (logger) logger.info('opened connection to WA')
 		clearTimeout(qrTimer) // will never happen in all likelyhood -- but just in case WA sends success on first try
 

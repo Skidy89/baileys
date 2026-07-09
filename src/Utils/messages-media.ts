@@ -992,7 +992,7 @@ export const decryptMediaRetryData = (
 }
 
 export const getStatusCodeForMediaRetry = (code: number) =>
-	MEDIA_RETRY_STATUS_MAP[code as proto.MediaRetryNotification.ResultType]
+	MEDIA_RETRY_STATUS_MAP[code as keyof typeof MEDIA_RETRY_STATUS_MAP] || 500
 
 const MEDIA_RETRY_STATUS_MAP = {
 	[proto.MediaRetryNotification.ResultType.SUCCESS]: 200,

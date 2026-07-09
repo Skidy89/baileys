@@ -8,7 +8,7 @@
     "sourceMap": true,
     "declarationMap": true,
     "moduleDetection": "force",
-
+    "noUnusedLocals": true,
     "lib": ["ES2020", "ESNext.Array", "DOM"],
     "rootDir": "./src",
 

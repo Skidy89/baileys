@@ -313,6 +313,7 @@ export function makeLibSignalRepository(
 					deviceJids.push(jid)
 				}
 			}
+
 			if (logger)
 				logger.debug(
 					{

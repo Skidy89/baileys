@@ -115,6 +115,7 @@ export const makeEventBuffer = (logger: ILogger | undefined): BaileysBufferableE
 		if (!isBuffering) {
 			return false
 		}
+
 		if (logger) logger.debug({ bufferCount }, 'Flushing event buffer')
 		isBuffering = false
 		bufferCount = 0

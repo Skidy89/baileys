@@ -1,9 +1,9 @@
 import { Boom } from '@hapi/boom'
 import type { SocketConfig } from '../Types'
+import type { BinaryNode } from '../WABinary'
 import { S_WHATSAPP_NET } from '../WABinary'
 import { USyncQuery } from '../WAUSync'
 import { makeSocket } from './socket'
-import type { BinaryNode } from '../WABinary'
 
 export const makeUSyncSocket = (config: SocketConfig) => {
 	const sock = makeSocket(config)

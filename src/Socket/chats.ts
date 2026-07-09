@@ -11,22 +11,13 @@ import type {
 	MessageUpsertType,
 	PresenceData,
 	SocketConfig,
-	WABusinessHoursConfig,
-	WABusinessProfile,
 	WAMediaUpload,
 	WAMessage,
 	WAPatchCreate,
 	WAPatchName,
-	WAPresence,
-	WAPrivacyCallValue,
-	WAPrivacyGroupAddValue,
-	WAPrivacyMessagesValue,
-	WAPrivacyOnlineValue,
-	WAPrivacyValue,
-	WAReadReceiptsValue
+	WAPresence
 } from '../Types'
 import { ALL_WA_PATCH_NAMES } from '../Types'
-import type { LabelActionBody } from '../Types/Label'
 import { SyncState } from '../Types/State'
 import {
 	chatModificationToAppPatch,
@@ -158,32 +149,6 @@ export const makeChatsSocket = (config: SocketConfig) => {
 
 		return privacySettings
 	}
-
-	/** helper function to run a privacy IQ query */
-	const privacyQuery = async (name: string, value: string) => {
-		await query({
-			tag: 'iq',
-			attrs: {
-				xmlns: 'privacy',
-				to: S_WHATSAPP_NET,
-				type: 'set'
-			},
-			content: [
-				{
-					tag: 'privacy',
-					attrs: {},
-					content: [
-						{
-							tag: 'category',
-							attrs: { name, value }
-						}
-					]
-				}
-			]
-		})
-	}
-
-	
 
 	const updateDefaultDisappearingMode = async (duration: number) => {
 		await query({
@@ -430,8 +395,6 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		})
 	}
 
-
-
 	const cleanDirtyBits = async (type: 'account_sync' | 'groups', fromTimestamp?: number | string) => {
 		if (logger) logger.info({ fromTimestamp }, 'clean dirty bits ' + type)
 		await sendNode({
@@ -522,6 +485,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 						if (shouldForceSnapshot) {
 							forceSnapshotCollections.delete(name)
 						}
+
 						if (logger)
 							logger.info(`resyncing ${name} from v${state.version}${shouldForceSnapshot ? ' (forcing snapshot)' : ''}`)
 
@@ -945,6 +909,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		if (lidIssueProp !== undefined) {
 			serverProps.lidTrustedTokenIssueToLid = lidIssueProp === 'true' || lidIssueProp === '1'
 		}
+
 		if (logger) logger.debug({ serverProps }, 'fetched props')
 
 		return props
@@ -960,8 +925,6 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		return appPatch(patch)
 	}
 
-	
-	
 	/**
 	 * queries need to be fired on connection open
 	 * help ensure parity with WA Web
@@ -1186,6 +1149,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 			setTimeout(() => ev.flush(), 0)
 			return
 		}
+
 		if (logger) logger.info('First connection, awaiting history sync notification with a 20s timeout.')
 
 		if (awaitingSyncTimeout) {
@@ -1276,6 +1240,6 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		resyncAppState,
 		chatModify,
 		cleanDirtyBits,
-		placeholderResendCache,
+		placeholderResendCache
 	}
 }

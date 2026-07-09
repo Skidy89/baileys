@@ -76,6 +76,7 @@ export function makeCacheableSignalKeyStore(
 					}
 				}
 			}
+
 			return data
 		},
 		async set(data) {
@@ -103,6 +104,7 @@ export function makeCacheableSignalKeyStore(
 		}
 	}
 }
+const cacheMutex = new Mutex()
 export function makeCacheableSignalKeyStoreOld(
 	store: SignalKeyStore,
 	logger?: ILogger,
@@ -116,8 +118,6 @@ export function makeCacheableSignalKeyStoreOld(
 			deleteOnExpire: true
 		})
 
-	// Mutex for protecting cache operations
-	const cacheMutex = new Mutex()
 
 	function getUniqueId(type: string, id: string) {
 		return `${type}.${id}`
@@ -150,6 +150,7 @@ export function makeCacheableSignalKeyStoreOld(
 						}
 					}
 				}
+
 				return data
 			})
 		},
@@ -260,6 +261,7 @@ export const addTransactionCapability = (
 			if (logger) logger.trace('no mutations in transaction')
 			return
 		}
+
 		if (logger) logger.trace('committing transaction')
 
 		for (let attempt = 0; attempt < maxCommitRetries; attempt++) {

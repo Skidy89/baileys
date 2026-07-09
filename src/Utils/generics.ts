@@ -3,6 +3,7 @@ import { createHash, randomBytes } from 'crypto'
 import type Long from 'long'
 import { proto } from '../../WAProto/index.js'
 const baileysVersion = [2, 3000, 1035194821]
+import { Packr } from 'msgpackr'
 import type {
 	BaileysEventEmitter,
 	BaileysEventMap,
@@ -14,7 +15,6 @@ import type {
 import { DisconnectReason } from '../Types'
 import { type BinaryNode, getAllBinaryNodeChildren, jidDecode } from '../WABinary'
 import { sha256 } from './crypto'
-import { Packr } from 'msgpackr'
 export const packr = new Packr()
 export const BufferJSON = {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any

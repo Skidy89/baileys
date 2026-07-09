@@ -120,6 +120,7 @@ export class PreKeyManager {
 					if (this.logger) {
 						this.logger.warn(`Skipping deletion of non-existent ${keyType}: ${keyId}`)
 					}
+
 					delete data[keyType]![keyId]
 				}
 			}

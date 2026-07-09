@@ -38,7 +38,6 @@ import {
 	encodeSignedDeviceIdentity,
 	extractAddressingContext,
 	extractE2ESessionFromRetryReceipt,
-	getCallStatusFromNode,
 	getHistoryMsg,
 	getNextPreKeys,
 	getStatusFromReceiptType,

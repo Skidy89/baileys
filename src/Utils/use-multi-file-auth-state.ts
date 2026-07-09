@@ -3,8 +3,8 @@ import { join } from 'path'
 import { proto } from '../../WAProto/index.js'
 import type { AuthenticationCreds, AuthenticationState, SignalDataTypeMap } from '../Types'
 import { initAuthCreds } from './auth-utils'
-import { makeKeyedMutex } from './make-mutex'
 import { packr } from './index.js'
+import { makeKeyedMutex } from './make-mutex'
 
 // We need to lock files due to the fact that we are using async functions to read and write files
 // https://github.com/WhiskeySockets/Baileys/issues/794
@@ -31,10 +31,7 @@ export const useMultiFileAuthState = async (
 
 		return fileMutex.mutex(filePath, async () => {
 			try {
-				await writeFile(filePath, packr.pack(data), {
-					encoding: 'utf-8',
-					signal: AbortSignal.timeout(15000)
-				})
+				await writeFile(filePath, packr.pack(data))
 			} catch (error) {
 				await removeData(file)
 				throw error
@@ -45,11 +42,14 @@ export const useMultiFileAuthState = async (
 	const readData = async (file: string) => {
 		const filePath = join(folder, fixFileName(file)!)
 		return await fileMutex.mutex(filePath, async () => {
-			const data = await readFile(filePath, {
-				signal: AbortSignal.timeout(15000)
-			}).catch(() => null)
+			const data = await readFile(filePath).catch(() => null)
 			if (!data) return null
-			return packr.unpack(data)
+			try {
+				return packr.unpack(data)
+			} catch {
+				await unlink(filePath).catch(() => {})
+				return null
+			}
 		})
 	}
 

@@ -181,6 +181,7 @@ export const makeNoiseHandler = ({
 					const result = decrypt(frame)
 					frame = await decodeBinaryNode(result)
 				}
+
 				if (logger) logger.trace({ msg: (frame as BinaryNode)?.attrs?.id }, 'recv frame')
 
 				onFrame(frame)

@@ -1,8 +1,8 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, pbkdf2Sync, randomBytes } from 'crypto'
+import HKDF from 'futoin-hkdf'
 import * as curve from 'libsignal/src/curve'
 import { KEY_BUNDLE_TYPE } from '../Defaults'
 import type { KeyPair } from '../Types'
-import HKDF from 'futoin-hkdf'
 
 /** with the new libsignal, this would not be necessary, but keep it if something breaks */
 export const generateSignalPubKey = (pubKey: Uint8Array | Buffer) =>
