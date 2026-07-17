@@ -21,6 +21,7 @@ import { SenderKeyName } from './Group/sender-key-name'
 import { SenderKeyRecord } from './Group/sender-key-record'
 import { GroupCipher, GroupSessionBuilder, SenderKeyDistributionMessage } from './Group'
 import { LIDMappingStore } from './lid-mapping'
+import { makeMutex } from '../Utils/make-mutex'
 
 /** Extract identity key from PreKeyWhisperMessage for identity change detection */
 function extractIdentityFromPkmsg(ciphertext: Uint8Array): Uint8Array | undefined {
@@ -46,7 +47,6 @@ function extractIdentityFromPkmsg(ciphertext: Uint8Array): Uint8Array | undefine
 		return undefined
 	}
 }
-
 export function makeLibSignalRepository(
 	auth: SignalAuthState,
 	logger: ILogger | undefined,
@@ -62,6 +62,12 @@ export function makeLibSignalRepository(
 		ttl: 3 * 24 * 60 * 60 * 1000,
 		ttlAutopurge: true,
 		updateAgeOnGet: true
+	})
+	const migrationMutex = makeMutex()
+	const migrationAttemptCache = new LRUCache<string, { migrated: number; skipped: number; total: number }>({
+		max: 10_000,
+		ttl: 5 * 60 * 1000,
+		ttlAutopurge: true
 	})
 
 	const ensureSenderKeyAndCreateSkdm = async (group: string, meId: string) => {
@@ -259,6 +265,7 @@ export function makeLibSignalRepository(
 
 		close() {
 			migratedSessionCache.clear()
+			migrationAttemptCache.clear()
 			lidMapping.close()
 		},
 
@@ -273,106 +280,120 @@ export function makeLibSignalRepository(
 				return { migrated: 0, skipped: 0, total: 1 }
 			}
 
-			const { user, device: fromDevice } = jidDecode(fromJid)! 
-			const syncedDevices = getUSyncDevices ? await getUSyncDevices(fromJid) : [fromJid]
-			logger?.debug({ fromJid, toJid, user, fromDevice, syncedDevices }, 'starting session migration from PN to LID') 
-			const userDevices = new Set<string>([fromDevice?.toString() || '0'])
-			for (const jid of syncedDevices) {
-				const decoded = jidDecode(jid)
-				if (decoded?.user === user && (isPnUser(jid) || isHostedPnUser(jid))) {
-					userDevices.add(decoded.device?.toString() || '0')
+			return migrationMutex.mutex(async () => {
+				const { user, device: fromDevice } = jidDecode(fromJid)!
+				const lidUser = jidDecode(toJid)!.user
+				const migrationKey = `${user}.${lidUser}`
+				const cachedResult = migrationAttemptCache.get(migrationKey)
+				if (cachedResult) {
+					return cachedResult
 				}
-			}
 
-			// Filter out cached devices before database fetch
-			const uncachedDevices = [...userDevices].filter(device => {
-				const deviceKey = `${user}.${device}`
-				return !migratedSessionCache.has(deviceKey)
-			})
-			const deviceJids = uncachedDevices.map(device => {
-				if (device === '99') return `${user}:99@hosted`
-				return device === '0' ? `${user}@s.whatsapp.net` : `${user}:${device}@s.whatsapp.net`
-			})
+				const syncedDevices = getUSyncDevices ? await getUSyncDevices(fromJid) : [fromJid]
+				logger?.debug({ fromJid, toJid, user, fromDevice, syncedDevices }, 'starting session migration from PN to LID')
+				const userDevices = new Set<string>([fromDevice?.toString() || '0'])
+				for (const jid of syncedDevices) {
+					const decoded = jidDecode(jid)
+					if (decoded?.user === user && (isPnUser(jid) || isHostedPnUser(jid))) {
+						userDevices.add(decoded.device?.toString() || '0')
+					}
+				}
 
-			if (logger)
-				logger.debug(
-					{
-						fromJid,
-						totalDevices: userDevices.size
-					},
-					'loaded devices for session migration from USync'
-				)
-			if (deviceJids.length === 0) {
-				return { migrated: 0, skipped: 0, total: 0 }
-			}
-			const BATCH_SIZE = 10
-			const totalOps = deviceJids.length
-			let totalMigrated = 0
+				const uncachedDevices = [...userDevices].filter(device => {
+					const deviceKey = `${user}.${device}`
+					return !migratedSessionCache.has(deviceKey)
+				})
+				const deviceJids = uncachedDevices.map(device => {
+					if (device === '99') return `${user}:99@hosted`
+					return device === '0' ? `${user}@s.whatsapp.net` : `${user}:${device}@s.whatsapp.net`
+				})
 
-			for (let i = 0; i < deviceJids.length; i += BATCH_SIZE) {
-				const batchJids = deviceJids.slice(i, i + BATCH_SIZE)
+				if (logger)
+					logger.debug(
+						{
+							fromJid,
+							totalDevices: userDevices.size
+						},
+						'loaded devices for session migration from USync'
+					)
+				if (deviceJids.length === 0) {
+					const result = { migrated: 0, skipped: 0, total: 0 }
+					migrationAttemptCache.set(migrationKey, result)
+					return result
+				}
 
-				const result = await parsedKeys.transaction(
-					async (): Promise<{ migrated: number; skipped: number; total: number }> => {
-						const migrationOps = batchJids.map(jid => {
-							const lidWithDevice = transferDevice(jid, toJid)
-							const fromDecoded = jidDecode(jid)!
-							const toDecoded = jidDecode(lidWithDevice)!
-							return {
-								fromJid: jid,
-								toJid: lidWithDevice,
-								pnUser: fromDecoded.user,
-								lidUser: toDecoded.user,
-								deviceId: fromDecoded.device || 0,
-								fromAddr: jidToSignalProtocolAddress(jid),
-								toAddr: jidToSignalProtocolAddress(lidWithDevice)
-							}
-						})
+				const BATCH_SIZE = 10
+				const totalOps = deviceJids.length
+				let totalMigrated = 0
 
-						const pnAddrStrings = Array.from(new Set(migrationOps.map(op => op.fromAddr.toString())))
-						const pnSessionsBatch = await parsedKeys.get('session', pnAddrStrings)
+				for (let i = 0; i < deviceJids.length; i += BATCH_SIZE) {
+					const batchJids = deviceJids.slice(i, i + BATCH_SIZE)
 
-						const sessionUpdatesBatch: { [key: string]: Uint8Array | null } = {}
-						const migratedInBatch: string[] = []
+					const result = await parsedKeys.transaction(
+						async (): Promise<{ migrated: number; skipped: number; total: number }> => {
+							const migrationOps = batchJids.map(jid => {
+								const lidWithDevice = transferDevice(jid, toJid)
+								const fromDecoded = jidDecode(jid)!
+								const toDecoded = jidDecode(lidWithDevice)!
+								return {
+									fromJid: jid,
+									toJid: lidWithDevice,
+									pnUser: fromDecoded.user,
+									lidUser: toDecoded.user,
+									deviceId: fromDecoded.device || 0,
+									fromAddr: jidToSignalProtocolAddress(jid),
+									toAddr: jidToSignalProtocolAddress(lidWithDevice)
+								}
+							})
 
-						for (const op of migrationOps) {
+							const pnAddrStrings = Array.from(new Set(migrationOps.map(op => op.fromAddr.toString())))
+							const pnSessionsBatch = await parsedKeys.get('session', pnAddrStrings)
+							logger?.debug({ batchJids, pnSessionsBatch }, 'loaded PN sessions for migration batch')
+							const sessionUpdatesBatch: { [key: string]: Uint8Array | null } = {}
+							const migratedInBatch: string[] = []
+
+							for (const op of migrationOps) {
 							const pnAddrStr = op.fromAddr.toString()
 							const lidAddrStr = op.toAddr.toString()
 							const pnSession = pnSessionsBatch[pnAddrStr]
 							if (pnSession) {
 								const fromSession = libsignal.SessionRecord.deserialize(pnSession)
 								if (fromSession.haveOpenSession()) {
+									logger?.debug({ fromJid: op.fromJid, toJid: op.toJid }, 'migrating session from PN to LID')
 									sessionUpdatesBatch[lidAddrStr] = fromSession.serialize()
 									sessionUpdatesBatch[pnAddrStr] = null
 									migratedInBatch.push(`${op.pnUser}.${op.deviceId}`)
 								}
 							}
-						}
+							}
 
-						if (Object.keys(sessionUpdatesBatch).length > 0) {
+							if (Object.keys(sessionUpdatesBatch).length > 0) {
 							await parsedKeys.set({ session: sessionUpdatesBatch })
 							for (const deviceKey of migratedInBatch) {
+								logger?.debug({ deviceKey }, 'migrated session from PN to LID')
 								migratedSessionCache.set(deviceKey, true)
 							}
-						}
+							}
 
-						return {
+							return {
 							migrated: migratedInBatch.length,
 							skipped: batchJids.length - migratedInBatch.length,
 							total: batchJids.length
-						}
-					},
-					`migrate-batch-${i / BATCH_SIZE}-${jidDecode(toJid)?.user}`
-				)
+							}
+						},
+						`migrate-batch-${i / BATCH_SIZE}-${jidDecode(toJid)?.user}`
+					)
 
-				totalMigrated += result.migrated
-			}
+					totalMigrated += result.migrated
+				}
 
-			const skippedCount = totalOps - totalMigrated
-			if (logger) {
-				logger.debug({ migratedSessions: totalMigrated }, 'bulk session migration complete')
-			}
-			return { migrated: totalMigrated, skipped: skippedCount, total: totalOps }
+				const result = { migrated: totalMigrated, skipped: totalOps - totalMigrated, total: totalOps }
+				migrationAttemptCache.set(migrationKey, result)
+				if (logger) {
+					logger.debug({ migratedSessions: totalMigrated }, 'bulk session migration complete')
+				}
+				return result
+			})
 		}
 	}
 
