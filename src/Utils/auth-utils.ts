@@ -118,7 +118,6 @@ export function makeCacheableSignalKeyStoreOld(
 			deleteOnExpire: true
 		})
 
-
 	function getUniqueId(type: string, id: string) {
 		return `${type}.${id}`
 	}
