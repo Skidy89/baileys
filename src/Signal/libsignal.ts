@@ -50,14 +50,16 @@ function extractIdentityFromPkmsg(ciphertext: Uint8Array): Uint8Array | undefine
 export function makeLibSignalRepository(
 	auth: SignalAuthState,
 	logger: ILogger | undefined,
-	pnToLIDFunc?: (jids: string[]) => Promise<LIDMapping[] | undefined>
+	pnToLIDFunc?: (jids: string[]) => Promise<LIDMapping[] | undefined>,
+	getUSyncDevices?: (jid: string) => Promise<string[]>
 ): SignalRepositoryWithLIDStore {
 	const lidMapping = new LIDMappingStore(auth.keys as SignalKeyStoreWithTransaction, logger, pnToLIDFunc)
 	const storage = signalStorage(auth, lidMapping)
 
 	const parsedKeys = auth.keys as SignalKeyStoreWithTransaction
 	const migratedSessionCache = new LRUCache<string, true>({
-		ttl: 3 * 24 * 60 * 60 * 1000, // 7 days
+		max: 100_000,
+		ttl: 3 * 24 * 60 * 60 * 1000,
 		ttlAutopurge: true,
 		updateAgeOnGet: true
 	})
@@ -264,7 +266,6 @@ export function makeLibSignalRepository(
 			fromJid: string,
 			toJid: string
 		): Promise<{ migrated: number; skipped: number; total: number }> {
-			// TODO: use usync to handle this entire mess
 			if (!fromJid || (!isLidUser(toJid) && !isHostedLidUser(toJid))) return { migrated: 0, skipped: 0, total: 0 }
 
 			// Only support PN to LID migration
@@ -272,57 +273,34 @@ export function makeLibSignalRepository(
 				return { migrated: 0, skipped: 0, total: 1 }
 			}
 
-			const { user } = jidDecode(fromJid)!
-			if (logger) logger.debug({ fromJid }, 'bulk device migration - loading all user devices')
+			const { user, device: fromDevice } = jidDecode(fromJid)!
+			const syncedDevices = getUSyncDevices ? await getUSyncDevices(fromJid) : [fromJid]
 
-			// Get user's device list from storage
-			const { [user]: userDevices } = await parsedKeys.get('device-list', [user])
-			if (!userDevices) {
-				return { migrated: 0, skipped: 0, total: 0 }
-			}
-
-			const { device: fromDevice } = jidDecode(fromJid)!
-			const fromDeviceStr = fromDevice?.toString() || '0'
-			if (!userDevices.includes(fromDeviceStr)) {
-				userDevices.push(fromDeviceStr)
+			const userDevices = new Set<string>([fromDevice?.toString() || '0'])
+			for (const jid of syncedDevices) {
+				const decoded = jidDecode(jid)
+				if (decoded?.user === user && (isPnUser(jid) || isHostedPnUser(jid))) {
+					userDevices.add(decoded.device?.toString() || '0')
+				}
 			}
 
 			// Filter out cached devices before database fetch
-			const uncachedDevices = userDevices.filter(device => {
+			const uncachedDevices = [...userDevices].filter(device => {
 				const deviceKey = `${user}.${device}`
 				return !migratedSessionCache.has(deviceKey)
 			})
-
-			// Bulk check session existence only for uncached devices
-			const deviceSessionKeys = uncachedDevices.map(device => `${user}.${device}`)
-			const existingSessions = await parsedKeys.get('session', deviceSessionKeys)
-
-			// Step 3: Convert existing sessions to JIDs (only migrate sessions that exist)
-			const deviceJids: string[] = []
-			for (const [sessionKey, sessionData] of Object.entries(existingSessions)) {
-				if (sessionData) {
-					// Session exists in storage
-					const deviceStr = sessionKey.split('.')[1]
-					if (!deviceStr) continue
-					const deviceNum = parseInt(deviceStr)
-					let jid = deviceNum === 0 ? `${user}@s.whatsapp.net` : `${user}:${deviceNum}@s.whatsapp.net`
-					if (deviceNum === 99) {
-						jid = `${user}:99@hosted`
-					}
-
-					deviceJids.push(jid)
-				}
-			}
+			const deviceJids = uncachedDevices.map(device => {
+				if (device === '99') return `${user}:99@hosted`
+				return device === '0' ? `${user}@s.whatsapp.net` : `${user}:${device}@s.whatsapp.net`
+			})
 
 			if (logger)
 				logger.debug(
 					{
 						fromJid,
-						totalDevices: userDevices.length,
-						devicesWithSessions: deviceJids.length,
-						devices: deviceJids
+						totalDevices: userDevices.size
 					},
-					'bulk device migration complete - all user devices processed'
+					'loaded devices for session migration from USync'
 				)
 
 			// Single transaction for all migrations

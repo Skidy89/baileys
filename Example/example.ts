@@ -6,7 +6,7 @@ import P from 'pino'
 
 import qrcode from 'qrcode-terminal'
 const logger = P({
-  level: "silent",
+  level: "debug",
   
 })
 
@@ -32,7 +32,7 @@ const startSock = async() => {
 
 	const sock = makeWASocket({
 		version,
-		logger: undefined,
+		logger: logger,
 		auth: {creds: state.creds, keys: state.keys},
 		enableRecentMessageCache: false,
         waWebSocketUrl: "wss://web.whatsapp.com/ws/chat?ED=CAgIAg==",

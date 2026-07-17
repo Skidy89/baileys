@@ -148,6 +148,7 @@ export type SocketConfig = {
 	makeSignalRepository: (
 		auth: SignalAuthState,
 		logger: ILogger | undefined,
-		pnToLIDFunc?: (jids: string[]) => Promise<LIDMapping[] | undefined>
+		pnToLIDFunc?: (jids: string[]) => Promise<LIDMapping[] | undefined>,
+		getUSyncDevices?: (jid: string) => Promise<string[]>
 	) => SignalRepositoryWithLIDStore
 }

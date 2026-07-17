@@ -51,6 +51,7 @@ import {
 	S_WHATSAPP_NET
 } from '../WABinary'
 import { BinaryInfo } from '../WAM/BinaryInfo.js'
+import type { ParsedDeviceInfo } from '../WAUSync/Protocols/USyncDeviceProtocol'
 import { USyncQuery, USyncUser } from '../WAUSync/'
 import { WebSocketClient } from './Client'
 
@@ -422,12 +423,31 @@ export const makeSocket = (config: SocketConfig) => {
 		return []
 	}
 
+	const getUSyncDevicesForMigration = async (jid: string): Promise<string[]> => {
+		const result = await executeUSyncQuery(
+			new USyncQuery().withContext('background').withDeviceProtocol().withUser(new USyncUser().withId(jid))
+		)
+		const devices = new Set([jid])
+
+		for (const item of result?.list || []) {
+			const decoded = jidDecode(item.id)
+			const deviceList = (item.devices as ParsedDeviceInfo | undefined)?.deviceList
+			if (!decoded || !deviceList) continue
+
+			for (const { id, isHosted } of deviceList) {
+				devices.add(jidEncode(decoded.user, isHosted ? 'hosted' : decoded.server, id))
+			}
+		}
+
+		return [...devices]
+	}
+
 	const ev = makeEventBuffer(logger)
 
 	const { creds } = authState
 	// add transaction capability
 	const keys = addTransactionCapability(authState.keys, logger, transactionOpts)
-	const signalRepository = makeSignalRepository({ creds, keys }, logger, pnFromLIDUSync)
+	const signalRepository = makeSignalRepository({ creds, keys }, logger, pnFromLIDUSync, getUSyncDevicesForMigration)
 
 	let lastDateRecv: Date
 	let epoch = 1
