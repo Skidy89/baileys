@@ -273,10 +273,18 @@ export function makeLibSignalRepository(
 				return { migrated: 0, skipped: 0, total: 1 }
 			}
 
-			const { user, device: fromDevice } = jidDecode(fromJid)!
-			const syncedDevices = getUSyncDevices ? await getUSyncDevices(fromJid) : [fromJid]
+			const { user } = jidDecode(fromJid)!
+			const { [user]: storedDevices } = await parsedKeys.get('device-list', [user])
 
-			const userDevices = new Set<string>([fromDevice?.toString() || '0'])
+const syncedDevices = getUSyncDevices
+ ? await getUSyncDevices(fromJid)
+ : []
+
+const userDevices = new Set([
+ ...(storedDevices ?? []),
+ ...syncedDevices
+   .map(j => jidDecode(j)?.device?.toString() ?? "0")
+])
 			for (const jid of syncedDevices) {
 				const decoded = jidDecode(jid)
 				if (decoded?.user === user && (isPnUser(jid) || isHostedPnUser(jid))) {
