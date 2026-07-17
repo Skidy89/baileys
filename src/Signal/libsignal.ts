@@ -276,15 +276,12 @@ export function makeLibSignalRepository(
 			const { user } = jidDecode(fromJid)!
 			const { [user]: storedDevices } = await parsedKeys.get('device-list', [user])
 
-const syncedDevices = getUSyncDevices
- ? await getUSyncDevices(fromJid)
- : []
+			const syncedDevices = getUSyncDevices ? await getUSyncDevices(fromJid) : []
 
-const userDevices = new Set([
- ...(storedDevices ?? []),
- ...syncedDevices
-   .map(j => jidDecode(j)?.device?.toString() ?? "0")
-])
+			const userDevices = new Set([
+				...(storedDevices ?? []),
+				...syncedDevices.map(j => jidDecode(j)?.device?.toString() ?? '0')
+			])
 			for (const jid of syncedDevices) {
 				const decoded = jidDecode(jid)
 				if (decoded?.user === user && (isPnUser(jid) || isHostedPnUser(jid))) {
@@ -315,15 +312,13 @@ const userDevices = new Set([
 			}
 			const BATCH_SIZE = 10
 			const totalOps = deviceJids.length
+			let totalMigrated = 0
 
-			// Single transaction
-			return parsedKeys.transaction(
-				async (): Promise<{ migrated: number; skipped: number; total: number }> => {
-					let migratedCount = 0
+			for (let i = 0; i < deviceJids.length; i += BATCH_SIZE) {
+				const batchJids = deviceJids.slice(i, i + BATCH_SIZE)
 
-					for (let i = 0; i < deviceJids.length; i += BATCH_SIZE) {
-						const batchJids = deviceJids.slice(i, i + BATCH_SIZE)
-
+				const result = await parsedKeys.transaction(
+					async (): Promise<{ migrated: number; skipped: number; total: number }> => {
 						const migrationOps = batchJids.map(jid => {
 							const lidWithDevice = transferDevice(jid, toJid)
 							const fromDecoded = jidDecode(jid)!
@@ -354,7 +349,6 @@ const userDevices = new Set([
 								if (fromSession.haveOpenSession()) {
 									sessionUpdatesBatch[lidAddrStr] = fromSession.serialize()
 									sessionUpdatesBatch[pnAddrStr] = null
-									migratedCount++
 									migratedInBatch.push(`${op.pnUser}.${op.deviceId}`)
 								}
 							}
@@ -366,16 +360,24 @@ const userDevices = new Set([
 								migratedSessionCache.set(deviceKey, true)
 							}
 						}
-					}
 
-					const skippedCount = totalOps - migratedCount
-					if (logger) {
-						logger.debug({ migratedSessions: migratedCount }, 'bulk session migration complete')
-					}
-					return { migrated: migratedCount, skipped: skippedCount, total: totalOps }
-				},
-				`migrate-${deviceJids.length}-sessions-${jidDecode(toJid)?.user}`
-			)
+						return {
+							migrated: migratedInBatch.length,
+							skipped: batchJids.length - migratedInBatch.length,
+							total: batchJids.length
+						}
+					},
+					`migrate-batch-${i / BATCH_SIZE}-${jidDecode(toJid)?.user}`
+				)
+
+				totalMigrated += result.migrated
+			}
+
+			const skippedCount = totalOps - totalMigrated
+			if (logger) {
+				logger.debug({ migratedSessions: totalMigrated }, 'bulk session migration complete')
+			}
+			return { migrated: totalMigrated, skipped: skippedCount, total: totalOps }
 		}
 	}
 
