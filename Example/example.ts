@@ -1,7 +1,6 @@
 import { Boom } from '@hapi/boom'
 import readline from 'readline'
-import makeWASocket, { AnyMessageContent, delay, DisconnectReason, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, getHistoryMsg, GroupMetadata, isJidBot, isJidBroadcast, isJidMetaAI, isJidNewsletter, jidDecode, makeCacheableSignalKeyStore, makeCacheableSignalKeyStoreOld, normalizeMessageContent, PatchedMessageWithRecipientJID, proto, useMultiFileAuthState, WAMessageContent, WAMessageKey } from '../src'
-import got from 'got'
+import makeWASocket, { AnyMessageContent, delay, DisconnectReason, fetchLatestBaileysVersion, getAggregateVotesInPollMessage, getHistoryMsg, GroupMetadata, isJidBot, isJidBroadcast, isJidMetaAI, isJidNewsletter, jidDecode, makeCacheableSignalKeyStore, normalizeMessageContent, PatchedMessageWithRecipientJID, proto, useMultiFileAuthState, WAMessageContent, migrateAuthState, useSqliteAuthState } from '../src'
 import P from 'pino'
 
 import qrcode from 'qrcode-terminal'
@@ -25,7 +24,18 @@ const question = (text: string) => new Promise<string>((resolve) => rl.question(
 
 // start a connection
 const startSock = async() => {
-	const { state, saveCreds } = await useMultiFileAuthState('baileys_auth_info')
+	const d1 = await useMultiFileAuthState('baileys_auth_info')
+	
+	const d2 = await useSqliteAuthState({ dbPath: 'baileys_auth_info2.sqlite' })
+	const d = await migrateAuthState({
+		from: d1.state,
+		to: d2.state,
+		skipExisting: true,
+		verify: true,
+		logger
+	})
+	console.log('migrateAuthState result: ', d)
+	
 	// fetch latest version of WA Web
 	const { version, isLatest } = await fetchLatestBaileysVersion()
 	console.log(`using WA v${version.join('.')}, isLatest: ${isLatest}`)
@@ -33,7 +43,7 @@ const startSock = async() => {
 	const sock = makeWASocket({
 		version,
 		logger: logger,
-		auth: {creds: state.creds, keys: state.keys},
+		auth: {creds: d2.state.creds, keys: d2.state.keys},
 		enableRecentMessageCache: false,
         waWebSocketUrl: "wss://web.whatsapp.com/ws/chat?ED=CAgIAg==",
 		shouldSyncHistoryMessage: () => false,
@@ -100,7 +110,7 @@ const startSock = async() => {
 
 			// credentials updated -- save them
 			if(events['creds.update']) {
-				await saveCreds()
+				await d2.saveCreds()
 			}
 
 			if(events['labels.association']) {
@@ -152,7 +162,12 @@ const startSock = async() => {
 				const result = await sock.sendMessage(msg.key.remoteJid!, { text: 'Hello there!' })
 				console.timeEnd("test")
 				const end = Date.now()
-				await sock.sendMessage(msg.key.remoteJid!, { text: `Response time: ${end - p}ms`, edit: result?.key })
+				const toMB = (bytes: number) => (bytes / 1024 / 1024).toFixed(2)
+				await sock.sendMessage(msg.key.remoteJid!, { text: `Response time: ${end - p}ms
+					memory Usage:
+					rss: ${toMB(process.memoryUsage().rss)} MB
+					heapTotal: ${toMB(process.memoryUsage().heapTotal)} MB
+					heapUsed: ${toMB(process.memoryUsage().heapUsed)} MB`, edit: result?.key })
 			  }
 
               if (!msg.key.fromMe && doReplies && !isJidNewsletter(msg.key?.remoteJid!)) {
@@ -195,3 +210,4 @@ const startSock = async() => {
 }
 
 startSock()
+

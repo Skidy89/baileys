@@ -1,4 +1,4 @@
-import { mkdir, readFile, stat, unlink, writeFile } from 'fs/promises'
+import { mkdir, readdir, readFile, stat, unlink, writeFile } from 'fs/promises'
 import { join } from 'path'
 import { proto } from '../../WAProto/index.js'
 import type { AuthenticationCreds, AuthenticationState, SignalDataTypeMap } from '../Types'
@@ -72,7 +72,35 @@ export const useMultiFileAuthState = async (
 	} else {
 		await mkdir(folder, { recursive: true })
 	}
+	function decodeIdForType<T extends keyof SignalDataTypeMap>(type: T, encodedId: string): string {
+		if (type === 'sender-key') {
+			return encodedId.replace(/--/g, '::')
+		}
 
+		if (type === 'app-state-sync-key') {
+			return encodedId.replace(/__/g, '/')
+		}
+
+		return encodedId
+	}
+	/**
+	 * Iterate every file in the folder that belongs to `type`. Yields the
+	 * decoded id (the same logical id callers passed to `get`/`set` originally)
+	 * via {@link decodeIdForType}, plus the on-disk filename for read access.
+	 */
+	async function* iterateType<T extends keyof SignalDataTypeMap>(
+		type: T
+	): AsyncGenerator<{ id: string; filename: string }> {
+		const entries = await readdir(folder)
+		const prefix = `${fixFileName(type)}-`
+		for (const filename of entries) {
+			if (!filename.startsWith(prefix) || !filename.endsWith('.bin')) continue
+			// Skip `.tmp` (in-flight writes) and `.bak` (rotated backups) artifacts.
+			if (filename.endsWith('.tmp') || filename.endsWith('.bak')) continue
+			const encodedId = filename.slice(prefix.length, -'.bin'.length)
+			yield { id: decodeIdForType(type, encodedId), filename }
+		}
+	}
 	const creds: AuthenticationCreds = (await readData('creds.bin')) || initAuthCreds()
 
 	return {
@@ -105,6 +133,25 @@ export const useMultiFileAuthState = async (
 					}
 
 					await Promise.all(tasks)
+				},
+				list: async function* <T extends keyof SignalDataTypeMap>(
+					type: T
+				): AsyncIterable<readonly [string, SignalDataTypeMap[T]]> {
+					for await (const entry of iterateType(type)) {
+						let value: any = await readData(entry.filename)
+						if (type === 'app-state-sync-key' && value) {
+							value = proto.Message.AppStateSyncKeyData.fromObject(value)
+						}
+
+						if (value !== null && value !== undefined) {
+							yield [entry.id, value as SignalDataTypeMap[T]] as const
+						}
+					}
+				},
+				listIds: async function* <T extends keyof SignalDataTypeMap>(type: T): AsyncIterable<string> {
+					for await (const entry of iterateType(type)) {
+						yield entry.id
+					}
 				}
 			}
 		},

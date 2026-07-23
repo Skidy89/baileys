@@ -353,32 +353,32 @@ export function makeLibSignalRepository(
 							const migratedInBatch: string[] = []
 
 							for (const op of migrationOps) {
-							const pnAddrStr = op.fromAddr.toString()
-							const lidAddrStr = op.toAddr.toString()
-							const pnSession = pnSessionsBatch[pnAddrStr]
-							if (pnSession) {
-								const fromSession = libsignal.SessionRecord.deserialize(pnSession)
-								if (fromSession.haveOpenSession()) {
-									logger?.debug({ fromJid: op.fromJid, toJid: op.toJid }, 'migrating session from PN to LID')
-									sessionUpdatesBatch[lidAddrStr] = fromSession.serialize()
-									sessionUpdatesBatch[pnAddrStr] = null
-									migratedInBatch.push(`${op.pnUser}.${op.deviceId}`)
+								const pnAddrStr = op.fromAddr.toString()
+								const lidAddrStr = op.toAddr.toString()
+								const pnSession = pnSessionsBatch[pnAddrStr]
+								if (pnSession) {
+									const fromSession = libsignal.SessionRecord.deserialize(pnSession)
+									if (fromSession.haveOpenSession()) {
+										logger?.debug({ fromJid: op.fromJid, toJid: op.toJid }, 'migrating session from PN to LID')
+										sessionUpdatesBatch[lidAddrStr] = fromSession.serialize()
+										sessionUpdatesBatch[pnAddrStr] = null
+										migratedInBatch.push(`${op.pnUser}.${op.deviceId}`)
+									}
 								}
-							}
 							}
 
 							if (Object.keys(sessionUpdatesBatch).length > 0) {
-							await parsedKeys.set({ session: sessionUpdatesBatch })
-							for (const deviceKey of migratedInBatch) {
-								logger?.debug({ deviceKey }, 'migrated session from PN to LID')
-								migratedSessionCache.set(deviceKey, true)
-							}
+								await parsedKeys.set({ session: sessionUpdatesBatch })
+								for (const deviceKey of migratedInBatch) {
+									logger?.debug({ deviceKey }, 'migrated session from PN to LID')
+									migratedSessionCache.set(deviceKey, true)
+								}
 							}
 
 							return {
-							migrated: migratedInBatch.length,
-							skipped: batchJids.length - migratedInBatch.length,
-							total: batchJids.length
+								migrated: migratedInBatch.length,
+								skipped: batchJids.length - migratedInBatch.length,
+								total: batchJids.length
 							}
 						},
 						`migrate-batch-${i / BATCH_SIZE}-${jidDecode(toJid)?.user}`
