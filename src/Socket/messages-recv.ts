@@ -87,6 +87,7 @@ import {
 } from '../WABinary'
 import { extractGroupMetadata } from './groups'
 import { makeMessagesSocket } from './messages-send'
+import { makeLockManager } from '../Utils/lock-manager.js'
 
 type MexGqlData = Record<string, unknown>
 
@@ -154,6 +155,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			stdTTL: DEFAULT_CACHE_TTLS.CALL_OFFER, // 5 mins
 			useClones: false
 		})
+	const lidMigrationLocks = makeLockManager()
 
 	// Debounce identity-change session refreshes per JID to avoid bursts
 	const identityAssertDebounce = new NodeCache<boolean>({ stdTTL: 5, useClones: false })
@@ -1599,7 +1601,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		const encNode = getBinaryNodeChild(node, 'enc')
 		// TODO: temporary fix for crashes and issues resulting of failed msmsg decryption
 		if (encNode?.attrs.type === 'msmsg') {
-			if (logger) logger.debug({ key: node.attrs.key }, 'ignored msmsg')
+			logger && logger.debug({ key: node.attrs.key }, 'ignored msmsg')
 			await sendMessageAck(node, NACK_REASONS.MissingMessageSecret)
 			return
 		}
@@ -1617,17 +1619,34 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			const alt = msg.key.participantAlt || msg.key.remoteJidAlt
 			// store new mappings we didn't have before
 			if (!!alt) {
-				const altServer = jidDecode(alt)?.server
-				const primaryJid = msg.key.participant || msg.key.remoteJid!
-				if (altServer === 'lid') {
-					if (!(await signalRepository.lidMapping.getPNForLID(alt))) {
-						await signalRepository.lidMapping.storeLIDPNMappings([{ lid: alt, pn: primaryJid }])
-						await signalRepository.migrateSession(primaryJid, alt)
+				// H8 fix: serialize the look-up → store → migrate sequence per
+				// alt-jid. Concurrent inbound messages from the same participant
+				// would otherwise each observe a null mapping and each fire the
+				// migration.
+				await lidMigrationLocks.withLock({ namespace: 'lid-migration', id: alt }, async () => {
+					const altServer = jidDecode(alt)?.server
+					const primaryJid = msg.key.participant || msg.key.remoteJid!
+					// Skip the store + migrate ONLY when the existing mapping
+					// already matches the incoming `primaryJid`. A bare
+					// existence check would freeze a stale mapping forever:
+					// if a PN previously mapped to one LID and a new message
+					// arrives announcing a different LID, we must reconcile
+					// rather than silently ignore the update. Equality with
+					// the incoming side is the correct idempotency guard.
+					if (altServer === 'lid') {
+						const existingPn = await signalRepository.lidMapping.getPNForLID(alt)
+						if (existingPn !== primaryJid) {
+							await signalRepository.lidMapping.storeLIDPNMappings([{ lid: alt, pn: primaryJid }])
+							await signalRepository.migrateSession(primaryJid, alt)
+						}
+					} else {
+						const existingLid = await signalRepository.lidMapping.getLIDForPN(alt)
+						if (existingLid !== primaryJid) {
+							await signalRepository.lidMapping.storeLIDPNMappings([{ lid: primaryJid, pn: alt }])
+							await signalRepository.migrateSession(alt, primaryJid)
+						}
 					}
-				} else {
-					await signalRepository.lidMapping.storeLIDPNMappings([{ lid: primaryJid, pn: alt }])
-					await signalRepository.migrateSession(alt, primaryJid)
-				}
+				})
 			}
 
 			await messageMutex.mutex(async () => {
@@ -1654,18 +1673,17 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 							unavailableType === 'hosted_unavailable_fanout' ||
 							unavailableType === 'view_once_unavailable_fanout'
 						) {
-							if (logger)
-								logger.debug(
-									{ msgId: msg.key.id, unavailableType },
-									'skipping placeholder resend for excluded unavailable type'
-								)
+							logger && logger.debug(
+								{ msgId: msg.key.id, unavailableType },
+								'skipping placeholder resend for excluded unavailable type'
+							)
 							acked = true
 							return sendMessageAck(node)
 						}
 
 						const messageAge = unixTimestampSeconds() - toNumber(msg.messageTimestamp)
 						if (messageAge > PLACEHOLDER_MAX_AGE_SECONDS) {
-							if (logger) logger.debug({ msgId: msg.key.id, messageAge }, 'skipping placeholder resend for old message')
+							logger && logger.debug({ msgId: msg.key.id, messageAge }, 'skipping placeholder resend for old message')
 							acked = true
 							return sendMessageAck(node)
 						}
@@ -1692,11 +1710,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 						requestPlaceholderResend(cleanKey, msgData)
 							.then(requestId => {
 								if (requestId && requestId !== 'RESOLVED') {
-									if (logger)
-										logger.debug(
-											{ msgId: msg.key.id, requestId },
-											'requested placeholder resend for unavailable message'
-										)
+									logger && logger.debug({ msgId: msg.key.id, requestId }, 'requested placeholder resend for unavailable message')
 									ev.emit('messages.update', [
 										{
 											key: msg.key,
@@ -1706,11 +1720,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 								}
 							})
 							.catch(err => {
-								if (logger)
-									logger.warn(
-										{ err, msgId: msg.key.id },
-										'failed to request placeholder resend for unavailable message'
-									)
+								logger && logger.warn({ err, msgId: msg.key.id }, 'failed to request placeholder resend for unavailable message')
 							})
 						acked = true
 						await sendMessageAck(node)
@@ -1720,23 +1730,22 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 						if (isJidStatusBroadcast(msg.key.remoteJid!)) {
 							const messageAge = unixTimestampSeconds() - toNumber(msg.messageTimestamp)
 							if (messageAge > STATUS_EXPIRY_SECONDS) {
-								if (logger)
-									logger.debug(
-										{ msgId: msg.key.id, messageAge, remoteJid: msg.key.remoteJid },
-										'skipping retry for expired status message'
-									)
+								logger && logger.debug(
+									{ msgId: msg.key.id, messageAge, remoteJid: msg.key.remoteJid },
+									'skipping retry for expired status message'
+								)
 								acked = true
 								return sendMessageAck(node)
 							}
 						}
 
-						if (logger) logger.debug('[handleMessage] Attempting retry request for failed decryption')
+						logger && logger.debug('[handleMessage] Attempting retry request for failed decryption')
 
 						// WAWeb only retry-receipts here; server emits PreKeyLow if prekeys run low.
 						await retryMutex.mutex(async () => {
 							try {
 								if (!ws.isOpen) {
-									if (logger) logger.debug({ node }, 'Connection closed, skipping retry')
+									logger && logger.debug({ node }, 'Connection closed, skipping retry')
 									return
 								}
 
@@ -1746,7 +1755,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 									await delay(retryRequestDelayMs)
 								}
 							} catch (err) {
-								if (logger) logger.error({ err }, 'Failed to send retry')
+								logger && logger.error({ err }, 'Failed to send retry')
 							}
 
 							acked = true
@@ -1789,7 +1798,7 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 					} else {
 						acked = true
 						await sendMessageAck(node)
-						if (logger) logger.debug({ key: msg.key }, 'processed newsletter message without receipts')
+						logger && logger.debug({ key: msg.key }, 'processed newsletter message without receipts')
 					}
 				}
 
@@ -1798,14 +1807,15 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 				await upsertMessage(msg, node.attrs.offline ? 'append' : 'notify')
 			})
 		} catch (error) {
-			if (logger) logger.error({ error, node: binaryNodeToString(node) }, 'error in handling message')
+			logger && logger.error({ error, node: binaryNodeToString(node) }, 'error in handling message')
 			if (!acked) {
-				await sendMessageAck(node, NACK_REASONS.UnhandledError).catch(ackErr => {
-					if (logger) logger.error({ ackErr }, 'failed to ack message after error')
-				})
+				await sendMessageAck(node, NACK_REASONS.UnhandledError).catch(ackErr =>
+					logger && logger.error({ ackErr }, 'failed to ack message after error')
+				)
 			}
 		}
 	}
+
 
 	const handleBadAck = async ({ attrs }: BinaryNode) => {
 		const key: WAMessageKey = { remoteJid: attrs.from, fromMe: true, id: attrs.id }

@@ -1214,6 +1214,7 @@ export const makeSocket = (config: SocketConfig) => {
 		updateServerTimeOffset,
 		sendUnifiedSession,
 		wamBuffer: publicWAMBuffer,
+		getUSyncDevicesForMigration,
 		/** Waits for the connection to WA to reach a state */
 		waitForConnectionUpdate: bindWaitForConnectionUpdate(ev),
 		sendWAMBuffer,

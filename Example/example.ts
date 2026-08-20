@@ -24,17 +24,9 @@ const question = (text: string) => new Promise<string>((resolve) => rl.question(
 
 // start a connection
 const startSock = async() => {
-	const d1 = await useMultiFileAuthState('baileys_auth_info')
 	
-	const d2 = await useSqliteAuthState({ dbPath: 'baileys_auth_info2.sqlite' })
-	const d = await migrateAuthState({
-		from: d1.state,
-		to: d2.state,
-		skipExisting: true,
-		verify: true,
-		logger
-	})
-	console.log('migrateAuthState result: ', d)
+	const d2 = await useSqliteAuthState({ dbPath: 'baileys_auth_info2' })
+
 	
 	// fetch latest version of WA Web
 	const { version, isLatest } = await fetchLatestBaileysVersion()
