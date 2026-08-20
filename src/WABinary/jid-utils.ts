@@ -6,16 +6,7 @@ export const STORIES_JID = 'status@broadcast'
 export const META_AI_JID = '13135550002@c.us'
 
 export type JidServer =
-	| 'c.us'
-	| 'g.us'
-	| 'broadcast'
-	| 's.whatsapp.net'
-	| 'call'
-	| 'lid'
-	| 'newsletter'
-	| 'bot'
-	| 'hosted'
-	| 'hosted.lid'
+	'c.us' | 'g.us' | 'broadcast' | 's.whatsapp.net' | 'call' | 'lid' | 'newsletter' | 'bot' | 'hosted' | 'hosted.lid'
 
 export enum WAJIDDomains {
 	WHATSAPP = 0,

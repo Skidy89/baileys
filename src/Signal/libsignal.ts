@@ -86,7 +86,7 @@ function extractIdentityFromPkmsg(ciphertext: Uint8Array): Uint8Array | undefine
 
 export function makeLibSignalRepository(
 	auth: SignalAuthState,
-	logger: ILogger,
+	logger: ILogger | undefined,
 	pnToLIDFunc?: (jids: string[]) => Promise<LIDMapping[] | undefined>,
 	getUSyncDevices?: (jid: string) => Promise<string[]>
 ): SignalRepositoryWithLIDStore {
@@ -225,7 +225,12 @@ export function makeLibSignalRepository(
 					if (identityKey) {
 						const identityChanged = await pinnedStorage.saveIdentity(addrStr, identityKey)
 						if (identityChanged) {
-							logger.info({ jid, addr: addrStr }, 'identity key changed or new contact, session will be re-established')
+							if (logger) {
+								logger.info(
+									{ jid, addr: addrStr },
+									'identity key changed or new contact, session will be re-established'
+								)
+							}
 						}
 					}
 				}
@@ -293,7 +298,9 @@ export function makeLibSignalRepository(
 		},
 
 		async injectE2ESession({ jid, session }) {
-			logger.trace({ jid }, 'injecting E2EE session')
+			if (logger) {
+				logger.trace({ jid }, 'injecting E2EE session')
+			}
 			const addr = jidToSignalProtocolAddress(jid)
 			const addrStr = addr.toString()
 			// Pre-resolve + pin so libsignal's internal storage calls use the
@@ -379,7 +386,8 @@ export function makeLibSignalRepository(
 			try {
 				syncedDevices = getUSyncDevices ? await getUSyncDevices(fromJid) : []
 			} catch (err) {
-				logger.warn({ err, fromJid }, 'USync device lookup failed, using cached device list for session migration')
+				if (logger)
+					logger.warn({ err, fromJid }, 'USync device lookup failed, using cached device list for session migration')
 				const { [user]: cachedDevices = [] } = await parsedKeys.get('device-list', [user])
 				syncedDevices = cachedDevices.map(device => {
 					if (device === '99') return `${user}:99@hosted`
@@ -392,16 +400,16 @@ export function makeLibSignalRepository(
 
 				return !migratedSessionCache.has(`${decoded.user}.${decoded.device || 0}`)
 			})
-
-			logger.debug(
-				{
-					fromJid,
-					totalDevices: deviceJids.length,
-					devicesWithSessions: deviceJids.length,
-					devices: deviceJids
-				},
-				'bulk device migration complete - all user devices processed'
-			)
+			if (logger)
+				logger.debug(
+					{
+						fromJid,
+						totalDevices: deviceJids.length,
+						devicesWithSessions: deviceJids.length,
+						devices: deviceJids
+					},
+					'bulk device migration complete - all user devices processed'
+				)
 
 			// Prepare migration operations with addressing metadata up-front so
 			// we can build a precise lock scope before entering the critical section.
@@ -473,7 +481,7 @@ export function makeLibSignalRepository(
 					// Single bulk session update for all migrations
 					if (migratedCount > 0) {
 						await parsedKeys.set({ session: sessionUpdates })
-						logger.debug({ migratedSessions: migratedCount }, 'bulk session migration complete')
+						if (logger) logger.debug({ migratedSessions: migratedCount }, 'bulk session migration complete')
 
 						// Cache device-level migrations
 						for (const op of migrationOps) {
