@@ -34,7 +34,6 @@ import type { ILogger } from './logger'
 import {
 	downloadContentFromMessage,
 	encryptedStream,
-	generateThumbnail,
 	getAudioDuration,
 	getRawMediaUploadData,
 	type MediaDownloadOptions

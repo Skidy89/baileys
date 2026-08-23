@@ -1,5 +1,4 @@
 import { Boom } from '@hapi/boom'
-import { exec } from 'child_process'
 import * as Crypto from 'crypto'
 import { once } from 'events'
 import { createReadStream, createWriteStream, promises as fs, WriteStream } from 'fs'
@@ -114,23 +113,6 @@ export async function getMediaKeys(
 	}
 }
 
-/** Extracts video thumb using FFMPEG */
-const extractVideoThumb = async (
-	path: string,
-	destPath: string,
-	time: string,
-	size: { width: number; height: number }
-) =>
-	new Promise<void>((resolve, reject) => {
-		const cmd = `ffmpeg -ss ${time} -i ${path} -y -vf scale=${size.width}:-1 -vframes 1 -f image2 ${destPath}`
-		exec(cmd, err => {
-			if (err) {
-				reject(err)
-			} else {
-				resolve()
-			}
-		})
-	})
 
 export const extractImageThumb = async (bufferOrFilePath: Readable | Buffer | string, width = 32) => {
 	// TODO: Move entirely to sharp, removing jimp as it supports readable streams
@@ -238,51 +220,6 @@ export async function getAudioDuration(buffer: Buffer | string | Readable) {
 	return metadata.format.duration
 }
 
-/**
-  referenced from and modifying https://github.com/wppconnect-team/wa-js/blob/main/src/chat/functions/prepareAudioWaveform.ts
- */
-export async function getAudioWaveform(buffer: Buffer | string | Readable, logger?: ILogger) {
-	try {
-		// @ts-ignore
-		const { default: decoder } = await import('audio-decode')
-		let audioData: Buffer
-		if (Buffer.isBuffer(buffer)) {
-			audioData = buffer
-		} else if (typeof buffer === 'string') {
-			const rStream = createReadStream(buffer)
-			audioData = await toBuffer(rStream)
-		} else {
-			audioData = await toBuffer(buffer)
-		}
-
-		const audioBuffer = await decoder(audioData)
-
-		const rawData = audioBuffer.getChannelData(0) // We only need to work with one channel of data
-		const samples = 64 // Number of samples we want to have in our final data set
-		const blockSize = Math.floor(rawData.length / samples) // the number of samples in each subdivision
-		const filteredData: number[] = []
-		for (let i = 0; i < samples; i++) {
-			const blockStart = blockSize * i // the location of the first sample in the block
-			let sum = 0
-			for (let j = 0; j < blockSize; j++) {
-				sum = sum + Math.abs(rawData[blockStart + j]) // find the sum of all the samples in the block
-			}
-
-			filteredData.push(sum / blockSize) // divide the sum by the block size to get the average
-		}
-
-		// This guarantees that the largest data point will be set to 1, and the rest of the data will scale proportionally.
-		const multiplier = Math.pow(Math.max(...filteredData), -1)
-		const normalizedData = filteredData.map(n => n * multiplier)
-
-		// Generate waveform like WhatsApp
-		const waveform = new Uint8Array(normalizedData.map(n => Math.floor(100 * n)))
-
-		return waveform
-	} catch (e) {
-		logger?.debug('Failed to generate waveform: ' + e)
-	}
-}
 
 export const toReadable = (buffer: Buffer) => {
 	const readable = new Readable({ read: () => {} })
@@ -324,43 +261,6 @@ export const getStream = async (item: WAMediaUpload, opts?: RequestInit & { maxC
 	return { stream: createReadStream(item.url), type: 'file' } as const
 }
 
-/** generates a thumbnail for a given media, if required */
-export async function generateThumbnail(
-	file: string,
-	mediaType: 'video' | 'image',
-	options: {
-		logger?: ILogger
-	}
-) {
-	let thumbnail: string | undefined
-	let originalImageDimensions: { width: number; height: number } | undefined
-	if (mediaType === 'image') {
-		const { buffer, original } = await extractImageThumb(file)
-		thumbnail = buffer.toString('base64')
-		if (original.width && original.height) {
-			originalImageDimensions = {
-				width: original.width,
-				height: original.height
-			}
-		}
-	} else if (mediaType === 'video') {
-		const imgFilename = join(getTmpFilesDirectory(), generateMessageID() + '.jpg')
-		try {
-			await extractVideoThumb(file, imgFilename, '00:00:00', { width: 32, height: 32 })
-			const buff = await fs.readFile(imgFilename)
-			thumbnail = buff.toString('base64')
-
-			await fs.unlink(imgFilename)
-		} catch (err) {
-			options.logger?.debug('could not generate video thumb: ' + err)
-		}
-	}
-
-	return {
-		thumbnail,
-		originalImageDimensions
-	}
-}
 
 export const getHttpStream = async (url: string | URL, options: RequestInit & { isStream?: true } = {}) => {
 	const response = await fetch(url.toString(), {
