@@ -215,17 +215,15 @@ export const prepareWAMessageMedia = async (
 	}
 
 	const requiresDurationComputation = mediaType === 'audio' && typeof uploadData.seconds === 'undefined'
-	const requiresThumbnailComputation =
-		(mediaType === 'image' || mediaType === 'video') && typeof uploadData.jpegThumbnail === 'undefined'
+	
 	const requiresAudioBackground = options.backgroundColor && mediaType === 'audio' && uploadData.ptt === true
-	const requiresOriginalForSomeProcessing = requiresDurationComputation || requiresThumbnailComputation
 
 	const { mediaKey, encFilePath, originalFilePath, fileEncSha256, fileSha256, fileLength } = await encryptedStream(
 		uploadData.media,
 		options.mediaTypeOverride || mediaType,
 		{
 			logger,
-			saveOriginalFileIfRequired: requiresOriginalForSomeProcessing,
+			saveOriginalFileIfRequired: false,
 			opts: options.options
 		}
 	)
@@ -244,29 +242,7 @@ export const prepareWAMessageMedia = async (
 
 	const processingTasks: Promise<void>[] = []
 
-	if (requiresThumbnailComputation) {
-		processingTasks.push(
-			(async () => {
-				try {
-					const { thumbnail, originalImageDimensions } = await generateThumbnail(
-						originalFilePath!,
-						mediaType as 'image' | 'video',
-						options
-					)
-					uploadData.jpegThumbnail = thumbnail
-					if (!uploadData.width && originalImageDimensions) {
-						uploadData.width = originalImageDimensions.width
-						uploadData.height = originalImageDimensions.height
-						logger?.debug('set dimensions')
-					}
-
-					logger?.debug('generated thumbnail')
-				} catch (error) {
-					logger?.warn({ trace: (error as any).stack }, 'thumbnail generation failed')
-				}
-			})()
-		)
-	}
+	
 
 	if (requiresDurationComputation) {
 		processingTasks.push(

@@ -26,3 +26,4 @@ wa-logs*
 coverage
 *.txt
 sticker/
+.github
