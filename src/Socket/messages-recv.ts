@@ -159,7 +159,6 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 
 	// Debounce identity-change session refreshes per JID to avoid bursts
 	const identityAssertDebounce = new NodeCache<boolean>({ stdTTL: 5, useClones: false })
-	const pendingPlaceholderResendTimers = new Set<ReturnType<typeof setTimeout>>()
 
 	let sendActiveReceipts = false
 
@@ -219,17 +218,12 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 			peerDataOperationRequestType: proto.Message.PeerDataOperationRequestType.PLACEHOLDER_MESSAGE_RESEND
 		}
 
-		const timer = setTimeout(async () => {
-			try {
-				if (await placeholderResendCache.get(messageKey?.id!)) {
-					if (logger) logger.debug({ messageKey }, 'PDO message without response after 8 seconds. Phone possibly offline')
-					await placeholderResendCache.del(messageKey?.id!)
-				}
-			} finally {
-				pendingPlaceholderResendTimers.delete(timer)
+		setTimeout(async () => {
+			if (await placeholderResendCache.get(messageKey?.id!)) {
+				if (logger) logger.debug({ messageKey }, 'PDO message without response after 8 seconds. Phone possibly offline')
+				await placeholderResendCache.del(messageKey?.id!)
 			}
 		}, 8_000)
-		pendingPlaceholderResendTimers.add(timer)
 
 		return sendPeerDataOperationMessage(pdoMessage)
 	}
@@ -2043,8 +2037,6 @@ export const makeMessagesRecvSocket = (config: SocketConfig) => {
 		}
 
 		identityAssertDebounce.close()
-		for (const timer of pendingPlaceholderResendTimers) clearTimeout(timer)
-		pendingPlaceholderResendTimers.clear()
 		sendActiveReceipts = false
 	})
 
