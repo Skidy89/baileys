@@ -7,6 +7,7 @@ import type { IAudioMetadata } from 'music-metadata'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { Readable, Transform } from 'stream'
+import { pipeline } from 'node:stream/promises'
 import { URL } from 'url'
 import { proto } from '../../WAProto/index.js'
 import { DEFAULT_ORIGIN, MEDIA_HKDF_KEY_MAPPING, MEDIA_PATH_MAP, type MediaType } from '../Defaults'
@@ -112,7 +113,6 @@ export async function getMediaKeys(
 		macKey: expandedMediaKey.subarray(48, 80)
 	}
 }
-
 
 export const extractImageThumb = async (bufferOrFilePath: Readable | Buffer | string, width = 32) => {
 	// TODO: Move entirely to sharp, removing jimp as it supports readable streams
@@ -220,7 +220,6 @@ export async function getAudioDuration(buffer: Buffer | string | Readable) {
 	return metadata.format.duration
 }
 
-
 export const toReadable = (buffer: Buffer) => {
 	const readable = new Readable({ read: () => {} })
 	readable.push(buffer)
@@ -261,7 +260,6 @@ export const getStream = async (item: WAMediaUpload, opts?: RequestInit & { maxC
 	return { stream: createReadStream(item.url), type: 'file' } as const
 }
 
-
 export const getHttpStream = async (url: string | URL, options: RequestInit & { isStream?: true } = {}) => {
 	const response = await fetch(url.toString(), {
 		dispatcher: options.dispatcher,
@@ -287,86 +285,195 @@ export const encryptedStream = async (
 	mediaType: MediaType,
 	{ logger, saveOriginalFileIfRequired, opts }: EncryptedStreamOptions = {}
 ) => {
+	logger?.debug(
+		{
+			mediaType,
+			saveOriginalFileIfRequired
+		},
+		'starting media encryption'
+	)
+	let mac = Buffer.alloc(0)
 	const { stream, type } = await getStream(media, opts)
 
-	logger?.debug('fetched media stream')
+	logger?.debug(
+		{
+			type,
+			mediaType
+		},
+		'fetched media stream'
+	)
 
 	const mediaKey = Crypto.randomBytes(32)
+
+
+
 	const { cipherKey, iv, macKey } = await getMediaKeys(mediaKey, mediaType)
 
+
+
 	const encFilePath = join(getTmpFilesDirectory(), mediaType + generateMessageID() + '-enc')
+
 	const encFileWriteStream = createWriteStream(encFilePath)
+
+	logger?.debug(
+		{
+			encFilePath
+		},
+		'created encrypted file stream'
+	)
 
 	let originalFileStream: WriteStream | undefined
 	let originalFilePath: string | undefined
 
 	if (saveOriginalFileIfRequired) {
 		originalFilePath = join(getTmpFilesDirectory(), mediaType + generateMessageID() + '-original')
+
 		originalFileStream = createWriteStream(originalFilePath)
 	}
 
 	let fileLength = 0
+	let chunkCount = 0
+	let lastLoggedBytes = 0
+
+	const maxContentLength = (opts as any)?.maxContentLength
+
 	const aes = Crypto.createCipheriv('aes-256-cbc', cipherKey, iv)
+
 	const hmac = Crypto.createHmac('sha256', macKey!).update(iv)
+
 	const sha256Plain = Crypto.createHash('sha256')
 	const sha256Enc = Crypto.createHash('sha256')
 
-	const onChunk = async (buff: Buffer) => {
-		sha256Enc.update(buff)
-		hmac.update(buff)
-		// Handle backpressure: if write returns false, wait for drain
-		if (!encFileWriteStream.write(buff)) {
-			await once(encFileWriteStream, 'drain')
+
+
+	const encryptTransform = new Transform({
+		transform(chunk, _encoding, callback) {
+			const data = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+
+			chunkCount++
+
+			try {
+				const nextLength = fileLength + data.length
+
+				if (type === 'remote' && maxContentLength && nextLength > maxContentLength) {
+					logger?.debug(
+						{
+							fileLength,
+							chunkLength: data.length,
+							maxContentLength
+						},
+						'maximum content length exceeded'
+					)
+
+					callback(
+						new Boom(`content length exceeded when encrypting "${type}"`, {
+							data: {
+								media,
+								type
+							}
+						})
+					)
+
+					return
+				}
+
+				fileLength = nextLength
+
+				sha256Plain.update(data)
+
+				const encrypted = aes.update(data)
+
+				if (encrypted.length > 0) {
+					sha256Enc.update(encrypted)
+					hmac.update(encrypted)
+				}
+
+				if (originalFileStream) {
+					if (!originalFileStream.write(data)) {
+						originalFileStream.once('drain', () => {
+							callback(null, encrypted)
+						})
+
+						return
+					}
+				}
+
+				if (fileLength - lastLoggedBytes >= 10 * 1024 * 1024) {
+					lastLoggedBytes = fileLength
+
+					
+				}
+
+				callback(null, encrypted)
+			} catch (error) {
+				logger?.error(
+					{
+						err: error,
+						chunkCount,
+						fileLength
+					},
+					'failed processing media chunk'
+				)
+
+				callback(error as Error)
+			}
+		},
+
+		flush(callback) {
+			try {
+				
+
+				const encrypted = aes.final()
+
+				if (encrypted.length > 0) {
+					sha256Enc.update(encrypted)
+					hmac.update(encrypted)
+				}
+
+				
+
+				mac = hmac.digest().subarray(0, 10)
+
+
+				sha256Enc.update(mac)
+
+
+				callback(null, Buffer.concat([encrypted, mac]))
+			} catch (error) {
+				logger?.error(
+					{
+						err: error
+					},
+					'failed finalizing encrypted stream'
+				)
+
+				callback(error as Error)
+			}
 		}
-	}
+	})
 
 	try {
-		for await (const data of stream) {
-			fileLength += data.length
 
-			if (
-				type === 'remote' &&
-				(opts as any)?.maxContentLength &&
-				fileLength + data.length > (opts as any).maxContentLength
-			) {
-				throw new Boom(`content length exceeded when encrypting "${type}"`, {
-					data: { media, type }
-				})
-			}
+		await pipeline(stream, encryptTransform, encFileWriteStream)
 
-			if (originalFileStream) {
-				if (!originalFileStream.write(data)) {
-					await once(originalFileStream, 'drain')
-				}
-			}
 
-			sha256Plain.update(data)
-			await onChunk(aes.update(data))
+
+		if (originalFileStream) {
+
+
+			originalFileStream.end()
+
+			await once(originalFileStream, 'finish')
+
+
 		}
 
-		await onChunk(aes.final())
 
-		const mac = hmac.digest().subarray(0, 10)
-		sha256Enc.update(mac)
 
 		const fileSha256 = sha256Plain.digest()
 		const fileEncSha256 = sha256Enc.digest()
 
-		encFileWriteStream.write(mac)
 
-		const encFinishPromise = once(encFileWriteStream, 'finish')
-		const originalFinishPromise = originalFileStream ? once(originalFileStream, 'finish') : Promise.resolve()
-
-		encFileWriteStream.end()
-		originalFileStream?.end?.()
-		stream.destroy()
-
-		// Wait for write streams to fully flush to disk
-		// This helps reduce memory pressure by allowing OS to release buffers
-		await encFinishPromise
-		await originalFinishPromise
-
-		logger?.debug('encrypted data successfully')
 
 		return {
 			mediaKey,
@@ -378,22 +485,51 @@ export const encryptedStream = async (
 			fileLength
 		}
 	} catch (error) {
-		// destroy all streams with error
+		logger?.error(
+			{
+				err: error,
+				mediaType,
+				type,
+				fileLength,
+				chunkCount
+			},
+			'media encryption failed'
+		)
+		encryptTransform.destroy()
 		encFileWriteStream.destroy()
-		originalFileStream?.destroy?.()
+		originalFileStream?.destroy()
 		aes.destroy()
 		hmac.destroy()
 		sha256Plain.destroy()
 		sha256Enc.destroy()
 		stream.destroy()
 
+
 		try {
 			await fs.unlink(encFilePath)
-			if (originalFilePath) {
-				await fs.unlink(originalFilePath)
-			}
+
 		} catch (err) {
-			logger?.error({ err }, 'failed deleting tmp files')
+			logger?.error(
+				{
+					err,
+					encFilePath
+				},
+				'failed deleting encrypted temporary file'
+			)
+		}
+
+		if (originalFilePath) {
+			try {
+				await fs.unlink(originalFilePath)
+			} catch (err) {
+				logger?.error(
+					{
+						err,
+						originalFilePath
+					},
+					'failed deleting original temporary file'
+				)
+			}
 		}
 
 		throw error

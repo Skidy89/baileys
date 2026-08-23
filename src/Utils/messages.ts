@@ -214,10 +214,8 @@ export const prepareWAMessageMedia = async (
 	}
 
 	const requiresDurationComputation = mediaType === 'audio' && typeof uploadData.seconds === 'undefined'
-	
-	
+
 	const requiresAudioBackground = options.backgroundColor && mediaType === 'audio' && uploadData.ptt === true
-	
 
 	const { mediaKey, encFilePath, originalFilePath, fileEncSha256, fileSha256, fileLength } = await encryptedStream(
 		uploadData.media,
@@ -242,8 +240,6 @@ export const prepareWAMessageMedia = async (
 	})()
 
 	const processingTasks: Promise<void>[] = []
-
-
 
 	if (requiresDurationComputation) {
 		processingTasks.push(

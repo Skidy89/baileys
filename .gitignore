@@ -27,3 +27,5 @@ coverage
 *.txt
 sticker/
 .github
+*_session
+baileys_session

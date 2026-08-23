@@ -4,8 +4,9 @@ import makeWASocket, { AnyMessageContent, delay, DisconnectReason, fetchLatestBa
 import P from 'pino'
 
 import qrcode from 'qrcode-terminal'
+import { Readable } from 'stream'
 const logger = P({
-  level: "debug",
+  level: "silent",
   
 })
 
@@ -25,7 +26,7 @@ const question = (text: string) => new Promise<string>((resolve) => rl.question(
 // start a connection
 const startSock = async() => {
 	
-	const d2 = await useSqliteAuthState({ dbPath: 'baileys_auth_info2' })
+	const d2 = await useSqliteAuthState({ dbPath: 'baileys_session/baileys_auth_info2' })
 
 	
 	// fetch latest version of WA Web
