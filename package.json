@@ -52,7 +52,7 @@
     "music-metadata": "^11.12.3",
     "p-queue": "^9.0.0",
     "pino": "^9.6",
-    "protobufjs": "^7.5.6",
+    "protobufjs": "^8.7.2",
     "whatsapp-rust-bridge": "0.5.4",
     "ws": "^8.13.0"
   },
