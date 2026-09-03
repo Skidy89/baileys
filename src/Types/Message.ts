@@ -364,6 +364,7 @@ export type MessageContentGenerationOptions = MediaGenerationOptions & {
 	getProfilePicUrl?: (jid: string, type: 'image' | 'preview') => Promise<string | undefined>
 	getCallLink?: (type: 'audio' | 'video', event?: { startTime: number }) => Promise<string | undefined>
 	jid?: string
+	shouldProccessJpegThumbnail?: boolean
 }
 export type MessageGenerationOptions = MessageContentGenerationOptions & MessageGenerationOptionsFromContent
 

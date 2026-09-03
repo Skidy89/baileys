@@ -26,7 +26,7 @@ const question = (text: string) => new Promise<string>((resolve) => rl.question(
 // start a connection
 const startSock = async() => {
 	
-	const d2 = await useSqliteAuthState({ dbPath: 'baileys_session/baileys_auth_info2' })
+	const d2 = await useSqliteAuthState({ dbPath: 'baileys_session/test.db' })
 
 	
 	// fetch latest version of WA Web
@@ -37,7 +37,6 @@ const startSock = async() => {
 		version,
 		logger: logger,
 		auth: {creds: d2.state.creds, keys: d2.state.keys},
-		enableRecentMessageCache: false,
         waWebSocketUrl: "wss://web.whatsapp.com/ws/chat?ED=CAgIAg==",
 		shouldSyncHistoryMessage: () => false,
         shouldIgnoreJid: (jid) => isJidBroadcast(jid) || isJidMetaAI(jid) || isJidNewsletter(jid),

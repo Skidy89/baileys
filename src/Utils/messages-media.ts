@@ -305,11 +305,7 @@ export const encryptedStream = async (
 
 	const mediaKey = Crypto.randomBytes(32)
 
-
-
 	const { cipherKey, iv, macKey } = await getMediaKeys(mediaKey, mediaType)
-
-
 
 	const encFilePath = join(getTmpFilesDirectory(), mediaType + generateMessageID() + '-enc')
 
@@ -343,8 +339,6 @@ export const encryptedStream = async (
 
 	const sha256Plain = Crypto.createHash('sha256')
 	const sha256Enc = Crypto.createHash('sha256')
-
-
 
 	const encryptTransform = new Transform({
 		transform(chunk, _encoding, callback) {
@@ -400,8 +394,6 @@ export const encryptedStream = async (
 
 				if (fileLength - lastLoggedBytes >= 10 * 1024 * 1024) {
 					lastLoggedBytes = fileLength
-
-					
 				}
 
 				callback(null, encrypted)
@@ -421,8 +413,6 @@ export const encryptedStream = async (
 
 		flush(callback) {
 			try {
-				
-
 				const encrypted = aes.final()
 
 				if (encrypted.length > 0) {
@@ -430,13 +420,9 @@ export const encryptedStream = async (
 					hmac.update(encrypted)
 				}
 
-				
-
 				mac = hmac.digest().subarray(0, 10)
 
-
 				sha256Enc.update(mac)
-
 
 				callback(null, Buffer.concat([encrypted, mac]))
 			} catch (error) {
@@ -453,27 +439,16 @@ export const encryptedStream = async (
 	})
 
 	try {
-
 		await pipeline(stream, encryptTransform, encFileWriteStream)
 
-
-
 		if (originalFileStream) {
-
-
 			originalFileStream.end()
 
 			await once(originalFileStream, 'finish')
-
-
 		}
-
-
 
 		const fileSha256 = sha256Plain.digest()
 		const fileEncSha256 = sha256Enc.digest()
-
-
 
 		return {
 			mediaKey,
@@ -504,10 +479,8 @@ export const encryptedStream = async (
 		sha256Enc.destroy()
 		stream.destroy()
 
-
 		try {
 			await fs.unlink(encFilePath)
-
 		} catch (err) {
 			logger?.error(
 				{

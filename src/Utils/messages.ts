@@ -214,7 +214,10 @@ export const prepareWAMessageMedia = async (
 	}
 
 	const requiresDurationComputation = mediaType === 'audio' && typeof uploadData.seconds === 'undefined'
-
+	const requiresThumbnailComputation =
+		options.shouldProccessJpegThumbnail === true &&
+		(mediaType === 'image' || mediaType === 'video') &&
+		typeof uploadData.jpegThumbnail === 'undefined'
 	const requiresAudioBackground = options.backgroundColor && mediaType === 'audio' && uploadData.ptt === true
 
 	const { mediaKey, encFilePath, originalFilePath, fileEncSha256, fileSha256, fileLength } = await encryptedStream(
@@ -222,7 +225,7 @@ export const prepareWAMessageMedia = async (
 		options.mediaTypeOverride || mediaType,
 		{
 			logger,
-			saveOriginalFileIfRequired: false,
+			saveOriginalFileIfRequired: requiresThumbnailComputation,
 			opts: options.options
 		}
 	)
