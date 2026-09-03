@@ -1162,6 +1162,30 @@
   resolved "https://registry.npmjs.org/@msgpackr-extract/msgpackr-extract-win32-x64/-/msgpackr-extract-win32-x64-3.0.4.tgz"
   integrity sha512-CmCXPQrkbwExx3j946/PtHWHbYJiCRBRDl4BlkRQcJB/YOwQxJRTpoo7aTsortjgoJ1x7opzTSxn7C+ASSLVjQ==
 
+"@napi-rs/image-win32-x64-msvc@1.14.0":
+  version "1.14.0"
+  resolved "https://registry.npmjs.org/@napi-rs/image-win32-x64-msvc/-/image-win32-x64-msvc-1.14.0.tgz"
+  integrity sha512-Hq5BY3+FeNehRe1VPhVQ28dGTSWlxnGAHeoF7/GpgeWBfltLT5+DpkV+FPyq6ju49kG1aFofE+IlSGi5sMJ0Kw==
+
+"@napi-rs/image@^1.14.0":
+  version "1.14.0"
+  resolved "https://registry.npmjs.org/@napi-rs/image/-/image-1.14.0.tgz"
+  integrity sha512-pmwJPWY6R063luNBEP9msq9lFu+kYVMiQTJRSpyGnzYnnerYpT3U4vCgFhhVR3jypCgCVWi9viDLoEJoZoIA1w==
+  optionalDependencies:
+    "@napi-rs/image-android-arm64" "1.14.0"
+    "@napi-rs/image-darwin-arm64" "1.14.0"
+    "@napi-rs/image-darwin-x64" "1.14.0"
+    "@napi-rs/image-freebsd-x64" "1.14.0"
+    "@napi-rs/image-linux-arm-gnueabihf" "1.14.0"
+    "@napi-rs/image-linux-arm64-gnu" "1.14.0"
+    "@napi-rs/image-linux-arm64-musl" "1.14.0"
+    "@napi-rs/image-linux-x64-gnu" "1.14.0"
+    "@napi-rs/image-linux-x64-musl" "1.14.0"
+    "@napi-rs/image-wasm32-wasi" "1.14.0"
+    "@napi-rs/image-win32-arm64-msvc" "1.14.0"
+    "@napi-rs/image-win32-ia32-msvc" "1.14.0"
+    "@napi-rs/image-win32-x64-msvc" "1.14.0"
+
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
   resolved "https://registry.npmjs.org/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz"

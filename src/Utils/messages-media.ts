@@ -28,6 +28,7 @@ import { type BinaryNode, getBinaryNodeChild, getBinaryNodeChildBuffer, jidNorma
 import { aesDecryptGCM, aesEncryptGCM, hkdf } from './crypto'
 import { generateMessageID } from './generics'
 import type { ILogger } from './logger'
+import { exec } from 'node:child_process'
 
 const getTmpFilesDirectory = () => tmpdir()
 
@@ -115,7 +116,7 @@ export async function getMediaKeys(
 }
 
 export const extractImageThumb = async (bufferOrFilePath: Readable | Buffer | string, width = 32) => {
-	// TODO: Move entirely to sharp, removing jimp as it supports readable streams
+	// TODO: use napi-rs/image
 	// This will have positive speed and performance impacts as well as minimizing RAM usage.
 	if (bufferOrFilePath instanceof Readable) {
 		bufferOrFilePath = await toBuffer(bufferOrFilePath)
@@ -133,19 +134,6 @@ export const extractImageThumb = async (bufferOrFilePath: Readable | Buffer | st
 				width: dimensions.width,
 				height: dimensions.height
 			}
-		}
-	} else if ('jimp' in lib && typeof lib.jimp?.Jimp === 'object') {
-		const jimp = await (lib.jimp.Jimp as any).read(bufferOrFilePath)
-		const dimensions = {
-			width: jimp.width,
-			height: jimp.height
-		}
-		const buffer = await jimp
-			.resize({ w: width, mode: lib.jimp.ResizeStrategy.BILINEAR })
-			.getBuffer('image/jpeg', { quality: 50 })
-		return {
-			buffer,
-			original: dimensions
 		}
 	} else {
 		throw new Boom('No image processing library available')
@@ -280,6 +268,60 @@ type EncryptedStreamOptions = {
 	opts?: RequestInit
 }
 
+/** Extracts video thumb using FFMPEG */
+const extractVideoThumb = async (
+	path: string,
+	destPath: string,
+	time: string,
+	size: { width: number; height: number }
+) =>
+	new Promise<void>((resolve, reject) => {
+		const cmd = `ffmpeg -ss ${time} -i ${path} -y -vf scale=${size.width}:-1 -vframes 1 -f image2 ${destPath}`
+		exec(cmd, err => {
+			if (err) {
+				reject(err)
+			} else {
+				resolve()
+			}
+		})
+	})
+/** generates a thumbnail for a given media, if required */
+export async function generateThumbnail(
+	file: string,
+	mediaType: 'video' | 'image',
+	options: {
+		logger?: ILogger
+	}
+) {
+	let thumbnail: string | undefined
+	let originalImageDimensions: { width: number; height: number } | undefined
+	if (mediaType === 'image') {
+		const { buffer, original } = await extractImageThumb(file)
+		thumbnail = buffer.toString('base64')
+		if (original.width && original.height) {
+			originalImageDimensions = {
+				width: original.width,
+				height: original.height
+			}
+		}
+	} else if (mediaType === 'video') {
+		const imgFilename = join(getTmpFilesDirectory(), generateMessageID() + '.jpg')
+		try {
+			await extractVideoThumb(file, imgFilename, '00:00:00', { width: 32, height: 32 })
+			const buff = await fs.readFile(imgFilename)
+			thumbnail = buff.toString('base64')
+
+			await fs.unlink(imgFilename)
+		} catch (err) {
+			options.logger?.debug('could not generate video thumb: ' + err)
+		}
+	}
+
+	return {
+		thumbnail,
+		originalImageDimensions
+	}
+}
 export const encryptedStream = async (
 	media: WAMediaUpload,
 	mediaType: MediaType,

@@ -34,6 +34,7 @@ import type { ILogger } from './logger'
 import {
 	downloadContentFromMessage,
 	encryptedStream,
+	generateThumbnail,
 	getAudioDuration,
 	getRawMediaUploadData,
 	type MediaDownloadOptions
@@ -243,7 +244,25 @@ export const prepareWAMessageMedia = async (
 	})()
 
 	const processingTasks: Promise<void>[] = []
+	if (requiresThumbnailComputation) {
+		processingTasks.push(
+			(async () => {
+				const { thumbnail, originalImageDimensions } = await generateThumbnail(
+					originalFilePath!,
+					mediaType as 'image' | 'video',
+					options
+				)
+				uploadData.jpegThumbnail = thumbnail
+				if (!uploadData.width && originalImageDimensions) {
+					uploadData.width = originalImageDimensions.width
+					uploadData.height = originalImageDimensions.height
+					logger?.debug('set dimensions')
+				}
 
+				logger?.debug('generated thumbnail')
+			})()
+		)
+	}
 	if (requiresDurationComputation) {
 		processingTasks.push(
 			(async () => {
